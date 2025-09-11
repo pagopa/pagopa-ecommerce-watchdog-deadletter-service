@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  pagopa-ecommerce-watchdog-deadletter-service:
+    container_name: pagopa-ecommerce-watchdog-deadletter-service
+    build:
+      dockerfile: "${DOCKER_FILE_NAME}"
+      context: .
+    env_file:
+      - ./.env
+    ports:
+      - "8080:8080"
+    networks:
+      - pagopa-ecommerce-watchdog-deadletter-service-net
+  pagopa-ecommerce-helpdesk-service-mock:
+    container_name: pagopa-ecommerce-helpdesk-service-mock
+    build:
+      context: .
+      dockerfile: docker/pagopa-ecommerce-helpdesk-service-mock/Dockerfile
+    ports:
+      - "8090:8090"
+    networks:
+      - pagopa-ecommerce-watchdog-deadletter-service-net
+
+networks:
+  pagopa-ecommerce-watchdog-deadletter-service-net:
+    driver: bridge

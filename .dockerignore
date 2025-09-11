@@ -120,8 +120,6 @@ replay_pid*
 
 # Log file
 
-# Env file
-.env
 # BlueJ files
 
 # Mobile Tools for Java (J2ME)
@@ -158,4 +156,3 @@ gradle-app.setting
 *.hprof
 
 # End of https://www.toptal.com/developers/gitignore/api/intellij+all,kotlin,java,gradle
-/.env

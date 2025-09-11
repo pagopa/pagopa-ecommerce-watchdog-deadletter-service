@@ -1,0 +1,302 @@
+openapi: 3.0.0
+info:
+  version: 1.0.0
+  title: PagoPA Ecommerce Watchdog Service API
+  description: API service to monitor deadletter transactions and manually track recovery or follow-up actions.
+servers:
+  - url: https://${host}
+tags:
+  - name: deadletter-transactions
+    description: Deadletter transaction management
+  - name: deadletter-transactions-actions
+    description: Manual actions or notes related to deadletter transactions
+  - name: users
+    description: User data for operators managing actions
+paths:
+  /deadletter-transactions:
+    get:
+      tags:
+        - deadletter-transactions
+      summary: List all deadletter transactions
+      operationId: listDeadletterTransactions
+      parameters:
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+            example: '2025-08-19'
+          description: Filter transactions by date (format YYYY-MM-DD)
+        - name: pageNumber
+          in: query
+          required: true
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+          description: Searched page number, starting from 0
+        - name: pageSize
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 20
+            default: 10
+          description: Max element per page
+        - $ref: '#/components/parameters/X-User-Id'
+      responses:
+        '200':
+          description: List of deadletter transactions with pagination
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deadletterTransactions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DeadletterTransaction'
+                  page:
+                    $ref: '#/components/schemas/PageInfo'
+                required:
+                  - deadletterTransactions
+                  - page
+        '400':
+          description: Invalid request or query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+  /deadletter-transactions/{transactionId}/actions:
+    get:
+      tags:
+        - deadletter-transactions-actions
+      summary: List actions for a specific deadletter transaction
+      operationId: listActionsForDeadletterTransaction
+      parameters:
+        - name: transactionId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Deadletter transaction unique ID
+        - $ref: '#/components/parameters/X-User-Id'
+      responses:
+        '200':
+          description: List of actions taken on the specified deadletter transaction
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DeadletterTransactionAction'
+        '400':
+          description: Invalid path parameter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+        '404':
+          description: Deadletter transaction not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+    post:
+      tags:
+        - deadletter-transactions-actions
+      summary: Add a new action to a deadletter transaction
+      operationId: addActionToDeadletterTransaction
+      parameters:
+        - name: transactionId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Deadletter transaction unique ID
+        - $ref: '#/components/parameters/X-User-Id'
+      requestBody:
+        description: Action to be added
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeadletterTransactionActionInput'
+      responses:
+        '201':
+          description: Action added successfully
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+        '404':
+          description: Deadletter transaction not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+  /users:
+    get:
+      tags:
+        - users
+      summary: Get user information
+      operationId: getUserByHeader
+      parameters:
+        - name: x-user-id
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Unique identifier of the user making the request
+      responses:
+        '200':
+          description: User information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Missing or invalid user ID in header
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+components:
+  parameters:
+    X-User-Id:
+      name: x-user-id
+      in: header
+      required: true
+      schema:
+        type: string
+      description: Unique identifier of the user making the request
+  schemas:
+    PageInfo:
+      description: Information about the returned query page
+      type: object
+      properties:
+        current:
+          type: integer
+          description: Current returned page index (0-based)
+        total:
+          type: integer
+          description: Total pages for the query (based on requested page size)
+        results:
+          type: integer
+          description: Transactions returned into the current page
+      required:
+        - current
+        - results
+        - total
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        surname:
+          type: string
+        email:
+          type: string
+      required:
+        - id
+        - name
+        - surname
+        - email
+    DeadletterTransaction:
+      type: object
+      properties:
+        transactionId:
+          type: string
+        insertionDate:
+          type: string
+          format: date-time
+        paymentToken:
+          type: string
+        paymentMethodName:
+          type: string
+        pspId:
+          type: string
+        eCommerceStatus:
+          type: string
+        gatewayAuthorizationStatus:
+          type: string
+        paymentEndToEndId:
+          type: string
+        operationId:
+          type: string
+        deadletterTransactionDetails:
+          type: object
+        eCommerceDetails:
+          type: object
+        nodoDetails:
+          type: object
+        npgDetails:
+          type: object
+      required:
+        - id
+        - insertionDate
+        - transactionId
+        - paymentToken
+        - paymentMethodName
+        - pspId
+        - eCommerceStatus
+        - deadletterTransactionDetails
+    DeadletterTransactionAction:
+      type: object
+      properties:
+        id:
+          type: string
+        transactionId:
+          type: string
+        userId:
+          type: string
+        value:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+      required:
+        - id
+        - transactionId
+        - userId
+        - value
+        - timestamp
+    DeadletterTransactionActionInput:
+      type: object
+      properties:
+        value:
+          type: string
+      required:
+        - value
+    ProblemJson:
+      type: object
+      properties:
+        type:
+          type: string
+          format: uri
+          example: https://example.com/problem/invalid-request
+        title:
+          type: string
+          example: Invalid Request
+        status:
+          type: integer
+          example: 400
+        detail:
+          type: string
+          example: The provided input is not valid
+        instance:
+          type: string
+          format: uri
+          example: /deadletter-transactions/123/actions
