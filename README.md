@@ -61,14 +61,14 @@ After setting up the WSL environment, you can test the application by building i
 
 ### Requirements
 
-1. You must use GraalVM Java SDK to build native executable locally.
-   https://www.graalvm.org/downloads/. It is recommended to use SDKMAN
-2. You must use GraalVM gradle plugin which allows to configure a lot of setting for native compilation, like automatic
+1. You must use GraalVM Java SDK to build native executable locally. It is recommended to use [SDKMAN](https://sdkman.io/install) to provide a better JVM env "switching"
+2. This project uses GraalVM gradle plugin which allows to configure a lot of setting for native compilation, like automatic
    toolchain detection https://graalvm.github.io/native-build-tools/latest/gradle-plugin.html
 
-If you're experiencing issue with GraalVM not found like errors, be sure to use GraalVM for the project and try to
-enable automatic toolchain detection.
-Also, you can use [SDKMAN](https://sdkman.io/install) to provide a better JVM env "switching".
+With SDKMAN run the following command to install the required version of Gradle and Java SDK:
+```shell
+sdk env install
+```
 
 #### Compile & Run
 
