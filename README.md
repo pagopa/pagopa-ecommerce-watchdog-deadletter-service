@@ -15,25 +15,35 @@ This service leverages Kotlin's native compilation to achieve optimal performanc
 
 These are all environment variables needed by the application:
 
-| Variable name                                 | Description                                                                                              | type    | default                    |
-|-----------------------------------------------|----------------------------------------------------------------------------------------------------------|---------|----------------------------|
-| ONE_IDENTITY_BASE_URL                         | One Identity base URL                                                                                    | string  |                            |
-| ONE_IDENTITY_REDIRECT_URI                     | The 'redirect_uri' that was registered for this client by One Identity                                   | string  |                            |
-| OPENID_CLIENT_ID                              | This is the 'client_id' of the requesting client, provided by One Identity after registering the service | string  |                            |
-| REDIS_HOST                                    | Redis server hostname                                                                                    | string  |                            |
-| REDIS_PASSWORD                                | Redis server password                                                                                    | string  |                            |
-| REDIS_PORT                                    | Redis server listening port                                                                              | number  |                            |
-| REDIS_SSL_ENABLED                             | Redis server boolean value indicating if ssl connection is enabled                                       | boolean |                            |
-| AUTHENTICATED_USER_SESSION_CACHE_TTL_SECONDS  | Authenticated user session cache duration in seconds                                                     | number  |                            |
-| AUTHENTICATED_USER_SESSION_CACHE_KEYSPACE     | Authenticated user session cache entries keyspace                                                        | string  | authenticated-user-session |
-| OIDC_AUTH_STATE_CACHE_TTL_SECONDS             | OIDC authentication state cache duration in seconds                                                      | number  |                            |
-| OIDC_AUTH_STATE_CACHE_TTL_KEYSPACE            | OIDC authentication state cache entries keyspace                                                         | string  | oidc-auth-session-data     |
-| OIDC_KEYS_CACHE_TTL_SECONDS                   | OIDC JWT verification keys cache duration in seconds                                                     | number  |                            |
-| OIDC_KEYS_CACHE_TTL_KEYSPACE                  | OIDC JWT verification keys cache entries keyspace                                                        | string  | oidc-keys                  |
-| ONE_IDENTITY_SERVER_URI                       | OIDC authentication backend identity provider uri                                                        | string  |                            |
-| ONE_IDENTITY_SERVER_READ_TIMEOUT_MILLIS       | OIDC authentication backend identity provider requests read timeout (in milliseconds)                    | number  |                            |
-| ONE_IDENTITY_SERVER_CONNECTION_TIMEOUT_MILLIS | OIDC authentication backend identity provider requests connection timeout (in milliseconds)              | number  |                            |
-| SESSION_TOKEN_LENGTH_IN_BYTES                 | Randomly generated session token length in bytes                                                         | number  | 16                         |
+| Variable name                                           | Description                                                                                                                                                | type    | default |
+|---------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------|---------|---------|
+| DOCKER_FILE_NAME                                        | Specifies the Dockerfile to use for the build (e.g., JVM or native)                                                                                        | string  |         |
+| ROOT_LOGGING_LEVEL                                      | Sets the root logging level for the application                                                                                                            | string  | INFO    |
+| ECOMMERCE_HELPDESK_SERVER_URI                           | URI for the e-commerce helpdesk server                                                                                                                     | string  |         |
+| ECOMMERCE_HELPDESK_SERVER_READ_TIMEOUT_MILLIS           | Read timeout in milliseconds for the e-commerce helpdesk server                                                                                            | integer |         |
+| ECOMMERCE_HELPDESK_SERVER_CONNECTION_TIMEOUT_MILLIS     | Connection timeout in milliseconds for the e-commerce helpdesk server                                                                                      | integer |         |
+| ECOMMERCE_HELPDESK_API_KEY                              | API key for the e-commerce helpdesk service                                                                                                                | string  |         |
+| NODO_TECHNICAL_SUPPORT_SERVER_URI                       | URI for the NODO technical support server                                                                                                                  | string  |         |
+| NODO_TECHNICAL_SUPPORT_SERVER_READ_TIMEOUT_MILLIS       | Read timeout in milliseconds for the NODO technical support server                                                                                         | integer |         |
+| NODO_TECHNICAL_SUPPORT_SERVER_CONNECTION_TIMEOUT_MILLIS | Connection timeout in milliseconds for the NODO technical support server                                                                                   | integer |         |
+| NODO_TECHNICAL_SUPPORT_API_KEY                          | API key for the NODO technical support service                                                                                                             | string  |         |
+| MONGO_HOST                                              | MongoDB server hostname                                                                                                                                    | string  |         |
+| MONGO_PORT                                              | MongoDB server port                                                                                                                                        | integer |         |
+| MONGO_USERNAME                                          | Username for MongoDB authentication                                                                                                                        | string  |         |
+| MONGO_PASSWORD                                          | Password for MongoDB authentication                                                                                                                        | string  |         |
+| MONGO_SSL_ENABLED                                       | Enables or disables SSL for the MongoDB connection                                                                                                         | boolean |         |
+| MONGO_DB_NAME                                           | MongoDB database name                                                                                                                                      | string  |         |
+| MONGO_MIN_POOL_SIZE                                     | Min amount of connections to be retained into connection pool. See docs *                                                                                  | integer |         |
+| MONGO_MAX_POOL_SIZE                                     | Max amount of connections to be retained into connection pool.See docs *                                                                                   | integer |         |
+| MONGO_MAX_IDLE_TIMEOUT_MS                               | Max timeout after which an idle connection is killed in milliseconds. See docs *                                                                           | integer |         |
+| MONGO_CONNECTION_TIMEOUT_MS                             | Max time to wait for a connection to be opened. See docs *                                                                                                 | integer |         |
+| MONGO_SOCKET_TIMEOUT_MS                                 | Max time to wait for a command send or receive before timing out. See docs *                                                                               | integer |         |
+| MONGO_SERVER_SELECTION_TIMEOUT_MS                       | Max time to wait for a server to be selected while performing a communication with Mongo in milliseconds. See docs *                                       | integer |         |
+| MONGO_WAITING_QUEUE_MS                                  | Max time a thread has to wait for a connection to be available in milliseconds. See docs *                                                                 | integer |         |
+| MONGO_HEARTBEAT_FREQUENCY_MS                            | Hearth beat frequency in milliseconds. This is an hello command that is sent periodically on each active connection to perform an health check. See docs * | integer |         |
+| MONGO_REPLICA_SET_OPTION                                | Additional replica set options for the MongoDB connection string                                                                                           | string  |         |
+\* For Mongo connection string options
+see [docs](https://www.mongodb.com/docs/drivers/java/sync/v4.3/fundamentals/connection/connection-options/#connection-options)
 
 An example configuration of these environment variables is in the `.env.example` file.
 
