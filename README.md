@@ -96,6 +96,7 @@ order to test the service.
 Also exist a gradle command to compile and run it directly:
 
 ```shell
+export $(grep -v '^#' .env.example | xargs)
 gradle :nativeRun
 ```
 
