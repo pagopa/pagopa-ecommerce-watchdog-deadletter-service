@@ -246,7 +246,7 @@ graalvmNative {
       javaLauncher =
         javaToolchains.launcherFor {
           languageVersion = JavaLanguageVersion.of(21)
-          vendor.set(JvmVendorSpec.GRAAL_VM)
+          //vendor.set(JvmVendorSpec.GRAAL_VM)
         }
     }
   }
