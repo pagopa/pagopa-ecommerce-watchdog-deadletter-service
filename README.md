@@ -100,6 +100,19 @@ export $(grep -v '^#' .env.example | xargs)
 gradle :nativeRun
 ```
 
+If you want to run the project locally with Spring Boot, you should initialize ecommerce-helpdesk-mock using the following commands (you need yarn installed on the WSL):
+
+```shell
+yarn add json-server@0.17.4 --exact
+```
+
+The following command should be used to start the mock server for local testing
+
+```shell
+yarn json-server ./ecommerce-helpdesk-mock/db.json --routes ./ecommerce-helpdesk-mock/routes.json
+```
+
+
 ## Docker
 
 The project can be built and run using Docker and docker-compose. You should install Docker Desktop on Windows and go
