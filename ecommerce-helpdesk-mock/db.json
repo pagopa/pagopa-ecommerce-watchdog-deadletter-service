@@ -1,0 +1,50 @@
+{
+  "searchTransaction" : {
+    "transactions": [
+        {
+          "userInfo": {
+            "notificationEmail": "test@pagopa.it",
+            "authenticationType": "GUEST"
+          },
+          "transactionInfo": {
+            "creationDate": "2025-09-23T08:13:35.99845033Z",
+            "status": "Rifiutato",
+            "eventStatus": "UNAUTHORIZED",
+            "amount": 10000,
+            "fee": 90,
+            "grandTotal": 10090,
+            "paymentMethodName": "Conto Banca Popolare di Sondrio",
+            "brand": "N/A",
+            "authorizationRequestId": "2A0FM0Z00YQE30W070",
+            "paymentGateway": "REDIRECT",
+            "correlationId": "b746fb5d-e4ce-4ef3-8a37-84e920d1bd24",
+            "gatewayAuthorizationStatus": "CANCELED"
+          },
+          "paymentInfo": {
+            "origin": "CHECKOUT",
+            "details": [
+              {
+                "subject": "240223_08: prova",
+                "rptId": "12621570154001999990002164270",
+                "idTransaction": "d13fef3e449a4aceb76c539892b23035",
+                "paymentToken": "59277cdeea60416682d584ecec2f9e38",
+                "creditorInstitution": "Universita' degli Studi di Milano - Bicocca",
+                "paFiscalCode": "12621570154"
+              }
+            ]
+          },
+          "pspInfo": {
+            "pspId": "POSOIT22XXX",
+            "businessName": "Banca Popolare di Sondrio",
+            "idChannel": "00053810149_09"
+          },
+          "product": "ECOMMERCE"
+        }
+      ],
+    "page": {
+      "current": 0,
+      "total": 1,
+      "results": 1
+    }
+  }
+}

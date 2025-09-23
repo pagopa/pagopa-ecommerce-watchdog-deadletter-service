@@ -1,0 +1,3 @@
+{
+  "/ecommerce/helpdesk-service/v1/ecommerce/searchTransaction?pageNumber=:page&pageSize=:pagesize" : "/searchTransaction?page"
+}
