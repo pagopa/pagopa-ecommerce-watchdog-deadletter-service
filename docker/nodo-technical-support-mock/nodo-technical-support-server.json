@@ -1,0 +1,40 @@
+{
+  "notice": {
+    "dateFrom": "2025-09-16",
+    "dateTo": "2025-09-23",
+    "count": 2,
+    "data": [
+      {
+        "businessProcess": "closePayment-v2",
+        "organizationFiscalCode": "12621570154",
+        "noticeNumber": "001999990002164270",
+        "iuv": "999990002164270",
+        "pspId": "AGID_01",
+        "brokerPspId": "97735020584",
+        "channelId": "97735020584_09",
+        "outcome": null,
+        "status": null,
+        "insertedTimestamp": "2025-09-23T10:13:35.93506",
+        "serviceIdentifier": "NDP004UAT",
+        "paymentToken": "59277cdeea60416682d584ecec2f9e38",
+        "ccp": "59277cdeea60416682d584ecec2f9e38",
+        "negativeBizEvtId": "5a032bf8-5f1c-4c4a-833d-9657dd2f1416"
+      },
+      {
+        "organizationFiscalCode": "12621570154",
+        "noticeNumber": "001999990002164270",
+        "iuv": "999990002164270",
+        "pspId": "POSOIT22XXX",
+        "brokerPspId": "00053810149",
+        "channelId": "00053810149_07",
+        "outcome": "OK",
+        "status": "completed",
+        "insertedTimestamp": "2025-09-23T10:19:59.23385",
+        "serviceIdentifier": "NDP004UAT",
+        "paymentToken": "63da1f7bd7f245fcb4b599943030eef9",
+        "ccp": "63da1f7bd7f245fcb4b599943030eef9",
+        "positiveBizEvtId": "59ec7839-46c1-4690-abc0-3dc13f110a26"
+      }
+    ]
+  }
+}
