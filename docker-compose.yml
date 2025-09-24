@@ -14,11 +14,16 @@ services:
       - pagopa-ecommerce-watchdog-deadletter-service-net
   pagopa-ecommerce-helpdesk-service-mock:
     container_name: pagopa-ecommerce-helpdesk-service-mock
+    volumes:
+      - type: bind
+        source: ./ecommerce-helpdesk-mock
+        target: /config
+        read_only: true
     build:
       context: .
-      dockerfile: docker/pagopa-ecommerce-helpdesk-service-mock/Dockerfile
+      dockerfile: ecommerce-helpdesk-mock/Dockerfile.helpdesk-mock
     ports:
-      - "8090:8090"
+      - "3000:3000"
     networks:
       - pagopa-ecommerce-watchdog-deadletter-service-net
 

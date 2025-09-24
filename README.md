@@ -109,7 +109,7 @@ yarn add json-server@0.17.4 --exact
 The following command should be used to start the mock server for local testing
 
 ```shell
-yarn json-server ./ecommerce-helpdesk-mock/db.json --routes ./ecommerce-helpdesk-mock/routes.json
+yarn json-server ./ecommerce-helpdesk-mock/helpdesk.json --routes ./ecommerce-helpdesk-mock/routes.json
 ```
 
 
