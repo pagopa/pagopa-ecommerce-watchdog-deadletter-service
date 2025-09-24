@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   pagopa-ecommerce-watchdog-deadletter-service:
     container_name: pagopa-ecommerce-watchdog-deadletter-service
@@ -24,6 +22,21 @@ services:
       dockerfile: ecommerce-helpdesk-mock/Dockerfile.helpdesk-mock
     ports:
       - "3000:3000"
+    networks:
+      - pagopa-ecommerce-watchdog-deadletter-service-net
+
+  pagopa-nodo-technical-support-mock:
+    container_name: pagopa-nodo-technical-support-mock
+    build:
+      context: .
+      dockerfile: docker/nodo-technical-support-mock/Dockerfile.nodo-technical-support-mock
+    volumes:
+      - type: bind
+        source: ./docker/nodo-technical-support-mock
+        target: /config
+        read_only: true
+    ports:
+      - "8090:3000"
     networks:
       - pagopa-ecommerce-watchdog-deadletter-service-net
 
