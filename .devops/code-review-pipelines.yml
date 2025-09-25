@@ -36,13 +36,13 @@ stages:
           - task: Gradle@3
             inputs:
               gradleWrapperFile: 'gradlew' # string. Alias: wrapperScript. Required. Gradle wrapper. Default: gradlew.
-              tasks: 'build' # string. Required. Tasks. Default: build.
+              tasks: 'build -PbuildCommons' # string. Required. Tasks. Default: build.
               publishJUnitResults: true
               testResultsFiles: '**/TEST-*.xml' # string. Required when publishJUnitResults = true. Test results files. Default: **/TEST-*.xml.
               codeCoverageToolOption: 'None' # 'None' | 'Cobertura' | 'JaCoCo'. Alias: codeCoverageTool. Code coverage tool. Default: None.
               codeCoverageClassFilesDirectories: 'build/classes/main/' # string. Alias: classFilesDirectories. Required when codeCoverageTool != None. Class files directories. Default: build/classes/main/.
               javaHomeOption: 'JDKVersion' # 'JDKVersion' | 'Path'. Alias: javaHomeSelection. Required. Set JAVA_HOME by. Default: JDKVersion.
-              jdkVersionOption: '1.21' # 'default' | '1.11' | '1.10' | '1.9' | '1.8' | '1.7' | '1.6'. Alias: jdkVersion. Optional. Use when javaHomeSelection = JDKVersion. JDK version. Default: default.
+              jdkVersionOption: '1.21' # Alias: jdkVersion. Optional. Use when javaHomeSelection = JDKVersion. JDK version. Default: default.
               sonarQubeRunAnalysis: true
 
           - task: SonarCloudPublish@3
@@ -60,3 +60,26 @@ stages:
               summaryFileLocation: 'build/reports/jacoco/test/jacocoTestReport.xml'
               reportDirectory: 'build/reports/jacoco/test/html'
             displayName: 'Publish Code Coverage on Azure Devops'
+
+  - stage: IntegrationTest
+    dependsOn: [ ]
+    jobs:
+      - job: make_integration_test
+        steps:
+            - script: cp .env.example .env
+              displayName: 'Setup env'
+
+            - script: docker compose up -d
+              displayName: 'Run app with docker-compose'
+
+            - script: |
+                timeout 180 bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:8080/actuator/health/liveness)" != "200" ]]; do sleep 5; done' || exit 1
+              displayName: 'Health check'
+
+            - template: azure-templates/api-tests.yml
+              parameters:
+                API_TEST_FILE: "api-tests/jwt-token-issuer-service.postman-collection.json"
+                ENV_FILE: "api-tests/localhost.env.json"
+                TEST_FILE_PREFIX: "local"
+                USE_NEWMAN_DOCKER_IMAGE: false
+                SERVICE_API_KEY: "PRIMARY-KEY"
