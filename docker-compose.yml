@@ -21,7 +21,7 @@ services:
       context: .
       dockerfile: ecommerce-helpdesk-mock/Dockerfile.helpdesk-mock
     ports:
-      - "3000:3000"
+      - "8091:3000"
     networks:
       - pagopa-ecommerce-watchdog-deadletter-service-net
 
