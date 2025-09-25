@@ -1,0 +1,112 @@
+microservice-chart:
+  namespace: "ecommerce"
+  nameOverride: ""
+  fullnameOverride: "pagopa-ecommerce-watchdog-deadletter-service"
+  image:
+    repository: pagopadcommonacr.azurecr.io/pagopaecommercewatchdogdeadletterservice
+    tag: "latest"
+    pullPolicy: Always
+  livenessProbe:
+    handlerType: httpGet
+    httpGet:
+      path: /actuator/health/liveness
+      port: 8080
+    initialDelaySeconds: 10
+    failureThreshold: 6
+    periodSeconds: 10
+  readinessProbe:
+    handlerType: httpGet
+    httpGet:
+      path: /actuator/health/readiness
+      port: 8080
+    initialDelaySeconds: 10
+    failureThreshold: 6
+    periodSeconds: 10
+  deployment:
+    create: true
+  service:
+    create: true
+    type: ClusterIP
+    ports:
+      - 8080
+  ingress:
+    create: true
+    host: "weudev.ecommerce.internal.dev.platform.pagopa.it"
+    path: /pagopa-ecommerce-watchdog-deadletter-service/(.*)
+    servicePort: 8080
+  serviceAccount:
+    name: "ecommerce-workload-identity"
+  podAnnotations: {}
+  podSecurityContext:
+    seccompProfile:
+      type: RuntimeDefault
+  securityContext:
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - all
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "128Mi"
+      cpu: "100m"
+  autoscaling:
+    enable: false
+    minReplica: 1
+    maxReplica: 1
+    pollingInterval: 10 # seconds
+    cooldownPeriod: 50 # seconds
+    triggers:
+      - type: cpu
+        metadata:
+          # Required
+          type: Utilization # Allowed types are 'Utilization' or 'AverageValue'
+          value: "75"
+  envConfig:
+    ROOT_LOGGING_LEVEL: "info"
+    OTEL_RESOURCE_ATTRIBUTES_DEPLOYMENT_ENVIRONMENT: "dev"
+    OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+    OTEL_TRACES_EXPORTER: otlp
+    OTEL_METRICS_EXPORTER: otlp
+    OTEL_LOGS_EXPORTER: none
+    OTEL_TRACES_SAMPLER: "always_on"
+    ECOMMERCE_HELPDESK_SERVER_URI: toupdate
+    ECOMMERCE_HELPDESK_SERVER_READ_TIMEOUT_MILLIS: toupdate
+    ECOMMERCE_HELPDESK_SERVER_CONNECTION_TIMEOUT_MILLIS: toupdate
+    NODO_TECHNICAL_SUPPORT_SERVER_URI: toupdate
+    NODO_TECHNICAL_SUPPORT_SERVER_READ_TIMEOUT_MILLIS: toupdate
+    NODO_TECHNICAL_SUPPORT_SERVER_CONNECTION_TIMEOUT_MILLIS: toupdate
+    MONGO_HOST: toupdate
+    MONGO_PORT: toupdate
+    MONGO_SSL_ENABLED: toupdate
+    MONGO_DB_NAME: toupdate
+    MONGO_MIN_POOL_SIZE: toupdate
+    MONGO_MAX_POOL_SIZE: toupdate
+    MONGO_MAX_IDLE_TIMEOUT_MS: toupdate
+    MONGO_CONNECTION_TIMEOUT_MS: toupdate
+    MONGO_SOCKET_TIMEOUT_MS: toupdate
+    MONGO_SERVER_SELECTION_TIMEOUT_MS: toupdate
+    MONGO_WAITING_QUEUE_MS: toupdate
+    MONGO_HEARTBEAT_FREQUENCY_MS: toupdate
+    MONGO_REPLICA_SET_OPTION: toupdate
+  nodeSelector: {}
+  tolerations: []
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: node_type
+                operator: In
+                values:
+                  - user
+  secretProviderClass:
+    create: true
+  keyvault:
+    name: "pagopa-d-ecommerce-kv"
+    tenantId: "7788edaf-0346-4068-9d79-c868aed15b3d"
+  azure:
+    workloadIdentityClientId: "1be61b58-24e2-49c8-b401-89ebd004bf2e"
