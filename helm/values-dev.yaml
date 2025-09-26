@@ -92,6 +92,8 @@ microservice-chart:
     MONGO_WAITING_QUEUE_MS: toupdate
     MONGO_HEARTBEAT_FREQUENCY_MS: toupdate
     MONGO_REPLICA_SET_OPTION: toupdate
+  envSecret:
+    MONGO_PASSWORD: mongo-ecommerce-password
   nodeSelector: {}
   tolerations: []
   affinity:
