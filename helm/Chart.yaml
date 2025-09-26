@@ -1,0 +1,10 @@
+apiVersion: v2
+type: application
+version: 0.0.0
+appVersion: 0.0.0
+name: pagopa-ecommerce-watchdog-deadletter-service
+description: Microservice designed to support deadletter monitoring for the eCommerce transactions process.
+dependencies:
+  - name: microservice-chart
+    repository: "https://pagopa.github.io/aks-microservice-chart-blueprint"
+    version: 8.0.0

@@ -1,0 +1,139 @@
+# Deploy to Azure Kubernetes Service:
+# - DEV
+# - UAT -> PROD
+# Build and push image to Azure Container Registry; Deploy to Azure Kubernetes Service
+# https://docs.microsoft.com/azure/devops/pipelines/languages/docker
+
+parameters:
+  - name: 'DEV_DEPLOY'
+    displayName: 'Deploy on DEV environment'
+    type: boolean
+    default: True
+    values:
+      - False
+      - True
+
+  - name: 'UAT_PROD_DEPLOY'
+    displayName: 'Deploy on UAT environment with PROD promotion'
+    type: boolean
+    default: False
+    values:
+      - False
+      - True
+
+  - name: 'SKIP_BUILD'
+    displayName: 'Check this flag to skip build and proceed to deploy a docker image previously built'
+    type: boolean
+    default: False
+    values:
+      - False
+      - True
+
+  - name: "FORCE_REPLACE_DOCKER_IMAGE"
+    displayName: "Force the existing docker image to be replaced (latest tag)"
+    type: boolean
+    default: False
+    values:
+      - False
+      - True
+
+  - name: "UAT_SKIP_BLUE_DEPLOYMENT"
+    displayName: "Skip blue/green UAT deployment strategy: activating this parameter no blue version will be created and the pipeline proceed building and deploy artifact green version"
+    type: boolean
+    default: True
+    values:
+      - False
+      - True
+
+  - name: "PROD_SKIP_BLUE_DEPLOYMENT"
+    displayName: "Skip blue/green PROD deployment strategy: activating this parameter no blue version will be created and the pipeline proceed building and deploy artifact green version"
+    type: boolean
+    default: True
+    values:
+      - False
+      - True
+
+  - name: "NATIVE_COMPILATION"
+    displayName: "Boolean flag to use native compilation or JVM runtime for the output executable: activating this parameter native compilation will be used, jvm otherwise"
+    type: boolean
+    default: True
+    values:
+      - False
+      - True
+
+variables:
+  - ${{ if eq(parameters['NATIVE_COMPILATION'], True) }}:
+      - name: DOCKER_FILE_NAME
+        value: "Dockerfile.native"
+      - name: DOCKER_FILE_VERSION_SUFFIX
+        value: ""
+  - ${{ else }}:
+      - name: DOCKER_FILE_NAME
+        value: "Dockerfile.jvm"
+      - name: DOCKER_FILE_VERSION_SUFFIX
+        value: "-jvm"
+
+resources:
+  repositories:
+    - repository: pagopaCommons
+      type: github
+      name: pagopa/azure-pipeline-templates
+      ref: refs/tags/v6.14.0
+      endpoint: 'io-azure-devops-github-ro'
+
+pool:
+  vmImage: ubuntu-latest
+
+# --- START Deploy DEV --- #
+stages:
+
+  - stage: 'Build_for_DEV'
+    displayName: 'Build for DEV'
+    condition: and(succeeded(), not(${{ parameters.SKIP_BUILD }}), eq(${{parameters.DEV_DEPLOY}}, true))
+    jobs:
+      - job: Build_docker
+        displayName: Build docker with Build.SourceVersion as TAG
+        steps:
+          - template: templates/docker-release/template.yaml@pagopaCommons
+            parameters:
+              CONTAINER_REGISTRY_SERVICE_CONN: $(DEV_CONTAINER_REGISTRY_SERVICE_CONN)
+              CONTAINER_REGISTRY_FQDN: $(DEV_CONTAINER_NAMESPACE)
+              DOCKER_IMAGE_NAME: $(K8S_IMAGE_REPOSITORY_NAME)
+              DOCKER_IMAGE_TAG: $(Build.SourceVersion)${{ variables.DOCKER_FILE_VERSION_SUFFIX }}
+              FORCE_REPLACE_DOCKER_IMAGE: ${{ parameters.FORCE_REPLACE_DOCKER_IMAGE }}
+              DOCKERFILE: ${{ variables.DOCKER_FILE_NAME }}
+
+  - stage: 'Deploy_for_DEV'
+    displayName: 'Deploy DEV'
+    dependsOn: Build_for_DEV
+    condition: or(succeeded(), ${{ parameters.SKIP_BUILD }}, eq(${{parameters.DEV_DEPLOY}}, true) )
+    jobs:
+      - deployment: "deploy"
+        environment: 'DEV'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+                  displayName: "Checkout"
+                - task: Bash@3
+                  name: update_chart_version
+                  displayName: 'Setup helm microservice chart'
+                  inputs:
+                    targetType: "inline"
+                    script: |
+                      helm repo add microservice-chart https://pagopa.github.io/aks-microservice-chart-blueprint
+                      helm dep build helm
+                - template: azure-templates/helm-microservice-chart-deploy.yml
+                  parameters:
+                    DO_DEPLOY: true
+                    ENV: 'DEV'
+                    KUBERNETES_SERVICE_CONN: $(DEV_KUBERNETES_SERVICE_CONN)
+                    NAMESPACE: ecommerce
+                    APP_NAME: $(K8S_IMAGE_REPOSITORY_NAME)
+                    VALUE_FILE: "helm/values-dev.yaml"
+                    GREEN_VERSION: $(Build.SourceVersion)${{ variables.DOCKER_FILE_VERSION_SUFFIX }}
+                    BLUE_VERSION: $(Build.SourceVersion)${{ variables.DOCKER_FILE_VERSION_SUFFIX }}
+                    #for jvm build add --values option targeting containing overrides from native helm values, such as required resources etc
+                    ${{ if eq(parameters['NATIVE_COMPILATION'], False) }}:
+                      ARGUMENTS: "--timeout 5m0s --values helm/valuesOverrides/overrides-jvm-dev.yaml"

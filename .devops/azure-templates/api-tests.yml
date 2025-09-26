@@ -1,0 +1,51 @@
+parameters:
+  # Required
+  - name: "ENV_FILE"
+    type: string
+  - name: "API_TEST_FILE"
+    type: string
+  - name: "TEST_FILE_PREFIX"
+    type: string
+  - name: "USE_NEWMAN_DOCKER_IMAGE"
+    type: boolean
+  - name: "SERVICE_API_KEY"
+    type: string
+
+
+steps:
+  - task: CopyFiles@2
+    inputs:
+      SourceFolder: $(Build.Repository.LocalPath)
+      Contents: '**'
+      TargetFolder: $(Agent.TempDirectory)
+  - task: Bash@3
+    name: newman_run_command
+    displayName: 'Set Newman run command'
+    inputs:
+      targetType: "inline"
+      script: |
+        NEWMAN_TEST_RUN="run ${{ parameters.API_TEST_FILE }} -e ${{ parameters.ENV_FILE }} --env-var API-KEY=${{ parameters.SERVICE_API_KEY }} --ignore-redirects --reporters cli,junit --reporter-junit-export Results/${{ parameters.TEST_FILE_PREFIX }}-api-TEST.xml"
+        echo "Newman run command: [$NEWMAN_TEST_RUN]"
+        echo "##vso[task.setvariable variable=value;isOutput=true]$NEWMAN_TEST_RUN"
+      failOnStderr: true
+      workingDirectory: $(Agent.TempDirectory)
+  - ${{ if eq(parameters['USE_NEWMAN_DOCKER_IMAGE'], False) }}:
+      - script: |
+          yarn global add newman
+        displayName: 'Newman installation'
+        workingDirectory: $(Agent.TempDirectory)
+      - script: |
+          newman $(newman_run_command.value)
+        displayName: 'Run api test'
+        workingDirectory: $(Agent.TempDirectory)
+  - ${{ else }}:
+      - script: |
+          docker run --rm -v .:/etc/newman -t postman/newman $(newman_run_command.value)
+        displayName: 'Run api test'
+        workingDirectory: $(Agent.TempDirectory)
+  - task: PublishTestResults@2
+    condition: succeededOrFailed()
+    inputs:
+      testResultsFormat: 'JUnit'
+      testResultsFiles: '**/*-TEST.xml'
+      searchFolder: '$(Agent.TempDirectory)'
