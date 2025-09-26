@@ -10,21 +10,22 @@ services:
       - "8080:8080"
     networks:
       - pagopa-ecommerce-watchdog-deadletter-service-net
+    dns_search: .
   pagopa-ecommerce-helpdesk-service-mock:
     container_name: pagopa-ecommerce-helpdesk-service-mock
     volumes:
       - type: bind
-        source: ./ecommerce-helpdesk-mock
+        source: ./docker/ecommerce-helpdesk-mock
         target: /config
         read_only: true
     build:
       context: .
-      dockerfile: ecommerce-helpdesk-mock/Dockerfile.helpdesk-mock
+      dockerfile: docker/ecommerce-helpdesk-mock/Dockerfile.helpdesk-mock
     ports:
       - "8091:3000"
     networks:
       - pagopa-ecommerce-watchdog-deadletter-service-net
-
+    dns_search: .
   pagopa-nodo-technical-support-mock:
     container_name: pagopa-nodo-technical-support-mock
     build:
@@ -39,6 +40,7 @@ services:
       - "8090:3000"
     networks:
       - pagopa-ecommerce-watchdog-deadletter-service-net
+    dns_search: .
 
 networks:
   pagopa-ecommerce-watchdog-deadletter-service-net:
