@@ -112,6 +112,7 @@ The following commands should be used to start the mock servers for local testin
 
 ```shell
 yarn json-server --port 8090 ./docker/nodo-technical-support-mock/nodo-technical-support-server.json --routes ./docker/nodo-technical-support-mock/routes.json --middlewares ./docker/nodo-technical-support-mock/middleware.js
+yarn json-server ./ecommerce-helpdesk-mock/helpdesk.json --routes ./ecommerce-helpdesk-mock/routes.json
 ```
 
 ## Docker
