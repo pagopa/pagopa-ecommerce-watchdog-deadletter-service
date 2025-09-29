@@ -159,3 +159,7 @@ gradle-app.setting
 
 # End of https://www.toptal.com/developers/gitignore/api/intellij+all,kotlin,java,gradle
 /.env
+
+
+# Node dependencies for mocks
+/node_modules

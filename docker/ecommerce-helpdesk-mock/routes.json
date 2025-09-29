@@ -1,0 +1,4 @@
+{
+  "/v1/ecommerce/searchTransaction?pageNumber=*&pageSize=*" : "/searchTransaction",
+  "/v1/ecommerce/searchDeadLetterEvents?pageNumber=*&pageSize=*": "/searchTransaction"
+}
