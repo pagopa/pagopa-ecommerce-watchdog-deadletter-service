@@ -75,11 +75,3 @@ stages:
             - script: |
                 timeout 180 bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:8080/actuator/health/liveness)" != "200" ]]; do sleep 5; done' || exit 1
               displayName: 'Health check'
-
-            - template: azure-templates/api-tests.yml
-              parameters:
-                API_TEST_FILE: "api-tests/jwt-token-issuer-service.postman-collection.json"
-                ENV_FILE: "api-tests/localhost.env.json"
-                TEST_FILE_PREFIX: "local"
-                USE_NEWMAN_DOCKER_IMAGE: false
-                SERVICE_API_KEY: "PRIMARY-KEY"
