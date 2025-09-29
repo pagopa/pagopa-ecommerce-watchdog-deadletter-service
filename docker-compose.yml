@@ -10,7 +10,6 @@ services:
       - "8080:8080"
     networks:
       - pagopa-ecommerce-watchdog-deadletter-service-net
-    dns_search: .
   pagopa-ecommerce-helpdesk-service-mock:
     container_name: pagopa-ecommerce-helpdesk-service-mock
     volumes:
@@ -25,7 +24,6 @@ services:
       - "8091:3000"
     networks:
       - pagopa-ecommerce-watchdog-deadletter-service-net
-    dns_search: .
   pagopa-nodo-technical-support-mock:
     container_name: pagopa-nodo-technical-support-mock
     build:
@@ -40,7 +38,6 @@ services:
       - "8090:3000"
     networks:
       - pagopa-ecommerce-watchdog-deadletter-service-net
-    dns_search: .
 
 networks:
   pagopa-ecommerce-watchdog-deadletter-service-net:
