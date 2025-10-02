@@ -12,6 +12,8 @@ tags:
     description: Manual actions or notes related to deadletter transactions
   - name: users
     description: User data for operators managing actions
+  - name: authentication
+    description: User authentication
 paths:
   /deadletter-transactions:
     get:
@@ -171,6 +173,38 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProblemJson'
+  /authenticate:
+    post:
+      tags:
+        - authentication
+      summary: User authentication
+      operationId: authenticateUser
+      requestBody:
+        description: Body containing username and password
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthenticationCredentials"
+      responses:
+        '200':
+          description: Successful authentication.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticationOk'
+        '400':
+          description: Bad Request. The request body is missing required fields or is malformed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+        '401':
+          description: Unauthorized. The provided credentials are invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
 components:
   parameters:
     X-User-Id:
@@ -280,6 +314,25 @@ components:
           type: string
       required:
         - value
+    AuthenticationCredentials:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+          format: password
+      required:
+        - username
+        - password
+    AuthenticationOk:
+      type: object
+      properties:
+        urlRedirect:
+          type: string
+          example: https://watchdog-fe/#token=123
+      required:
+        - urlRedirect
     ProblemJson:
       type: object
       properties:
