@@ -6,6 +6,7 @@ import io.netty.util.internal.shaded.org.jctools.queues.MpscArrayQueue
 import io.netty.util.internal.shaded.org.jctools.queues.unpadded.MpscUnpaddedArrayQueue
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.AuthenticationCredentialsDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.AuthenticationOkDto
+import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.DeadletterTransactionDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.ListDeadletterTransactions200ResponseDto
 import org.springframework.aot.hint.annotation.RegisterReflectionForBinding
 import org.springframework.context.annotation.Bean
@@ -33,7 +34,8 @@ class NettyNativeConfig {
         // auto generated DTO
         ListDeadletterTransactions200ResponseDto::class,
         AuthenticationCredentialsDto::class,
-        AuthenticationOkDto::class
+        AuthenticationOkDto::class,
+        DeadletterTransactionDto::class
     )
     fun nettyNativeConfiguration(): String {
         // Simple bean to trigger the reflection registration
