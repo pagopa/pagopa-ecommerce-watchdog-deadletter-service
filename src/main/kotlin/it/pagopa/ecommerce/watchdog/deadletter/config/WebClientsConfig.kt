@@ -4,9 +4,12 @@ import io.netty.channel.ChannelOption
 import io.netty.handler.timeout.ReadTimeoutHandler
 import it.pagopa.generated.ecommerce.helpdesk.ApiClient as EcommerceHelpdeskApiClient
 import it.pagopa.generated.ecommerce.helpdesk.api.ECommerceApi
+import it.pagopa.generated.ecommerce.helpdesk.model.EcommerceSearchDeadLetterEventsRequestDto
+import it.pagopa.generated.ecommerce.helpdesk.model.SearchDeadLetterEventResponseDto
 import it.pagopa.generated.nodo.support.ApiClient as NodoTechnicalSupportApiClient
 import it.pagopa.generated.nodo.support.api.WorkerResourceApi
 import java.util.concurrent.TimeUnit
+import org.springframework.aot.hint.annotation.RegisterReflectionForBinding
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -20,6 +23,10 @@ import reactor.netty.transport.NameResolverProvider.NameResolverSpec
 class WebClientsConfig {
 
     @Bean(name = ["ecommerceHelpdeskClient"])
+    @RegisterReflectionForBinding(
+        SearchDeadLetterEventResponseDto::class,
+        EcommerceSearchDeadLetterEventsRequestDto::class,
+    )
     fun ecommerceHelpdeskClient(
         @Value("\${ecommerce-helpdesk.server.uri}") serverUri: String,
         @Value("\${ecommerce-helpdesk.server.readTimeoutMillis}") readTimeoutMillis: Int,
