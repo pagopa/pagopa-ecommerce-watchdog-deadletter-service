@@ -31,7 +31,7 @@ class NettyNativeConfig {
         // The specific JCTools class mentioned in the pipeline health check error (shaded path)
         MpscUnpaddedArrayQueue::class,
         MpscArrayQueue::class,
-        // auto generated DTO
+        // auto generated model DTO
         ListDeadletterTransactions200ResponseDto::class,
         AuthenticationCredentialsDto::class,
         AuthenticationOkDto::class,
