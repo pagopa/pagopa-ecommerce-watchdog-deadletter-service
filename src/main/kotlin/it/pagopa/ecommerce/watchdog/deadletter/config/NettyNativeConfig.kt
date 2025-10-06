@@ -35,7 +35,7 @@ class NettyNativeConfig {
         ListDeadletterTransactions200ResponseDto::class,
         AuthenticationCredentialsDto::class,
         AuthenticationOkDto::class,
-        DeadletterTransactionDto::class
+        DeadletterTransactionDto::class,
     )
     fun nettyNativeConfiguration(): String {
         // Simple bean to trigger the reflection registration
