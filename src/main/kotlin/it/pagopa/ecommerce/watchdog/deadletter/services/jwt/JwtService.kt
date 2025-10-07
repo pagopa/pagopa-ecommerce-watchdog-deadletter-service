@@ -57,15 +57,15 @@ class JwtService(
         val issuedAtDate = Date.from(now)
         val expiryDate = Date.from(now.plus(Duration.ofMinutes(jwtDuration.toLong())))
         val headerParams = mapOf("kid" to privateKey.kid)
-        val filteredPrivateClaims = privateClaims.filterNot { JwtService.Companion.PUBLIC_CLAIMS.contains(it.key) }
+        val filteredPrivateClaims = privateClaims.filterNot { PUBLIC_CLAIMS.contains(it.key) }
         val jwtBuilder =
             Jwts.builder()
                 .setHeaderParams(headerParams)
                 .setClaims(filteredPrivateClaims)
                 .setIssuedAt(issuedAtDate) // iat
                 .setExpiration(expiryDate) // exp
-                .setAudience(JwtService.Companion.WATCHDOG_AUDIENCE) // aud
-                .setIssuer(JwtService.Companion.JWT_ISSUER) // iss
+                .setAudience(WATCHDOG_AUDIENCE) // aud
+                .setIssuer(JWT_ISSUER) // iss
                 .signWith(privateKey.privateKey)
         return jwtBuilder.compact()
     }
