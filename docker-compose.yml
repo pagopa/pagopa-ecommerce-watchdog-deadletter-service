@@ -38,7 +38,22 @@ services:
       - "8090:3000"
     networks:
       - pagopa-ecommerce-watchdog-deadletter-service-net
+  mongo:
+    image: mongo:7-jammy
+    container_name: mongo_db
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: myuser
+      MONGO_INITDB_ROOT_PASSWORD: mypassword
+    networks:
+      - pagopa-ecommerce-watchdog-deadletter-service-net
+    volumes:
+      - mongodata:/data/db
 
+volumes:
+  mongodata:
 networks:
   pagopa-ecommerce-watchdog-deadletter-service-net:
     driver: bridge
