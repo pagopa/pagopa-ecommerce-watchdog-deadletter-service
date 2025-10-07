@@ -40,6 +40,9 @@ object Deps {
   const val openTelemetryInstrumentationVersion = "2.14.0-alpha"
   const val springBootVersion = "3.4.2"
   const val jsonWebTokenVersion = "0.11.5"
+  const val azureIdentityVersion = "1.16.0"
+  const val azureKeyVaultSecretsVersion = "4.9.4"
+  const val azureKeyVaultCertificatesVersion = "4.7.4"
 }
 
 repositories { mavenCentral() }
@@ -81,6 +84,11 @@ dependencies {
   implementation("io.jsonwebtoken:jjwt-api:${Deps.jsonWebTokenVersion}")
   implementation("io.jsonwebtoken:jjwt-impl:${Deps.jsonWebTokenVersion}")
   implementation("io.jsonwebtoken:jjwt-jackson:${Deps.jsonWebTokenVersion}")
+
+  //Azure
+  implementation("com.azure:azure-security-keyvault-secrets:${Deps.azureKeyVaultSecretsVersion}")
+  implementation("com.azure:azure-security-keyvault-certificates:${Deps.azureKeyVaultCertificatesVersion}")
+  implementation("com.azure:azure-identity:${Deps.azureIdentityVersion}")
 
   testImplementation("org.springframework.boot:spring-boot-starter-test")
   testImplementation("io.projectreactor:reactor-test")
