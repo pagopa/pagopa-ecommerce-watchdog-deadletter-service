@@ -93,8 +93,13 @@ microservice-chart:
     MONGO_WAITING_QUEUE_MS: "2000"
     MONGO_HEARTBEAT_FREQUENCY_MS: "5000"
     MONGO_REPLICA_SET_OPTION: "&replicaSet=globaldb"
-    LOGIN_REDIRECT_URL: "https://weudev.ecommerce.internal.dev.platform.pagopa.it/pagopa-ecommerce-watchdog-deadletter-fe/"
-    LOGIN_JWT_VALIDITY_TIME_MINUTES: "1440"
+    AUTH_LOGIN_REDIRECT_URL: "https://weudev.ecommerce.internal.dev.platform.pagopa.it/pagopa-ecommerce-watchdog-deadletter-fe/"
+    AUTH_JWT_VALIDITY_TIME_MINUTES: "1440"
+    AUTH_JWT_SECRET_KEY_NAME: "" #TODO: Create certificate on Azure and add secret name
+    AUTH_JWT_SECRET_KEY_PASSWORD: ""
+    AUTH_AZURE_KV_ENDPOINT: "https://pagopa-d-ecommerce-kv.vault.azure.net/"
+    AUTH_AZURE_MAX_RETRY: "3"
+    AUTH_AZURE_RETRY_DELAY_MILLIS: "500"
   envSecret:
     MONGO_PASSWORD: mongo-ecommerce-password
     OTEL_EXPORTER_OTLP_HEADERS: elastic-otel-token-header

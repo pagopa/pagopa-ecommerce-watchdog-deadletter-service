@@ -42,8 +42,13 @@ These are all environment variables needed by the application:
 | MONGO_WAITING_QUEUE_MS                                  | Max time a thread has to wait for a connection to be available in milliseconds. See docs *                                                                 | integer |         |
 | MONGO_HEARTBEAT_FREQUENCY_MS                            | Hearth beat frequency in milliseconds. This is an hello command that is sent periodically on each active connection to perform an health check. See docs * | integer |         |
 | MONGO_REPLICA_SET_OPTION                                | Additional replica set options for the MongoDB connection string                                                                                           | string  |         |
-| LOGIN_REDIRECT_URL                                      | Url of the login redirect                                                                                                                                  | string  |         |
-| LOGIN_JWT_VALIDITY_TIME_MINUTES                         | JWT validity in minutes                                                                                                                                    | integer |         |
+| AUTH_LOGIN_REDIRECT_URL                                 | Url of the login redirect                                                                                                                                  | string  |         |
+| AUTH_JWT_VALIDITY_TIME_MINUTES                          | JWT validity in minutes                                                                                                                                    | integer |         |
+| AUTH_JWT_SECRET_KEY_NAME                                | The name of Azure KeyVault secret containing certificates                                                                                                  | string  |         |
+| AUTH_JWT_SECRET_KEY_PASSWORD                            | The password of Azure KeyVault secret used to validate keystores                                                                                           | string  |         |
+| AUTH_AZURE_KV_ENDPOINT                                  | Azure KeyVault endpoint                                                                                                                                    | string  |         |
+| AUTH_AZURE_MAX_RETRY                                    | Maximum number of retries for Azure operations                                                                                                             | integer |         |
+| AUTH_AZURE_RETRY_DELAY_MILLIS                           | Delay between retries in milliseconds for Azure operations                                                                                                 | integer |         |
 
 \* For Mongo connection string options
 see [docs](https://www.mongodb.com/docs/drivers/java/sync/v4.3/fundamentals/connection/connection-options/#connection-options)
