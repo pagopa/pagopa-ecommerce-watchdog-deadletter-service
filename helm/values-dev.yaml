@@ -95,7 +95,7 @@ microservice-chart:
     MONGO_REPLICA_SET_OPTION: "&replicaSet=globaldb"
     AUTH_LOGIN_REDIRECT_URL: "https://weudev.ecommerce.internal.dev.platform.pagopa.it/pagopa-ecommerce-watchdog-deadletter-fe/"
     AUTH_JWT_VALIDITY_TIME_MINUTES: "1440"
-    AUTH_JWT_SECRET_KEY_NAME: "" #TODO: Create certificate on Azure and add secret name
+    AUTH_JWT_SECRET_KEY_NAME: "watchdog-jwt-cert"
     AUTH_JWT_SECRET_KEY_PASSWORD: ""
     AUTH_AZURE_KV_ENDPOINT: "https://pagopa-d-ecommerce-kv.vault.azure.net/"
     AUTH_AZURE_MAX_RETRY: "3"
