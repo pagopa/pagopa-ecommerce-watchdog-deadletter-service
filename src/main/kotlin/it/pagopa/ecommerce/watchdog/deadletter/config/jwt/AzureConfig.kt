@@ -7,10 +7,10 @@ import com.azure.security.keyvault.certificates.CertificateAsyncClient
 import com.azure.security.keyvault.certificates.CertificateClientBuilder
 import com.azure.security.keyvault.secrets.SecretAsyncClient
 import com.azure.security.keyvault.secrets.SecretClientBuilder
+import java.time.Duration
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import java.time.Duration
 
 @Configuration
 class AzureConfig(

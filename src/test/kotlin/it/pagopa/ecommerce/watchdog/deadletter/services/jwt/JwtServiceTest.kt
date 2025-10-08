@@ -29,6 +29,6 @@ class JwtServiceTest {
         StepVerifier.create(jwtService.generateUserJwtToken(userDetails))
             .expectNext(token)
             .verifyComplete()
-        verify(jwtUtils, times(1)).generateJwtToken(privateClaims, privateKeyWithKid,)
+        verify(jwtUtils, times(1)).generateJwtToken(privateClaims, privateKeyWithKid)
     }
 }

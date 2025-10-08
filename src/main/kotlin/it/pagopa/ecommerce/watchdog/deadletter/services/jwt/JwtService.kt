@@ -10,20 +10,14 @@ import reactor.core.publisher.Mono
 @Service
 class JwtService(
     @Autowired private val reactiveAzureKVSecurityKeysService: ReactiveAzureKVSecurityKeysService,
-    @Autowired private val jwtUtils: JwtUtils
+    @Autowired private val jwtUtils: JwtUtils,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
     fun generateUserJwtToken(userDetails: UserDetails): Mono<String> {
         return reactiveAzureKVSecurityKeysService
             .getPrivate()
-            .map {
-                jwtUtils.generateJwtToken(
-                    userDetails.toMap(),
-                    it,
-                )
-            }
+            .map { jwtUtils.generateJwtToken(userDetails.toMap(), it) }
             .doOnNext { logger.info("User token generated successfully") }
     }
-
 }

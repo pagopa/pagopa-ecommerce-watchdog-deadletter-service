@@ -17,16 +17,16 @@ class ExceptionHandlerTest {
                 RestApiException(
                     httpStatus = HttpStatus.BAD_REQUEST,
                     title = "title",
-                    description = "description"
+                    description = "description",
                 )
             )
         assertEquals(
             WatchdogDeadletterTestUtils.buildProblemJson(
                 httpStatus = HttpStatus.BAD_REQUEST,
                 title = "title",
-                description = "description"
+                description = "description",
             ),
-            response.body
+            response.body,
         )
         assertEquals(HttpStatus.BAD_REQUEST, response.statusCode)
     }
@@ -39,9 +39,9 @@ class ExceptionHandlerTest {
             WatchdogDeadletterTestUtils.buildProblemJson(
                 httpStatus = HttpStatus.UNAUTHORIZED,
                 title = "User unauthorized",
-                description = "User is not authorized to access the resource"
+                description = "User is not authorized to access the resource",
             ),
-            response.body
+            response.body,
         )
         assertEquals(HttpStatus.UNAUTHORIZED, response.statusCode)
     }

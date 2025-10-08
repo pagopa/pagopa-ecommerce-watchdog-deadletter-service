@@ -7,10 +7,6 @@ import com.azure.security.keyvault.secrets.models.KeyVaultSecret
 import it.pagopa.ecommerce.watchdog.deadletter.config.jwt.AzureSecretConfigProperties
 import it.pagopa.ecommerce.watchdog.deadletter.domain.jwt.PrivateKeyWithKid
 import it.pagopa.ecommerce.watchdog.deadletter.domain.jwt.PublicKeyWithKid
-import org.slf4j.LoggerFactory
-import org.springframework.stereotype.Component
-import reactor.core.publisher.Flux
-import reactor.core.publisher.Mono
 import java.io.ByteArrayInputStream
 import java.security.KeyStore
 import java.security.MessageDigest
@@ -19,6 +15,10 @@ import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 import java.time.OffsetDateTime
 import java.util.Base64
+import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Component
+import reactor.core.publisher.Flux
+import reactor.core.publisher.Mono
 
 @Component
 class ReactiveAzureKVSecurityKeysService(

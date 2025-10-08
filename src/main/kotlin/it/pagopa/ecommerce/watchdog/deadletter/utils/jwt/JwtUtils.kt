@@ -3,12 +3,11 @@ package it.pagopa.ecommerce.watchdog.deadletter.utils.jwt
 import io.jsonwebtoken.Claims
 import io.jsonwebtoken.Jwts
 import it.pagopa.ecommerce.watchdog.deadletter.domain.jwt.PrivateKeyWithKid
-import org.springframework.beans.factory.annotation.Value
-import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.Instant
 import java.util.Date
-import kotlin.text.contains
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.stereotype.Component
 
 @Component
 class JwtUtils(@Value("\${auth.jwt.validityTimeMinutes}") private val jwtDuration: Int) {
@@ -28,10 +27,7 @@ class JwtUtils(@Value("\${auth.jwt.validityTimeMinutes}") private val jwtDuratio
         private const val JWT_ISSUER = "watchdog-deadletter-service"
     }
 
-fun generateJwtToken(
-        privateClaims: Map<String, Any>,
-        privateKey: PrivateKeyWithKid,
-    ): String {
+    fun generateJwtToken(privateClaims: Map<String, Any>, privateKey: PrivateKeyWithKid): String {
         val now = Instant.now()
         val issuedAtDate = Date.from(now)
         val expiryDate = Date.from(now.plus(Duration.ofMinutes(jwtDuration.toLong())))

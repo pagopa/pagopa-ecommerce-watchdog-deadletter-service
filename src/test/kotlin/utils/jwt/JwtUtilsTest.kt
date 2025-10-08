@@ -5,12 +5,12 @@ import io.jsonwebtoken.Jwts
 import it.pagopa.ecommerce.watchdog.deadletter.JwtKeyGenerationTestUtils.Companion.getKeyPairEC
 import it.pagopa.ecommerce.watchdog.deadletter.domain.jwt.PrivateKeyWithKid
 import it.pagopa.ecommerce.watchdog.deadletter.utils.jwt.JwtUtils
+import java.time.Duration
+import java.time.Instant
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
-import java.time.Duration
-import java.time.Instant
 
 class JwtUtilsTest {
     private val jwtUtils = JwtUtils(1)
@@ -39,10 +39,7 @@ class JwtUtilsTest {
 
         // test
         val generatedToken =
-            jwtUtils.generateJwtToken(
-                privateClaims = privateClaims,
-                privateKey = privateKeyWithKid,
-            )
+            jwtUtils.generateJwtToken(privateClaims = privateClaims, privateKey = privateKeyWithKid)
         val parsedToken =
             Jwts.parserBuilder().setSigningKey(privateKey.public).build().parse(generatedToken)
         val header = parsedToken.header

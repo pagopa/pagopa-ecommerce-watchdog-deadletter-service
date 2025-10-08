@@ -18,7 +18,7 @@ import java.util.stream.IntStream;
 public class AzureTestUtils {
 
     public PagedFlux<CertificateProperties> getCertificatePropertiesPagedFlux(
-            List<CertificateProperties> certificatePropertiesList
+                                                                              List<CertificateProperties> certificatePropertiesList
     ) {
         HttpHeaders httpHeaders = new HttpHeaders().set(HttpHeaderName.fromString("header1"), "value1")
                 .set(HttpHeaderName.fromString("header2"), "value2");
@@ -46,8 +46,8 @@ public class AzureTestUtils {
     }
 
     private Mono<PagedResponse<CertificateProperties>> getNextPage(
-            String continuationToken,
-            List<PagedResponse<CertificateProperties>> pagedResponses
+                                                                   String continuationToken,
+                                                                   List<PagedResponse<CertificateProperties>> pagedResponses
     ) {
 
         if (continuationToken == null || continuationToken.isEmpty()) {
@@ -63,12 +63,12 @@ public class AzureTestUtils {
     }
 
     private PagedResponseBase<String, CertificateProperties> createPagedResponse(
-            HttpRequest httpRequest,
-            HttpHeaders httpHeaders,
-            String deserializedHeaders,
-            int i,
-            List<CertificateProperties> certificatePropertiesList,
-            int noOfPages
+                                                                                 HttpRequest httpRequest,
+                                                                                 HttpHeaders httpHeaders,
+                                                                                 String deserializedHeaders,
+                                                                                 int i,
+                                                                                 List<CertificateProperties> certificatePropertiesList,
+                                                                                 int noOfPages
     ) {
         return new PagedResponseBase<>(
                 httpRequest,

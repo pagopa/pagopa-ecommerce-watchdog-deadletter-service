@@ -8,7 +8,6 @@ object WatchdogDeadletterTestUtils {
     fun buildProblemJson(
         httpStatus: HttpStatus,
         title: String,
-        description: String
+        description: String,
     ): ProblemJsonDto = ProblemJsonDto().status(httpStatus.value()).detail(description).title(title)
-
 }

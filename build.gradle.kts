@@ -88,9 +88,11 @@ dependencies {
   testImplementation("org.bouncycastle:bcpkix-jdk18on:${Deps.bouncyCastleVersion}")
   testImplementation("org.bouncycastle:bcprov-jdk18on:${Deps.bouncyCastleVersion}")
 
-  //Azure
+  // Azure
   implementation("com.azure:azure-security-keyvault-secrets:${Deps.azureKeyVaultSecretsVersion}")
-  implementation("com.azure:azure-security-keyvault-certificates:${Deps.azureKeyVaultCertificatesVersion}")
+  implementation(
+    "com.azure:azure-security-keyvault-certificates:${Deps.azureKeyVaultCertificatesVersion}"
+  )
   implementation("com.azure:azure-identity:${Deps.azureIdentityVersion}")
 
   testImplementation("org.springframework.boot:spring-boot-starter-test")
