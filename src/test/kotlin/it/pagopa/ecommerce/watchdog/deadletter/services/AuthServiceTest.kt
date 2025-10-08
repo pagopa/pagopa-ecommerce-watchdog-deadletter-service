@@ -17,7 +17,8 @@ class AuthServiceTest {
         // test
         StepVerifier.create(authService.authenticateUser(credentials))
             .expectNextMatches { authenticationOkDto ->
-                authenticationOkDto.urlRedirect == "$loginRedirectUrl#token=123"
+                authenticationOkDto.urlRedirect ==
+                    "$loginRedirectUrl#token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImlkIiwibmFtZSI6Ik1hcmlvIiwic3VybmFtZSI6IlJvc3NpIiwiZW1haWwiOiJtYXJpby5yb3NzaUBtb2NrLmNvbSIsImlhdCI6MTc1OTc1Mjg3NCwiZXhwIjoxNzU5OTMxOTMzLCJhdWQiOiJ3YXRjaGRvZyIsImlzcyI6IndhdGNoZG9nLWRlYWRsZXR0ZXItc2VydmljZSJ9.PXQlFZYtWo5eb_XuhEvJC3x4vmjtVYKHb01FZ2QIVFw"
             }
             .verifyComplete()
     }
