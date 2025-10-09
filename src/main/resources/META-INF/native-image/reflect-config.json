@@ -1,0 +1,43 @@
+[
+  {
+    "name": "com.azure.security.keyvault.secrets.implementation.models.DeletionRecoveryLevel",
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "com.azure.security.keyvault.certificates.implementation.models.DeletionRecoveryLevel",
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "com.azure.security.keyvault.secrets.implementation.models.DeletionRecoveryLevel[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "com.azure.security.keyvault.certificates.implementation.models.DeletionRecoveryLevel[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "com.azure.security.keyvault.certificates.models.CertificateKeyCurveName[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "com.azure.security.keyvault.certificates.models.CertificateKeyType[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "com.azure.security.keyvault.certificates.models.CertificatePolicyAction[]",
+    "unsafeAllocated": true
+  },
+  {
+    "name": "com.azure.security.keyvault.certificates.models.CertificateProperties",
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "com.azure.security.keyvault.certificates.implementation.models.CertificateAttributes",
+    "allDeclaredFields": true,
+    "allPublicMethods": true
+  }
+]
