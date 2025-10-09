@@ -85,21 +85,22 @@ dependencies {
   implementation("io.jsonwebtoken:jjwt-api:${Deps.jsonWebTokenVersion}")
   implementation("io.jsonwebtoken:jjwt-impl:${Deps.jsonWebTokenVersion}")
   implementation("io.jsonwebtoken:jjwt-jackson:${Deps.jsonWebTokenVersion}")
-  testImplementation("org.bouncycastle:bcpkix-jdk18on:${Deps.bouncyCastleVersion}")
-  testImplementation("org.bouncycastle:bcprov-jdk18on:${Deps.bouncyCastleVersion}")
 
   // Azure
   implementation("com.azure:azure-security-keyvault-secrets:${Deps.azureKeyVaultSecretsVersion}")
   implementation(
-    "com.azure:azure-security-keyvault-certificates:${Deps.azureKeyVaultCertificatesVersion}"
-  )
+        "com.azure:azure-security-keyvault-certificates:${Deps.azureKeyVaultCertificatesVersion}"
+    )
   implementation("com.azure:azure-identity:${Deps.azureIdentityVersion}")
 
+  testImplementation("org.bouncycastle:bcpkix-jdk18on:${Deps.bouncyCastleVersion}")
+  testImplementation("org.bouncycastle:bcprov-jdk18on:${Deps.bouncyCastleVersion}")
   testImplementation("org.springframework.boot:spring-boot-starter-test")
   testImplementation("io.projectreactor:reactor-test")
   testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
   testImplementation("org.jetbrains.kotlin:kotlin-test")
   testImplementation("org.mockito.kotlin:mockito-kotlin:5.4.0")
+
   testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
