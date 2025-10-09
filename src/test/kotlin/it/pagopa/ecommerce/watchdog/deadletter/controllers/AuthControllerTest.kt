@@ -1,10 +1,13 @@
 package it.pagopa.ecommerce.watchdog.deadletter.controllers
 
+import it.pagopa.ecommerce.watchdog.deadletter.domain.UserDetails
+import it.pagopa.ecommerce.watchdog.deadletter.exception.UserUnauthorizedException
 import it.pagopa.ecommerce.watchdog.deadletter.services.AuthService
+import it.pagopa.ecommerce.watchdog.deadletter.services.jwt.JwtService
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.AuthenticationCredentialsDto
-import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.AuthenticationOkDto
 import org.junit.jupiter.api.Test
 import org.mockito.BDDMockito.given
+import org.mockito.kotlin.any
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest
 import org.springframework.http.MediaType
@@ -20,14 +23,18 @@ class AuthControllerTest {
 
     @MockitoBean lateinit var authService: AuthService
 
+    @MockitoBean lateinit var jwtService: JwtService
+
     @Test
     fun `should return 200 Ok with redirectUrl`() {
         // pre-requisites
         val request = AuthenticationCredentialsDto("user", "password")
-        val redirectUrl = "http://localhost/#token=123"
+        val redirectUrl = "http://mock#token=123"
 
         given(authService.authenticateUser(request))
-            .willReturn(Mono.just(AuthenticationOkDto(redirectUrl)))
+            .willReturn(Mono.just(UserDetails("id", "Name", "Surname", "test@email.com")))
+
+        given(jwtService.generateUserJwtToken(any())).willReturn(Mono.just("123"))
 
         // test
         webClient
@@ -62,5 +69,24 @@ class AuthControllerTest {
             .exchange()
             .expectStatus()
             .isBadRequest
+    }
+
+    @Test
+    fun `should return 401 Unauthorized on UserUnauthorizedException`() {
+        // pre-requisites
+        val request = AuthenticationCredentialsDto("test_unauthorized", "password")
+
+        given(authService.authenticateUser(request))
+            .willReturn(Mono.error(UserUnauthorizedException()))
+
+        // test
+        webClient
+            .post()
+            .uri("/authenticate")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(request)
+            .exchange()
+            .expectStatus()
+            .isUnauthorized
     }
 }
