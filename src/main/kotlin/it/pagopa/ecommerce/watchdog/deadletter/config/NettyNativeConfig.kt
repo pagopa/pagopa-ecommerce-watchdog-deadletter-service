@@ -1,5 +1,9 @@
 package it.pagopa.ecommerce.watchdog.deadletter.config
 
+import com.azure.security.keyvault.certificates.implementation.models.CertificateBundle
+import com.azure.security.keyvault.certificates.implementation.models.CertificateListResult
+import com.azure.security.keyvault.secrets.implementation.models.SecretAttributes
+import com.azure.security.keyvault.secrets.implementation.models.SecretBundle
 import io.netty.buffer.PooledByteBufAllocator
 import io.netty.util.internal.PlatformDependent
 import io.netty.util.internal.shaded.org.jctools.queues.MpscArrayQueue
@@ -36,6 +40,12 @@ class NettyNativeConfig {
         AuthenticationCredentialsDto::class,
         AuthenticationOkDto::class,
         DeadletterTransactionDto::class,
+
+        // Azure KeyVault classes
+        SecretBundle::class,
+        SecretAttributes::class,
+        CertificateListResult::class,
+        CertificateBundle::class,
     )
     fun nettyNativeConfiguration(): String {
         // Simple bean to trigger the reflection registration
