@@ -261,6 +261,7 @@ graalvmNative {
           languageVersion = JavaLanguageVersion.of(21)
           vendor.set(JvmVendorSpec.GRAAL_VM)
         }
+        buildArgs.add("--initialize-at-build-time=org.slf4j.helpers.Reporter")
     }
   }
 
