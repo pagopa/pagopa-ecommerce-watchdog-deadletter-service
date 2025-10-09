@@ -29,7 +29,7 @@ class AuthControllerTest {
     fun `should return 200 Ok with redirectUrl`() {
         // pre-requisites
         val request = AuthenticationCredentialsDto("user", "password")
-        val redirectUrl = "http://mock/#token=123"
+        val redirectUrl = "http://mock#token=123"
 
         given(authService.authenticateUser(request))
             .willReturn(Mono.just(UserDetails("id", "Name", "Surname", "test@email.com")))

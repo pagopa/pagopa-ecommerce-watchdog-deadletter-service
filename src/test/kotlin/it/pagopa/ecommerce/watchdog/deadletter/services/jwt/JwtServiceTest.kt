@@ -17,7 +17,6 @@ class JwtServiceTest {
     @Test
     fun `Should generate user token successfully`() {
         // pre-conditions
-        val privateClaims = mapOf("key" to "value")
         val userDetails = UserDetails("id", "name", "surname", "test@email.com")
         val token = "jwtToken"
         val privateKey = getKeyPairEC()
@@ -29,6 +28,6 @@ class JwtServiceTest {
         StepVerifier.create(jwtService.generateUserJwtToken(userDetails))
             .expectNext(token)
             .verifyComplete()
-        verify(jwtUtils, times(1)).generateJwtToken(privateClaims, privateKeyWithKid)
+        verify(jwtUtils, times(1)).generateJwtToken(userDetails.toMap(), privateKeyWithKid)
     }
 }
