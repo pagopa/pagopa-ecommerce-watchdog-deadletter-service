@@ -4,9 +4,11 @@ import it.pagopa.ecommerce.watchdog.deadletter.clients.EcommerceHelpdeskServiceC
 import it.pagopa.ecommerce.watchdog.deadletter.clients.NodoTechnicalSupportClient
 import it.pagopa.ecommerce.watchdog.deadletter.documents.DeadletterTransactionAction
 import it.pagopa.ecommerce.watchdog.deadletter.repositories.DeadletterTransactionActionRepository
+import it.pagopa.ecommerce.watchdog.deadletter.utils.ObfuscationUtils.obfuscateEmail
 import it.pagopa.generated.ecommerce.helpdesk.model.DeadLetterEventDto
 import it.pagopa.generated.ecommerce.helpdesk.model.SearchNpgOperationsResponseDto
 import it.pagopa.generated.ecommerce.helpdesk.model.TransactionResultDto
+import it.pagopa.generated.ecommerce.helpdesk.model.UserInfoDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.DeadletterTransactionDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.ListDeadletterTransactions200ResponseDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.PageInfoDto
@@ -14,7 +16,7 @@ import it.pagopa.generated.nodo.support.model.TransactionResponseDto
 import java.time.Instant
 import java.time.LocalDate
 import java.time.format.DateTimeParseException
-import java.util.UUID
+import java.util.*
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
@@ -175,6 +177,14 @@ class DeadletterTransactionsService(
             ecommerceDetails?.transactionInfo?.gatewayAuthorizationStatus.toString()
 
         val paymentToken = info?.paymentTokens?.firstOrNull() ?: "N/A"
+
+        // TO DO: review obfuscatedEmail to avoid side effect
+        val userInfo: UserInfoDto? = ecommerceDetails?.userInfo
+        if (userInfo != null && userInfo.notificationEmail != null) {
+            val obfuscatedEmail: String? = obfuscateEmail(userInfo.notificationEmail)
+            userInfo.notificationEmail(obfuscatedEmail)
+            ecommerceDetails.userInfo(userInfo)
+        }
 
         return DeadletterTransactionDto().apply {
             transactionId = info?.transactionId ?: "N/A"

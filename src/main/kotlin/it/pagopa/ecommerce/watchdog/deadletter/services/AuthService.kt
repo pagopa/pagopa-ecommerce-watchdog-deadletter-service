@@ -16,7 +16,6 @@ class AuthService() {
         return if (credentials.username == "test_unauthorized")
             Mono.error(UserUnauthorizedException())
         else Mono.just(UserDetails("12345", "Mario", "Rossi", "mock@email.com"))
-
         // TODO: Get user by username from DB
         // TODO: Validate user password
     }
