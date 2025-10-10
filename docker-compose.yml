@@ -38,7 +38,33 @@ services:
       - "8090:3000"
     networks:
       - pagopa-ecommerce-watchdog-deadletter-service-net
+  mongo-express:
+    container_name: pagopa-watchdog-mongo-express
+    image: mongo-express@sha256:1b23d7976f0210dbec74045c209e52fbb26d29b2e873d6c6fa3d3f0ae32c2a64
+    env_file: ./docker/config/mongo/mongo-express.env
+    ports:
+      - "8201:8081"
+    networks:
+      - pagopa-ecommerce-watchdog-deadletter-service-net
+    depends_on:
+      - mongo
+  mongo:
+    image: mongo:7-jammy
+    container_name: mongo_db
+    restart: always
+    ports:
+      - "27017:27017"
+    env_file: ./docker/config/mongo/mongodb.env
+    networks:
+      - pagopa-ecommerce-watchdog-deadletter-service-net
+    volumes:
+      - mongodata:/data/db
+    healthcheck:
+      test: echo "db.stats().ok" | mongo --quiet
+      interval: 10s
 
+volumes:
+  mongodata:
 networks:
   pagopa-ecommerce-watchdog-deadletter-service-net:
     driver: bridge
