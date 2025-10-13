@@ -14,12 +14,15 @@ import java.time.ZoneOffset
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.ResponseEntity
+import org.springframework.validation.annotation.Validated
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.server.ServerWebExchange
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 
 @RestController
+@Validated
 class WatchdogDeadletterController(
     @Autowired val deadletterTransactionsService: DeadletterTransactionsService
 ) : DeadletterTransactionsApi {
@@ -66,8 +69,8 @@ class WatchdogDeadletterController(
     }
 
     override fun listDeadletterTransactions(
-        pageNumber: @NotNull @Min(value = 0) @Valid Int,
-        pageSize: @NotNull @Min(value = 1) @Max(value = 20) @Valid Int,
+        @RequestParam("pageNumber") @NotNull @Min(value = 0) pageNumber: Int,
+        @RequestParam("pageSize") @NotNull @Min(value = 1) @Max(value = 20) pageSize: Int,
         xUserId: @NotNull String,
         date: @Valid LocalDate,
         exchange: ServerWebExchange,
