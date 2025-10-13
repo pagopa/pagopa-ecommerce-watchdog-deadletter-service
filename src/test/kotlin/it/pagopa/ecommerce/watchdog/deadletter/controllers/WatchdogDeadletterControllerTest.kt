@@ -56,11 +56,7 @@ class WatchdogDeadletterControllerTest {
     fun `add action to deadletter-transaction return '400 BAD REQUEST' missing header user` () {
 
         val deadletterTransactionId : String = "00000000"
-        val xUserId : String = "test-user"
         val deadletterTransactionActionInputDto = DeadletterTransactionActionInputDto("testActionValue")
-
-        given(deadletterTransactionsService.addActionToDeadletterTransaction(deadletterTransactionId, xUserId, deadletterTransactionActionInputDto.value))
-            .willReturn(Mono.just(DeadletterTransactionAction("test-id",deadletterTransactionId,xUserId,deadletterTransactionActionInputDto.value,Instant.now())))
 
         webClient
             .post()
@@ -78,10 +74,6 @@ class WatchdogDeadletterControllerTest {
 
         val deadletterTransactionId : String = "00000000"
         val xUserId : String = "test-user"
-        val deadletterTransactionActionInputDto = DeadletterTransactionActionInputDto("testActionValue")
-
-        given(deadletterTransactionsService.addActionToDeadletterTransaction(deadletterTransactionId, xUserId, deadletterTransactionActionInputDto.value))
-            .willReturn(Mono.just(DeadletterTransactionAction("test-id",deadletterTransactionId,xUserId,deadletterTransactionActionInputDto.value,Instant.now())))
 
         webClient
             .post()
@@ -95,19 +87,15 @@ class WatchdogDeadletterControllerTest {
     }
 
     @Test
-    fun `add action to deadletter-transaction return '400 BAD REQUEST' malformed body` () {
+    fun `add action to deadletter-transaction should return '400 BAD REQUEST' malformed body` () {
 
         val deadletterTransactionId : String = "00000000"
         val xUserId : String = "test-user"
-        val deadletterTransactionActionInputDto = DeadletterTransactionActionInputDto("testActionValue")
         val malformedBody = """ 
             {
                 "wrongparam": 
             }
         """.trimIndent()
-
-        given(deadletterTransactionsService.addActionToDeadletterTransaction(deadletterTransactionId, xUserId, deadletterTransactionActionInputDto.value))
-            .willReturn(Mono.just(DeadletterTransactionAction("test-id",deadletterTransactionId,xUserId,deadletterTransactionActionInputDto.value,Instant.now())))
 
         webClient
             .post()
@@ -121,7 +109,7 @@ class WatchdogDeadletterControllerTest {
     }
 
     @Test
-    fun `list deadletter transaction return '200 OKAY' with the list of deadletter transactions with pagination` () {
+    fun `list deadletter transaction should return '200 OKAY' with the list of deadletter transactions with pagination` () {
         var date: LocalDate = LocalDate.parse("2025-08-19")
         var pageNumber: Int = 0
         var pageSize: Int = 1
@@ -148,24 +136,18 @@ class WatchdogDeadletterControllerTest {
             .expectBody()
     }
 
-
     @Test
-    fun `list deadletter transaction return '400 BAD REQUEST' because of a wrong parameter` () {
+    fun `list deadletter transaction should return '400 BAD REQUEST' because of constrain violation of pageNumber` () {
         var date: LocalDate = LocalDate.parse("2025-08-19")
-        var pageNumber: Int = 0
-        var pageSize: Int = 1
-        var deadletterTransactions: List<DeadletterTransactionDto> = ArrayList<DeadletterTransactionDto>()
-        var page : PageInfoDto = PageInfoDto(0,1,1)
+        var pageNumber: Int = -1
+        var pageSize: Int = 20
         val xUserId : String = "test-user"
-
-        given(deadletterTransactionsService.getDeadletterTransactions(date, pageNumber, pageSize))
-            .willReturn(Mono.just(ListDeadletterTransactions200ResponseDto(deadletterTransactions, page)))
 
         webClient
             .get()
             .uri{uriBuilder ->
                 uriBuilder.path("/deadletter-transactions")
-                    .queryParam("date","")
+                    .queryParam("date",date)
                     .queryParam("pageNumber", pageNumber)
                     .queryParam("pageSize",pageSize)
                     .build()
@@ -174,6 +156,72 @@ class WatchdogDeadletterControllerTest {
             .exchange()
             .expectStatus()
             .isBadRequest
-
     }
+
+    @Test
+    fun `list deadletter transaction should return '400 BAD REQUEST' because of constrain violation of pageSize` () {
+        var date: LocalDate = LocalDate.parse("2025-08-19")
+        var pageNumber: Int = 1
+        var pageSize: Int = -20
+        val xUserId : String = "test-user"
+
+        webClient
+            .get()
+            .uri{uriBuilder ->
+                uriBuilder.path("/deadletter-transactions")
+                    .queryParam("date",date)
+                    .queryParam("pageNumber", pageNumber)
+                    .queryParam("pageSize",pageSize)
+                    .build()
+            }
+            .header("x-user-id", xUserId)
+            .exchange()
+            .expectStatus()
+            .isBadRequest
+    }
+
+    @Test
+    fun `list deadletter transaction should return '400 BAD REQUEST' missing parameter` () {
+        var date: LocalDate = LocalDate.parse("2025-08-19")
+        var pageNumber: Int = 0
+        val xUserId : String = "test-user"
+
+
+        webClient
+            .get()
+            .uri{uriBuilder ->
+                uriBuilder.path("/deadletter-transactions")
+                    .queryParam("date",date)
+                    .queryParam("pageNumber", pageNumber)
+                    .build()
+            }
+            .header("x-user-id", xUserId)
+            .exchange()
+            .expectStatus()
+            .isBadRequest
+    }
+
+    @Test
+    fun `list deadletter transaction should return '400 BAD REQUEST' wrong date format` () {
+        var date: String = "2025-08-19EWR222"
+        var pageNumber: Int = 0
+        val xUserId : String = "test-user"
+
+        webClient
+            .get()
+            .uri{uriBuilder ->
+                uriBuilder.path("/deadletter-transactions")
+                    .queryParam("date",date)
+                    .queryParam("pageNumber", pageNumber)
+                    .build()
+            }
+            .header("x-user-id", xUserId)
+            .exchange()
+            .expectStatus()
+            .isBadRequest
+    }
+
+
+
+
 }

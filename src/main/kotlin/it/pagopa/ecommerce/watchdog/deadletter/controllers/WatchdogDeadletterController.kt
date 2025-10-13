@@ -72,7 +72,7 @@ class WatchdogDeadletterController(
         @RequestParam("pageNumber") @NotNull @Min(value = 0) pageNumber: Int,
         @RequestParam("pageSize") @NotNull @Min(value = 1) @Max(value = 20) pageSize: Int,
         xUserId: @NotNull String,
-        date: @Valid LocalDate,
+        @RequestParam("date") date: LocalDate,
         exchange: ServerWebExchange,
     ): Mono<ResponseEntity<ListDeadletterTransactions200ResponseDto>> {
         logger.info("Received listDeadletterTransactions request for [{}] ", date)
