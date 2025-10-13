@@ -49,7 +49,7 @@ services:
     depends_on:
       - mongo
   mongo:
-    image: mongo:7-jammy
+    image: mongo:7-jammy@sha256:5f8b6108f61e066b910c1e85ebd43fdfcbde94b78031601e7f09f5faf3f5d555
     container_name: mongo_db
     restart: always
     ports:
