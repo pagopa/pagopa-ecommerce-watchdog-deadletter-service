@@ -10,13 +10,13 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest
 import org.springframework.http.MediaType
-import org.springframework.http.ResponseEntity
 import org.springframework.test.context.TestPropertySource
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import reactor.core.publisher.Mono
 import java.time.Instant
 import org.mockito.BDDMockito.given
+import reactor.core.publisher.Flux
 import java.time.LocalDate
 import java.util.ArrayList;
 
@@ -53,7 +53,7 @@ class WatchdogDeadletterControllerTest {
     }
 
     @Test
-    fun `add action to deadletter-transaction return '400 BAD REQUEST' missing header user` () {
+    fun `add action to deadletter-transaction return '400 BAD REQUEST' missing missing x-user-id in the header` () {
 
         val deadletterTransactionId : String = "00000000"
         val deadletterTransactionActionInputDto = DeadletterTransactionActionInputDto("testActionValue")
@@ -110,11 +110,11 @@ class WatchdogDeadletterControllerTest {
 
     @Test
     fun `list deadletter transaction should return '200 OKAY' with the list of deadletter transactions with pagination` () {
-        var date: LocalDate = LocalDate.parse("2025-08-19")
-        var pageNumber: Int = 0
-        var pageSize: Int = 1
-        var deadletterTransactions: List<DeadletterTransactionDto> = ArrayList<DeadletterTransactionDto>()
-        var page : PageInfoDto = PageInfoDto(0,1,1)
+        val date: LocalDate = LocalDate.parse("2025-08-19")
+        val pageNumber: Int = 0
+        val pageSize: Int = 1
+        val deadletterTransactions: List<DeadletterTransactionDto> = ArrayList<DeadletterTransactionDto>()
+        val page : PageInfoDto = PageInfoDto(0,1,1)
         val xUserId : String = "test-user"
 
         given(deadletterTransactionsService.getDeadletterTransactions(date, pageNumber, pageSize))
@@ -221,6 +221,66 @@ class WatchdogDeadletterControllerTest {
             .isBadRequest
     }
 
+    @Test
+    fun `list deadletter transaction should return '400 BAD REQUEST' because of missing x-user-id in the header` () {
+        var date: LocalDate = LocalDate.parse("2025-08-19")
+        var pageNumber: Int = 0
+        var pageSize: Int = 1
+        var deadletterTransactions: List<DeadletterTransactionDto> = ArrayList<DeadletterTransactionDto>()
+        var page : PageInfoDto = PageInfoDto(0,1,1)
+
+        given(deadletterTransactionsService.getDeadletterTransactions(date, pageNumber, pageSize))
+            .willReturn(Mono.just(ListDeadletterTransactions200ResponseDto(deadletterTransactions, page)))
+
+        webClient
+            .get()
+            .uri{uriBuilder ->
+                uriBuilder.path("/deadletter-transactions")
+                    .queryParam("date",date)
+                    .queryParam("pageNumber", pageNumber)
+                    .queryParam("pageSize",pageSize)
+                    .build()
+            }
+            .exchange()
+            .expectStatus()
+            .isBadRequest
+    }
+
+    @Test
+    fun `list actions for deadletter transaction should return '200 OKAY' and return the list of action in the body` () {
+        val deadletterTransactionId: String = "00000000"
+        val xUserId : String = "test-user"
+        val deadletterTransactionAction : DeadletterTransactionAction = DeadletterTransactionAction("test-id",deadletterTransactionId,xUserId,"testvalue",Instant.now())
+
+        given(deadletterTransactionsService.listActionsForDeadletterTransaction(deadletterTransactionId, xUserId))
+            .willReturn(Flux.just<DeadletterTransactionAction>(deadletterTransactionAction))
+
+        webClient
+            .get()
+            .uri("/deadletter-transactions/$deadletterTransactionId/actions")
+            .header("x-user-id", xUserId)
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody()
+    }
+
+    @Test
+    fun `list actions for deadletter transaction should return '400 BAD REQUEST' because missing x-user-id`(){
+        val deadletterTransactionId: String = "00000000"
+
+        webClient
+            .get()
+            .uri("/deadletter-transactions/$deadletterTransactionId/actions")
+            .exchange()
+            .expectStatus()
+            .isBadRequest
+    }
+
+    @Test
+    fun `list actions for deadletter transaction should return '404 NOT FOUND' because the deadletterTransaction doesn't exist`(){
+        // TO DO
+    }
 
 
 
