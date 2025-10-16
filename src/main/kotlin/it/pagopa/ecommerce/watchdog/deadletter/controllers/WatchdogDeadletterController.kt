@@ -1,5 +1,6 @@
 package it.pagopa.ecommerce.watchdog.deadletter.controllers
 
+import it.pagopa.ecommerce.watchdog.deadletter.services.AuthService
 import it.pagopa.ecommerce.watchdog.deadletter.services.DeadletterTransactionsService
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.api.DeadletterTransactionsApi
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.DeadletterTransactionActionDto
@@ -21,37 +22,38 @@ import reactor.core.publisher.Mono
 
 @RestController
 class WatchdogDeadletterController(
-    @Autowired val deadletterTransactionsService: DeadletterTransactionsService
+    @Autowired val deadletterTransactionsService: DeadletterTransactionsService,
+    @Autowired val authService: AuthService,
 ) : DeadletterTransactionsApi {
 
     private val logger = LoggerFactory.getLogger(this.javaClass)
 
     override fun addActionToDeadletterTransaction(
         deadletterTransactionId: String,
-        xUserId: @NotNull String,
         deadletterTransactionActionInputDto: @Valid Mono<DeadletterTransactionActionInputDto>,
         exchange: ServerWebExchange,
     ): Mono<ResponseEntity<Void>> {
         return deadletterTransactionActionInputDto
             .flatMap { actionDto ->
-                deadletterTransactionsService.addActionToDeadletterTransaction(
-                    deadletterTransactionId,
-                    xUserId,
-                    actionDto.value,
-                )
+                authService.getAuthenticatedUserId().flatMap { userId ->
+                    deadletterTransactionsService.addActionToDeadletterTransaction(
+                        deadletterTransactionId,
+                        userId,
+                        actionDto.value,
+                    )
+                }
             }
             .thenReturn(ResponseEntity.accepted().build())
     }
 
     override fun listActionsForDeadletterTransaction(
         deadletterTransactionId: String,
-        xUserId: @NotNull String,
         exchange: ServerWebExchange?,
     ): Mono<ResponseEntity<Flux<DeadletterTransactionActionDto>>> {
-        return Mono.just(
+        return authService.getAuthenticatedUserId().map { userId ->
             ResponseEntity.ok(
                 deadletterTransactionsService
-                    .listActionsForDeadletterTransaction(deadletterTransactionId, xUserId)
+                    .listActionsForDeadletterTransaction(deadletterTransactionId, userId)
                     .map {
                         DeadletterTransactionActionDto(
                             it.id,
@@ -62,13 +64,12 @@ class WatchdogDeadletterController(
                         )
                     }
             )
-        )
+        }
     }
 
     override fun listDeadletterTransactions(
         pageNumber: @NotNull @Min(value = 0) @Valid Int,
         pageSize: @NotNull @Min(value = 1) @Max(value = 20) @Valid Int,
-        xUserId: @NotNull String,
         date: @Valid LocalDate,
         exchange: ServerWebExchange,
     ): Mono<ResponseEntity<ListDeadletterTransactions200ResponseDto>> {
