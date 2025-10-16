@@ -4,7 +4,7 @@ import com.azure.security.keyvault.certificates.CertificateAsyncClient
 import com.azure.security.keyvault.certificates.models.KeyVaultCertificate
 import com.azure.security.keyvault.secrets.SecretAsyncClient
 import com.azure.security.keyvault.secrets.models.KeyVaultSecret
-import it.pagopa.ecommerce.watchdog.deadletter.config.jwt.AzureSecretConfigProperties
+import it.pagopa.ecommerce.watchdog.deadletter.config.azure.AzureSecretConfigProperties
 import it.pagopa.ecommerce.watchdog.deadletter.domain.jwt.PrivateKeyWithKid
 import it.pagopa.ecommerce.watchdog.deadletter.domain.jwt.PublicKeyWithKid
 import java.io.ByteArrayInputStream

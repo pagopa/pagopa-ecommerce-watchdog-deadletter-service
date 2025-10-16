@@ -1,4 +1,4 @@
-package it.pagopa.ecommerce.watchdog.deadletter.config.jwt
+package it.pagopa.ecommerce.watchdog.deadletter.config.azure
 
 import com.azure.core.http.policy.FixedDelay
 import com.azure.core.http.policy.RetryPolicy
