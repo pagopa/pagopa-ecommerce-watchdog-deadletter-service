@@ -2,7 +2,6 @@ package it.pagopa.ecommerce.watchdog.deadletter.config.jwt
 
 import it.pagopa.ecommerce.watchdog.deadletter.services.jwt.ReactiveAzureKVSecurityKeysService
 import java.security.interfaces.RSAPublicKey
-import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -13,7 +12,6 @@ import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder
 class JwtDecoderConfig(
     @Autowired private val azureKVSecurityKeysService: ReactiveAzureKVSecurityKeysService
 ) {
-    private val logger = LoggerFactory.getLogger(this.javaClass)
 
     @Bean
     fun jwtDecoder(): ReactiveJwtDecoder {
