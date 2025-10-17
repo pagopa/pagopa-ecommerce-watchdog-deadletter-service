@@ -72,10 +72,6 @@ paths:
                 $ref: '#/components/schemas/ProblemJson'
         '401':
           description: Unauthorized. Missing or invalid authentication token.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemJson'
   /deadletter-transactions/{transactionId}/actions:
     get:
       tags:
@@ -108,10 +104,6 @@ paths:
                 $ref: '#/components/schemas/ProblemJson'
         '401':
           description: Unauthorized. Missing or invalid authentication token.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemJson'
         '404':
           description: Deadletter transaction not found
           content:
@@ -150,10 +142,6 @@ paths:
                 $ref: '#/components/schemas/ProblemJson'
         '401':
           description: Unauthorized. Missing or invalid authentication token.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemJson'
         '404':
           description: Deadletter transaction not found
           content:
