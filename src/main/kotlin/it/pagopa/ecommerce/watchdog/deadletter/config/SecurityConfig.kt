@@ -24,7 +24,13 @@ class SecurityConfig(
             .csrf { it.disable() } // CSRF is not needed with JWT authentication
             .cors { it.configurationSource(corsConfigurationSource()) }
             .authorizeExchange { exchanges ->
-                exchanges.pathMatchers("/authenticate").permitAll().anyExchange().authenticated()
+                exchanges
+                    .pathMatchers("/authenticate")
+                    .permitAll()
+                    .pathMatchers("/actuator/**")
+                    .permitAll()
+                    .anyExchange()
+                    .authenticated()
             }
             .oauth2ResourceServer { oauth ->
                 oauth.jwt { jwt ->
