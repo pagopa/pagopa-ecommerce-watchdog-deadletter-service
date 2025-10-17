@@ -1,7 +1,7 @@
 package it.pagopa.ecommerce.watchdog.deadletter
 
-import it.pagopa.ecommerce.watchdog.deadletter.config.jwt.AzureKeyVaultClientConfigProperties
-import it.pagopa.ecommerce.watchdog.deadletter.config.jwt.AzureSecretConfigProperties
+import it.pagopa.ecommerce.watchdog.deadletter.config.azure.AzureKeyVaultClientConfigProperties
+import it.pagopa.ecommerce.watchdog.deadletter.config.azure.AzureSecretConfigProperties
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.runApplication

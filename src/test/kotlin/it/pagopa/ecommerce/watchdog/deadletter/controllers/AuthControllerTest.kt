@@ -1,16 +1,22 @@
 package it.pagopa.ecommerce.watchdog.deadletter.controllers
 
+import it.pagopa.ecommerce.watchdog.deadletter.config.SecurityConfig
+import it.pagopa.ecommerce.watchdog.deadletter.config.jwt.JwtAuthenticationConverter
+import it.pagopa.ecommerce.watchdog.deadletter.config.jwt.JwtDecoderConfig
 import it.pagopa.ecommerce.watchdog.deadletter.domain.UserDetails
 import it.pagopa.ecommerce.watchdog.deadletter.exception.UserUnauthorizedException
 import it.pagopa.ecommerce.watchdog.deadletter.services.AuthService
 import it.pagopa.ecommerce.watchdog.deadletter.services.jwt.JwtService
+import it.pagopa.ecommerce.watchdog.deadletter.services.jwt.ReactiveAzureKVSecurityKeysService
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.AuthenticationCredentialsDto
 import org.junit.jupiter.api.Test
 import org.mockito.BDDMockito.given
 import org.mockito.kotlin.any
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest
+import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
+import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder
 import org.springframework.test.context.TestPropertySource
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.reactive.server.WebTestClient
@@ -18,8 +24,15 @@ import reactor.core.publisher.Mono
 
 @WebFluxTest(AuthController::class)
 @TestPropertySource(locations = ["classpath:application.test.properties"])
+@Import(SecurityConfig::class, JwtDecoderConfig::class, JwtAuthenticationConverter::class)
 class AuthControllerTest {
     @Autowired private lateinit var webClient: WebTestClient
+
+    @MockitoBean private lateinit var jwtDecoder: ReactiveJwtDecoder
+
+    @MockitoBean private lateinit var jwtAuthenticationConverter: JwtAuthenticationConverter
+
+    @MockitoBean private lateinit var azureKVSecurityKeysService: ReactiveAzureKVSecurityKeysService
 
     @MockitoBean lateinit var authService: AuthService
 
