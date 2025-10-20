@@ -3,7 +3,7 @@ microservice-chart:
   nameOverride: ""
   fullnameOverride: "pagopa-ecommerce-watchdog-deadletter-service"
   image:
-    repository: pagopadcommonacr.azurecr.io/pagopaecommercewatchdogdeadletterservice
+    repository: pagopaucommonacr.azurecr.io/pagopaecommercewatchdogdeadletterservice
     tag: "latest"
     pullPolicy: Always
   livenessProbe:
