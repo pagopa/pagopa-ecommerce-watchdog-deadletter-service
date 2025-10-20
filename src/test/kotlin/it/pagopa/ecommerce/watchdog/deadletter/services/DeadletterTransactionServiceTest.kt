@@ -1,6 +1,7 @@
 package it.pagopa.ecommerce.watchdog.deadletter.services
 import it.pagopa.ecommerce.watchdog.deadletter.clients.EcommerceHelpdeskServiceClient
 import it.pagopa.ecommerce.watchdog.deadletter.clients.NodoTechnicalSupportClient
+import it.pagopa.ecommerce.watchdog.deadletter.documents.DeadletterTransactionAction
 import it.pagopa.ecommerce.watchdog.deadletter.repositories.DeadletterTransactionActionRepository
 import it.pagopa.generated.ecommerce.helpdesk.model.DeadLetterEventDto
 import it.pagopa.generated.ecommerce.helpdesk.model.DeadLetterTransactionInfoDto
@@ -17,13 +18,23 @@ import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.DeadletterTran
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.ListDeadletterTransactions200ResponseDto
 import it.pagopa.generated.nodo.support.model.TransactionResponseDto
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import org.mockito.ArgumentCaptor
+import org.mockito.Captor
+import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.*
 import org.springframework.web.reactive.function.client.WebClientException
 import reactor.core.publisher.Mono
 import reactor.test.StepVerifier
+import java.time.Instant
 import java.time.LocalDate
 import java.time.OffsetDateTime
+import java.util.UUID
 import kotlin.reflect.full.memberProperties
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import org.mockito.kotlin.argumentCaptor
+import reactor.core.publisher.Flux
 
 
 class DeadletterTransactionServiceTest {
@@ -31,6 +42,8 @@ class DeadletterTransactionServiceTest {
     private val nodoTechnicalSupportClient: NodoTechnicalSupportClient = mock()
     private val deadletterTransactionActionRepository: DeadletterTransactionActionRepository = mock()
     private val deadletterTransactionsService : DeadletterTransactionsService = DeadletterTransactionsService(ecommerceHelpdeskServiceV1, nodoTechnicalSupportClient, deadletterTransactionActionRepository)
+
+
 
     @Test
     fun `getDeadletterTransactions should return a ListDeadletterTransactions200ResponseDto with an element` () {
@@ -343,7 +356,7 @@ class DeadletterTransactionServiceTest {
     }
 
     @Test
-    fun `getDeadletterTransactions should return a ListDeadletterTransactions200ResponseDto with deadletterTransactions empty  an error because the searchNodoGivenNoticeNumberAndFiscalCode fail` () {
+    fun `getDeadletterTransactions should return a ListDeadletterTransactions200ResponseDto with deadletterTransactions empty because of the searchNodoGivenNoticeNumberAndFiscalCode error` () {
         val date : LocalDate = LocalDate.parse("2025-08-19")
         val pageNumber: Int = 0
         val pageSize: Int = 1
@@ -546,5 +559,64 @@ class DeadletterTransactionServiceTest {
         verify(nodoTechnicalSupportClient).searchNodoGivenNoticeNumberAndFiscalCode(any(),any(),any(), any())
 
     }
+
+    @Test
+    fun `addActionToDeadletterTransaction should save a deadletterTransactionAction` () {
+        val transactionId = "testId"
+        val userId = "userIdTest"
+        val actionValue = "valueTest"
+
+        val deadletterTransactionAction : DeadletterTransactionAction = DeadletterTransactionAction(UUID.randomUUID().toString(),transactionId, userId, actionValue, Instant.now())
+
+        whenever(deadletterTransactionActionRepository.save(any()))
+            .thenReturn(Mono.just(deadletterTransactionAction))
+
+        val resultMono = deadletterTransactionsService.addActionToDeadletterTransaction(transactionId, userId, actionValue)
+
+        StepVerifier.create(resultMono)
+            .expectNext(deadletterTransactionAction)
+            .expectComplete()
+            .verify()
+
+        // Verify the object pass to the repository and his parameters
+        val actionCaptor = argumentCaptor<DeadletterTransactionAction>()
+        verify(deadletterTransactionActionRepository).save(actionCaptor.capture())
+
+        val newDeadLetterActionCapture = actionCaptor.firstValue
+
+        assertNotNull(newDeadLetterActionCapture.id)
+        assertNotNull(newDeadLetterActionCapture.timestamp)
+        assertEquals(newDeadLetterActionCapture.transactionId, transactionId)
+        assertEquals(newDeadLetterActionCapture.userId, userId)
+        assertEquals(newDeadLetterActionCapture.value, actionValue)
+    }
+
+    @Test
+    fun `listActionsForDeadletterTransaction should return all the action associated with a certain transactionId`() {
+        val transactionId = "testId"
+        val userId = "userIdTest"
+        val actionValue = "valueTest"
+
+        val deadletterTransactionAction : DeadletterTransactionAction = DeadletterTransactionAction(UUID.randomUUID().toString(),transactionId, userId, actionValue, Instant.now())
+
+        whenever(deadletterTransactionActionRepository.findByTransactionId(any()))
+            .thenReturn(Flux.just(deadletterTransactionAction))
+
+        val resultFlux = deadletterTransactionsService.listActionsForDeadletterTransaction(transactionId, userId)
+
+        StepVerifier.create(resultFlux)
+            .expectNext(deadletterTransactionAction)
+            .expectComplete()
+            .verify()
+
+        // Verify the object pass to the repository and his parameters
+        val actionCaptor = argumentCaptor<String>()
+        verify(deadletterTransactionActionRepository).findByTransactionId(actionCaptor.capture())
+
+        val transactionIdValuePassed = actionCaptor.firstValue
+        assertEquals(transactionIdValuePassed, transactionId)
+    }
+
+
 
 }
