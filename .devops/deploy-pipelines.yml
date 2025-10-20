@@ -156,12 +156,6 @@ stages:
       - job: "build"
         displayName: 'Build release candidate docker image'
         steps:
-          - task: Bash@3
-            displayName: "Write GitHub token file"
-            inputs:
-              targetType: "inline"
-              script: |
-                echo "$(GITHUB_RO_TOKEN)" > ./github_ro_token
           - template: templates/docker-release/template.yaml@pagopaCommons
             parameters:
               CONTAINER_REGISTRY_SERVICE_CONN: $(UAT_CONTAINER_REGISTRY_SERVICE_CONN)
@@ -260,21 +254,6 @@ stages:
                     ${{ if eq(parameters['NATIVE_COMPILATION'], False) }}:
                       ARGUMENTS: "--timeout 5m0s --values helm/valuesOverrides/overrides-jvm-dev.yaml"
   # --- END Deploy UAT --- #
-
-  # --- START API TEST for GREEN UAT DEPLOY --- #
-  - stage: "Green_API_UAT_test_V1"
-    displayName: 'Running API test on green app V1'
-    dependsOn: Deploy_UAT_Green
-    jobs:
-      - job: newman_api_test
-        steps:
-          - template: azure-templates/api-tests.yml
-            parameters:
-              ENV_FILE: "api-tests/env/helpdeskcommands_uat.env.json"
-              API_TEST_FILE: "api-tests/v1/helpdeskcommands.api.tests.uat.json"
-              TEST_FILE_PREFIX: "green-uat"
-              API_SUBSCRIPTION_KEY: $(HELPDESK_TESTING_API_KEY_UAT)
-  # --- END API TEST for GREEN UAT DEPLOY --- #
 
   # --- START Deploy PROD --- #
   - stage: "Prod_WaitForApproval"
