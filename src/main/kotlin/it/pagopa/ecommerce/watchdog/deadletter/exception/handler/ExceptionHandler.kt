@@ -49,7 +49,7 @@ class ExceptionHandler() {
         ServerWebInputException::class,
         HttpMessageNotReadableException::class,
         WebExchangeBindException::class,
-        ConstraintViolationException::class
+        ConstraintViolationException::class,
     )
     fun handleRequestValidationException(e: Exception): ResponseEntity<ProblemJsonDto> {
         logger.error("Input request is not valid", e)
