@@ -80,8 +80,8 @@ microservice-chart:
     NODO_TECHNICAL_SUPPORT_SERVER_URI: "https://api.platform.pagopa.it/technical-support/ndp/api/v1"
     NODO_TECHNICAL_SUPPORT_SERVER_READ_TIMEOUT_MILLIS: "10000"
     NODO_TECHNICAL_SUPPORT_SERVER_CONNECTION_TIMEOUT_MILLIS: "10000"
-    MONGO_HOST: pagopa-u-weu-ecommerce-cosmos-account.mongo.cosmos.azure.com
-    MONGO_USERNAME: pagopa-u-weu-ecommerce-cosmos-account
+    MONGO_HOST: pagopa-p-weu-ecommerce-cosmos-account.mongo.cosmos.azure.com
+    MONGO_USERNAME: pagopa-p-weu-ecommerce-cosmos-account
     MONGO_PORT: "10255"
     MONGO_SSL_ENABLED: "true"
     MONGO_DB_NAME: "ecommerce-watchdog"
@@ -120,7 +120,7 @@ microservice-chart:
   secretProviderClass:
     create: true
   keyvault:
-    name: "pagopa-u-ecommerce-kv"
+    name: "pagopa-p-ecommerce-kv"
     tenantId: "7788edaf-0346-4068-9d79-c868aed15b3d"
   azure:
     workloadIdentityClientId: "d5614882-90dd-47a1-aad1-cdf295201469"
