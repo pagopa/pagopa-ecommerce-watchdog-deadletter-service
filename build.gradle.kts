@@ -17,7 +17,7 @@ plugins {
 
 group = "it.pagopa.ecommerce.watchdog.deadletter"
 
-version = "1.2.0"
+version = "1.3.0"
 
 description = "pagopa-ecommerce-watchdog-deadletter-service"
 
