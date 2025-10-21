@@ -3,7 +3,7 @@ microservice-chart:
   nameOverride: ""
   fullnameOverride: "pagopa-ecommerce-watchdog-deadletter-service"
   image:
-    repository: pagopadcommonacr.azurecr.io/pagopaecommercewatchdogdeadletterservice
+    repository: pagopaucommonacr.azurecr.io/pagopaecommercewatchdogdeadletterservice
     tag: "1.2.0"
     pullPolicy: Always
   livenessProbe:
@@ -31,7 +31,7 @@ microservice-chart:
       - 8080
   ingress:
     create: true
-    host: "weudev.ecommerce.internal.dev.platform.pagopa.it"
+    host: "weuuat.ecommerce.internal.uat.platform.pagopa.it"
     path: /pagopa-ecommerce-watchdog-deadletter-service/(.*)
     servicePort: 8080
   serviceAccount:
@@ -74,14 +74,14 @@ microservice-chart:
     OTEL_METRICS_EXPORTER: otlp
     OTEL_LOGS_EXPORTER: none
     OTEL_TRACES_SAMPLER: "always_on"
-    ECOMMERCE_HELPDESK_SERVER_URI: "https://api.dev.platform.pagopa.it/ecommerce/helpdesk-service"
+    ECOMMERCE_HELPDESK_SERVER_URI: "https://api.uat.platform.pagopa.it/ecommerce/helpdesk-service"
     ECOMMERCE_HELPDESK_SERVER_READ_TIMEOUT_MILLIS: "10000"
     ECOMMERCE_HELPDESK_SERVER_CONNECTION_TIMEOUT_MILLIS: "10000"
-    NODO_TECHNICAL_SUPPORT_SERVER_URI: "https://api.dev.platform.pagopa.it/technical-support/ndp/api/v1"
+    NODO_TECHNICAL_SUPPORT_SERVER_URI: "https://api.uat.platform.pagopa.it/technical-support/ndp/api/v1"
     NODO_TECHNICAL_SUPPORT_SERVER_READ_TIMEOUT_MILLIS: "10000"
     NODO_TECHNICAL_SUPPORT_SERVER_CONNECTION_TIMEOUT_MILLIS: "10000"
-    MONGO_HOST: pagopa-d-weu-ecommerce-cosmos-account.mongo.cosmos.azure.com
-    MONGO_USERNAME: pagopa-d-weu-ecommerce-cosmos-account
+    MONGO_HOST: pagopa-u-weu-ecommerce-cosmos-account.mongo.cosmos.azure.com
+    MONGO_USERNAME: pagopa-u-weu-ecommerce-cosmos-account
     MONGO_PORT: "10255"
     MONGO_SSL_ENABLED: "true"
     MONGO_DB_NAME: "ecommerce-watchdog"
@@ -94,11 +94,11 @@ microservice-chart:
     MONGO_WAITING_QUEUE_MS: "2000"
     MONGO_HEARTBEAT_FREQUENCY_MS: "5000"
     MONGO_REPLICA_SET_OPTION: "&replicaSet=globaldb"
-    AUTH_LOGIN_REDIRECT_URL: "https://weudev.ecommerce.internal.dev.platform.pagopa.it/pagopa-ecommerce-watchdog-deadletter-fe/"
+    AUTH_LOGIN_REDIRECT_URL: "https://weuuat.ecommerce.internal.uat.platform.pagopa.it/pagopa-ecommerce-watchdog-deadletter-fe/"
     AUTH_JWT_VALIDITY_TIME_MINUTES: "1440"
     AUTH_JWT_SECRET_KEY_NAME: "watchdog-jwt-cert"
     AUTH_JWT_SECRET_KEY_PASSWORD: ""
-    AUTH_AZURE_KV_ENDPOINT: "https://pagopa-d-ecommerce-kv.vault.azure.net/"
+    AUTH_AZURE_KV_ENDPOINT: "https://pagopa-u-ecommerce-kv.vault.azure.net/"
     AUTH_AZURE_MAX_RETRY: "3"
     AUTH_AZURE_RETRY_DELAY_MILLIS: "500"
   envSecret:
@@ -120,7 +120,7 @@ microservice-chart:
   secretProviderClass:
     create: true
   keyvault:
-    name: "pagopa-d-ecommerce-kv"
+    name: "pagopa-u-ecommerce-kv"
     tenantId: "7788edaf-0346-4068-9d79-c868aed15b3d"
   azure:
-    workloadIdentityClientId: "1be61b58-24e2-49c8-b401-89ebd004bf2e"
+    workloadIdentityClientId: "449c5b65-f368-487a-881a-b03676420c53"
