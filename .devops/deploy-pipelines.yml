@@ -161,9 +161,12 @@ stages:
               CONTAINER_REGISTRY_SERVICE_CONN: $(UAT_CONTAINER_REGISTRY_SERVICE_CONN)
               CONTAINER_REGISTRY_FQDN: $(UAT_CONTAINER_NAMESPACE)
               DOCKER_IMAGE_NAME: $(K8S_IMAGE_REPOSITORY_NAME)
-              DOCKER_IMAGE_TAG: $(Build.SourceVersion)
+              DOCKER_IMAGE_TAG: $(Build.SourceVersion)${{ variables.DOCKER_FILE_VERSION_SUFFIX }}
               FORCE_REPLACE_DOCKER_IMAGE: ${{ parameters.FORCE_REPLACE_DOCKER_IMAGE }}
-          - template: azure-templates/chart-current-version.yml
+              ${{ if eq(parameters['NATIVE_COMPILATION'], True) }}:
+                DOCKERFILE: Dockerfile.native
+              ${{ else }}:
+                DOCKERFILE: Dockerfile.jvm
 
   - stage: "Get_Release_Version"
     displayName: "Get the app version to deploy"
@@ -198,9 +201,9 @@ stages:
             inputs:
               targetType: "inline"
               script: |
-                docker pull $(UAT_CONTAINER_NAMESPACE)/$(K8S_IMAGE_REPOSITORY_NAME):$(Build.SourceVersion)
-                docker tag $(UAT_CONTAINER_NAMESPACE)/$(K8S_IMAGE_REPOSITORY_NAME):$(Build.SourceVersion) $(UAT_CONTAINER_NAMESPACE)/$(K8S_IMAGE_REPOSITORY_NAME):$(app_version)
-                docker push $(UAT_CONTAINER_NAMESPACE)/$(K8S_IMAGE_REPOSITORY_NAME):$(app_version)
+                docker pull $(UAT_CONTAINER_NAMESPACE)/$(K8S_IMAGE_REPOSITORY_NAME):$(Build.SourceVersion)${{ variables.DOCKER_FILE_VERSION_SUFFIX }}
+                docker tag $(UAT_CONTAINER_NAMESPACE)/$(K8S_IMAGE_REPOSITORY_NAME):$(Build.SourceVersion)${{ variables.DOCKER_FILE_VERSION_SUFFIX }} $(UAT_CONTAINER_NAMESPACE)/$(K8S_IMAGE_REPOSITORY_NAME):$(app_version)${{ variables.DOCKER_FILE_VERSION_SUFFIX }}
+                docker push $(UAT_CONTAINER_NAMESPACE)/$(K8S_IMAGE_REPOSITORY_NAME):$(app_version)${{ variables.DOCKER_FILE_VERSION_SUFFIX }}
 
 
   - stage: "Deploy_UAT_Green"
@@ -248,7 +251,7 @@ stages:
                     NAMESPACE: ecommerce
                     APP_NAME: $(K8S_IMAGE_REPOSITORY_NAME)
                     VALUE_FILE: "helm/values-uat.yaml"
-                    GREEN_VERSION: $(app_version)
+                    GREEN_VERSION: $(app_version)${{ variables.DOCKER_FILE_VERSION_SUFFIX }}
                     #for jvm build add --values option targeting containing overrides from native helm values, such as required resources etc
                     ${{ if eq(parameters['NATIVE_COMPILATION'], False) }}:
                       ARGUMENTS: "--timeout 5m0s --values helm/valuesOverrides/overrides-jvm-dev.yaml"
@@ -305,19 +308,20 @@ stages:
             inputs:
               targetType: "inline"
               script: |
-                docker pull $(UAT_CONTAINER_NAMESPACE)/$(K8S_IMAGE_REPOSITORY_NAME):$(prod_version)
+                docker pull $(UAT_CONTAINER_NAMESPACE)/$(K8S_IMAGE_REPOSITORY_NAME):$(app_version)${{ variables.DOCKER_FILE_VERSION_SUFFIX }}
+                docker tag $(UAT_CONTAINER_NAMESPACE)/$(K8S_IMAGE_REPOSITORY_NAME):$(app_version)${{ variables.DOCKER_FILE_VERSION_SUFFIX }} $(PROD_CONTAINER_NAMESPACE)/$(K8S_IMAGE_REPOSITORY_NAME):$(Build.SourceVersion)${{ variables.DOCKER_FILE_VERSION_SUFFIX }}
           - task: Docker@2
             displayName: "docker login for PROD"
             inputs:
               containerRegistry: $(PROD_CONTAINER_REGISTRY_SERVICE_CONN)
               command: "login"
           - task: Bash@3
-            displayName: "docker tag new version for PROD"
+            displayName: "Push new version for PROD"
             inputs:
               targetType: "inline"
               script: |
-                docker tag $(UAT_CONTAINER_NAMESPACE)/$(K8S_IMAGE_REPOSITORY_NAME):$(prod_version) $(PROD_CONTAINER_NAMESPACE)/$(K8S_IMAGE_REPOSITORY_NAME):$(prod_version)
-                docker push $(PROD_CONTAINER_NAMESPACE)/$(K8S_IMAGE_REPOSITORY_NAME):$(prod_version)
+                docker push $(PROD_CONTAINER_NAMESPACE)/$(K8S_IMAGE_REPOSITORY_NAME):$(Build.SourceVersion)${{ variables.DOCKER_FILE_VERSION_SUFFIX }}
+
   - stage: "Deploy_PROD_Green"
     displayName: 'PROD green deployment'
     dependsOn: [Build_PROD_Green,Get_Release_Version]
@@ -358,7 +362,7 @@ stages:
                     NAMESPACE: ecommerce
                     APP_NAME: $(K8S_IMAGE_REPOSITORY_NAME)
                     VALUE_FILE: "helm/values-prod.yaml"
-                    GREEN_VERSION: $(prod_version)
+                    GREEN_VERSION: $(prod_version)${{ variables.DOCKER_FILE_VERSION_SUFFIX }}
                     #for jvm build add --values option targeting containing overrides from native helm values, such as required resources etc
                     ${{ if eq(parameters['NATIVE_COMPILATION'], False) }}:
                       ARGUMENTS: "--timeout 5m0s --values helm/valuesOverrides/overrides-jvm-dev.yaml"
