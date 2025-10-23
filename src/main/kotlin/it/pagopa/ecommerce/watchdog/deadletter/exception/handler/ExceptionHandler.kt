@@ -3,6 +3,7 @@ package it.pagopa.ecommerce.watchdog.deadletter.exception.handler
 import it.pagopa.ecommerce.watchdog.deadletter.exception.ApiError
 import it.pagopa.ecommerce.watchdog.deadletter.exception.RestApiException
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.ProblemJsonDto
+import jakarta.validation.ConstraintViolationException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.dao.OptimisticLockingFailureException
@@ -48,6 +49,7 @@ class ExceptionHandler() {
         ServerWebInputException::class,
         HttpMessageNotReadableException::class,
         WebExchangeBindException::class,
+        ConstraintViolationException::class,
     )
     fun handleRequestValidationException(e: Exception): ResponseEntity<ProblemJsonDto> {
         logger.error("Input request is not valid", e)
