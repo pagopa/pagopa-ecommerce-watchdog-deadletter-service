@@ -1,3 +1,5 @@
+package it.pagopa.ecommerce.watchdog.deadletter.services
+
 import it.pagopa.ecommerce.watchdog.deadletter.domain.UserDetails
 import it.pagopa.ecommerce.watchdog.deadletter.exception.InvalidCredentialsException
 import it.pagopa.ecommerce.watchdog.deadletter.repositories.OperatorsRepository

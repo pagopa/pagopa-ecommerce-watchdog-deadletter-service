@@ -1,6 +1,5 @@
 package it.pagopa.ecommerce.watchdog.deadletter.services
 
-import AuthService
 import it.pagopa.ecommerce.watchdog.deadletter.documents.Operator
 import it.pagopa.ecommerce.watchdog.deadletter.domain.UserDetails
 import it.pagopa.ecommerce.watchdog.deadletter.repositories.OperatorsRepository

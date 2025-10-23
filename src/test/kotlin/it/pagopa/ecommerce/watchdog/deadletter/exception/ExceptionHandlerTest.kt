@@ -38,8 +38,8 @@ class ExceptionHandlerTest {
         assertEquals(
             WatchdogDeadletterTestUtils.buildProblemJson(
                 httpStatus = HttpStatus.UNAUTHORIZED,
-                title = "User unauthorized",
-                description = "User is not authorized to access the resource",
+                title = "Operator unauthorized",
+                description = "Operator is not authorized to access the resource",
             ),
             response.body,
         )
