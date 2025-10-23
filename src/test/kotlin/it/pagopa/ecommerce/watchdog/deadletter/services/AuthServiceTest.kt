@@ -1,12 +1,15 @@
 package it.pagopa.ecommerce.watchdog.deadletter.services
 
 import it.pagopa.ecommerce.watchdog.deadletter.domain.UserDetails
+import it.pagopa.ecommerce.watchdog.deadletter.repositories.UserRepository
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.AuthenticationCredentialsDto
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.*
 import reactor.test.StepVerifier
 
 class AuthServiceTest {
-    private val authService: AuthService = AuthService()
+    private val userRepository: UserRepository = mock()
+    private val authService: AuthService = AuthService(userRepository)
 
     @Test
     fun `should authenticate user`() {
