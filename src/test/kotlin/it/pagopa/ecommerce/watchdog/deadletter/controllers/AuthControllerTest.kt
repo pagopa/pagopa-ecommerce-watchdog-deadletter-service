@@ -1,8 +1,8 @@
 package it.pagopa.ecommerce.watchdog.deadletter.controllers
 
+import AuthService
 import it.pagopa.ecommerce.watchdog.deadletter.domain.UserDetails
 import it.pagopa.ecommerce.watchdog.deadletter.exception.UserUnauthorizedException
-import it.pagopa.ecommerce.watchdog.deadletter.services.AuthService
 import it.pagopa.ecommerce.watchdog.deadletter.services.jwt.JwtService
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.AuthenticationCredentialsDto
 import org.junit.jupiter.api.Test

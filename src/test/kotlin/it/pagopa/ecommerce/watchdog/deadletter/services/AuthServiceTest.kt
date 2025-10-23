@@ -1,8 +1,9 @@
 package it.pagopa.ecommerce.watchdog.deadletter.services
 
-import it.pagopa.ecommerce.watchdog.deadletter.documents.User
+import AuthService
+import it.pagopa.ecommerce.watchdog.deadletter.documents.Operator
 import it.pagopa.ecommerce.watchdog.deadletter.domain.UserDetails
-import it.pagopa.ecommerce.watchdog.deadletter.repositories.UserRepository
+import it.pagopa.ecommerce.watchdog.deadletter.repositories.OperatorsRepository
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.AuthenticationCredentialsDto
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.*
@@ -12,8 +13,8 @@ import reactor.test.StepVerifier
 
 @TestPropertySource(locations = ["classpath:application.test.properties"])
 class AuthServiceTest {
-    private val userRepository: UserRepository = mock()
-    private val authService: AuthService = AuthService(userRepository)
+    private val operatorsRepository: OperatorsRepository = mock()
+    private val authService: AuthService = AuthService(operatorsRepository)
 
     @Test
     fun `should authenticate user`() {
@@ -22,7 +23,7 @@ class AuthServiceTest {
         val userDetails = UserDetails("12345", "Mario", "Rossi", "mock@email.com")
 
         val mockUserEntity =
-            mock<User> {
+            mock<Operator> {
                 on(it.id).thenReturn(userDetails.id)
                 on(it.name).thenReturn(userDetails.name)
                 on(it.surname).thenReturn(userDetails.surname)
@@ -30,7 +31,7 @@ class AuthServiceTest {
                 on(it.password).thenReturn(credentials.password) // Password corretta
             }
 
-        whenever(userRepository.findByUsername(credentials.username))
+        whenever(operatorsRepository.findById(credentials.username))
             .thenReturn(Mono.just(mockUserEntity))
 
         // test

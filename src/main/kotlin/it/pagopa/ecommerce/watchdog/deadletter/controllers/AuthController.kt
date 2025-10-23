@@ -1,6 +1,6 @@
 package it.pagopa.ecommerce.watchdog.deadletter.controllers
 
-import it.pagopa.ecommerce.watchdog.deadletter.services.AuthService
+import AuthService
 import it.pagopa.ecommerce.watchdog.deadletter.services.jwt.JwtService
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.api.AuthenticateApi
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.AuthenticationCredentialsDto
