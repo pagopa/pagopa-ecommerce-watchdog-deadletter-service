@@ -8,6 +8,7 @@ permissions:
   contents: write
   pull-requests: write
 
+
 jobs:
   semver_labels:
     name: Read semver labels from merged PR
@@ -75,7 +76,7 @@ jobs:
               yq -i ".appVersion = \"${{steps.get_new_ver.outputs.version}}\"" "$CHART_FILE"
               git add "$CHART_FILE"
           fi
-      - name: Setup Node.js
+      - name: Setup Node.js 22
         uses: actions/setup-node@3235b876344d2a9aa001b8d1453c930bba69e610
         with:
           node-version: '22'
