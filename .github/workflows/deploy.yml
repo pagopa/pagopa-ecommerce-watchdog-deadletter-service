@@ -36,7 +36,7 @@ jobs:
         uses: jacopocarlini/azure-pipelines@b9721743a54e862597395b4a70727cfdc03028fb # v1.3
         with:
           azure-devops-project-url: https://dev.azure.com/pagopaspa/pagoPA-projects
-          azure-pipeline-name: 'pagopa-checkout-auth-service.deploy'
+          azure-pipeline-name: 'pagopa-ecommerce-watchdog-deadletter-service.deploy'
           azure-devops-token: ${{ secrets.AZURE_DEVOPS_TOKEN }}
           azure-template-parameters: |
             {
