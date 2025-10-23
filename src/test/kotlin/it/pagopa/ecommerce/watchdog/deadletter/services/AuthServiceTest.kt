@@ -2,6 +2,7 @@ package it.pagopa.ecommerce.watchdog.deadletter.services
 
 import it.pagopa.ecommerce.watchdog.deadletter.documents.Operator
 import it.pagopa.ecommerce.watchdog.deadletter.domain.UserDetails
+import it.pagopa.ecommerce.watchdog.deadletter.exception.InvalidCredentialsException
 import it.pagopa.ecommerce.watchdog.deadletter.repositories.OperatorsRepository
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.AuthenticationCredentialsDto
 import org.junit.jupiter.api.Test
@@ -37,5 +38,34 @@ class AuthServiceTest {
         StepVerifier.create(authService.authenticateUser(credentials))
             .expectNext(userDetails)
             .verifyComplete()
+    }
+
+    @Test
+    fun `should fail authentication for invalid password`() {
+        // pre-requisites
+        val credentials = AuthenticationCredentialsDto("user", "wrong_password")
+
+        val mockUserEntity = mock<Operator> { on(it.password).thenReturn("correct_password") }
+
+        whenever(operatorsRepository.findById(credentials.username))
+            .thenReturn(Mono.just(mockUserEntity))
+
+        // test
+        StepVerifier.create(authService.authenticateUser(credentials))
+            .expectError(InvalidCredentialsException::class.java)
+            .verify()
+    }
+
+    @Test
+    fun `should fail authentication for user not found`() {
+        // pre-requisites
+        val credentials = AuthenticationCredentialsDto("unknown_user", "password")
+
+        whenever(operatorsRepository.findById(credentials.username)).thenReturn(Mono.empty())
+
+        // test
+        StepVerifier.create(authService.authenticateUser(credentials))
+            .expectError(InvalidCredentialsException::class.java)
+            .verify()
     }
 }
