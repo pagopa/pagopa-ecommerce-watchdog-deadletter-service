@@ -28,8 +28,8 @@ class AuthController(
         exchange: ServerWebExchange?,
     ): Mono<ResponseEntity<AuthenticationOkDto>> {
         return authenticationCredentialsDto
-            .flatMap { credentials -> authService.authenticateUser(credentials) }
-            .flatMap { userDetails -> jwtService.generateUserJwtToken(userDetails) }
+            .flatMap(authService::authenticateUser)
+            .flatMap(jwtService::generateUserJwtToken)
             .map { token ->
                 ResponseEntity.ok(AuthenticationOkDto("$loginRedirectUrl#token=$token"))
             }
