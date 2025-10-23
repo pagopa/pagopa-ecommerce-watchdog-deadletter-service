@@ -1,6 +1,6 @@
 package it.pagopa.ecommerce.watchdog.deadletter.config.jwt
 
-import it.pagopa.ecommerce.watchdog.deadletter.JwtKeyGenerationTestUtils.Companion.getKeyPairRSA
+import it.pagopa.ecommerce.watchdog.deadletter.JwtKeyGenerationTestUtils.Companion.getKeyPairEC
 import it.pagopa.ecommerce.watchdog.deadletter.domain.jwt.PublicKeyWithKid
 import it.pagopa.ecommerce.watchdog.deadletter.services.jwt.ReactiveAzureKVSecurityKeysService
 import org.assertj.core.api.Assertions.assertThat
@@ -26,7 +26,7 @@ class JwtDecoderConfigTest {
         @Bean
         fun azureKVSecurityKeysService(): ReactiveAzureKVSecurityKeysService {
             val mockService: ReactiveAzureKVSecurityKeysService = mock()
-            val keyPair = getKeyPairRSA()
+            val keyPair = getKeyPairEC()
             val publicKeyWithKid = PublicKeyWithKid("kid", keyPair.public)
             given(mockService.getPublic()).willReturn(Flux.just(publicKeyWithKid))
             return mockService
