@@ -19,8 +19,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
-import java.security.KeyPair
-import java.security.KeyPairGenerator
 
 @Component
 class ReactiveAzureKVSecurityKeysService(
@@ -75,7 +73,7 @@ class ReactiveAzureKVSecurityKeysService(
         }
     }
 
-    /*override fun getPrivate(): Mono<PrivateKeyWithKid> {
+    override fun getPrivate(): Mono<PrivateKeyWithKid> {
         return this.getKeyStore().map {
             val alias = it.aliases().nextElement()
             PrivateKeyWithKid(
@@ -91,7 +89,7 @@ class ReactiveAzureKVSecurityKeysService(
                 certFactory.generateCertificate(ByteArrayInputStream(it.cer)) as X509Certificate
             PublicKeyWithKid(getKid(it.cer), x509Cert.publicKey)
         }
-    }*/
+    }
 
     private fun getKid(encodedCert: ByteArray): String {
         // Compute SHA-256 hash
@@ -100,16 +98,17 @@ class ReactiveAzureKVSecurityKeysService(
         // Convert to Base64 URL-encoded string
         return Base64.getUrlEncoder().withoutPadding().encodeToString(hash)
     }
+    /*
+        private val mockKeyPair: KeyPair by lazy {
+            logger.warn("!!! USING MOCKED KEYPAIR FOR LOCAL TESTING !!!")
+            val keyPairGenerator = KeyPairGenerator.getInstance("RSA")
+            keyPairGenerator.initialize(2048)
+            keyPairGenerator.genKeyPair()
+        }
 
-    private val mockKeyPair: KeyPair by lazy {
-        logger.warn("!!! USING MOCKED KEYPAIR FOR LOCAL TESTING !!!")
-        val keyPairGenerator = KeyPairGenerator.getInstance("RSA")
-        keyPairGenerator.initialize(2048)
-        keyPairGenerator.genKeyPair()
-    }
 
+        override fun getPrivate(): Mono<PrivateKeyWithKid> = Mono.just(PrivateKeyWithKid(kid = "mock-kid-private", privateKey = mockKeyPair.private))
 
-    override fun getPrivate(): Mono<PrivateKeyWithKid> = Mono.just(PrivateKeyWithKid(kid = "mock-kid-private", privateKey = mockKeyPair.private))
-
-    override fun getPublic(): Flux<PublicKeyWithKid> = Flux.just(PublicKeyWithKid(kid = "mock-kid-public", publicKey = mockKeyPair.public))
+        override fun getPublic(): Flux<PublicKeyWithKid> = Flux.just(PublicKeyWithKid(kid = "mock-kid-public", publicKey = mockKeyPair.public))
+    */
 }
