@@ -97,6 +97,7 @@ dependencies {
   )
   implementation("com.azure:azure-identity:${Deps.azureIdentityVersion}")
 
+  testImplementation("org.springframework.security:spring-security-test")
   testImplementation("org.bouncycastle:bcpkix-jdk18on:${Deps.bouncyCastleVersion}")
   testImplementation("org.bouncycastle:bcprov-jdk18on:${Deps.bouncyCastleVersion}")
   testImplementation("org.springframework.boot:spring-boot-starter-test")
