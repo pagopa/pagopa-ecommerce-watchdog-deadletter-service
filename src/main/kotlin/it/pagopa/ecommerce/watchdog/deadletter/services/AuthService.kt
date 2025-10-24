@@ -21,7 +21,7 @@ class AuthService(private val userRepository: OperatorsRepository) {
      * implementation and will be replaced with a secure PasswordEncoder (e.g., BCrypt) in a
      * dedicated future Pull Request.
      *
-     * @param credentials The user's login credentials (username and password).
+     * @param incomingCredentials The user's login credentials (username and password).
      * @return A [Mono] emitting [UserDetails] on success, or an [InvalidCredentialsException] if
      *   the username is not found or the password does not match.
      */
@@ -52,6 +52,12 @@ class AuthService(private val userRepository: OperatorsRepository) {
             )
     }
 
+    /**
+     * Returns the current authenticated user's id.
+     *
+     * @return A [Mono] emitting the user's id on success, or an [IllegalStateException] if a valid
+     *   [UserDetails] authentication principal is not found in Spring SecurityContext.
+     */
     fun getAuthenticatedUserId(): Mono<String> {
         return ReactiveSecurityContextHolder.getContext().flatMap { securityContext ->
             when (val principal = securityContext.authentication.principal) {
