@@ -6,10 +6,10 @@ import it.pagopa.ecommerce.watchdog.deadletter.exception.InvalidCredentialsExcep
 import it.pagopa.ecommerce.watchdog.deadletter.repositories.OperatorsRepository
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.AuthenticationCredentialsDto
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.*
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.ReactiveSecurityContextHolder
 import org.springframework.security.core.context.SecurityContextImpl
-import org.mockito.kotlin.*
 import org.springframework.test.context.TestPropertySource
 import reactor.core.publisher.Mono
 import reactor.test.StepVerifier
@@ -44,7 +44,6 @@ class AuthServiceTest {
     }
 
     @Test
-
     fun `should return authenticated user id`() {
         // pre-requisites
         val userDetails = UserDetails("12345", "Mario", "Rossi", "mock@email.com")
