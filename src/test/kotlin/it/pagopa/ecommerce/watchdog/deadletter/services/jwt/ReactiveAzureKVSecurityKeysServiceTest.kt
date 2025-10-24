@@ -24,9 +24,11 @@ import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.given
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import org.springframework.test.context.TestPropertySource
 import reactor.core.publisher.Mono
 import reactor.test.StepVerifier
 
+@TestPropertySource(locations = ["classpath:application.test.properties"])
 class ReactiveAzureKVSecurityKeysServiceTest {
     private val azureTestUtils: AzureTestUtils = AzureTestUtils()
     private val secretClient: SecretAsyncClient = mock()

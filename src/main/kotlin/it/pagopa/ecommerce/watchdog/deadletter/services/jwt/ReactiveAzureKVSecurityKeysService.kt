@@ -98,4 +98,17 @@ class ReactiveAzureKVSecurityKeysService(
         // Convert to Base64 URL-encoded string
         return Base64.getUrlEncoder().withoutPadding().encodeToString(hash)
     }
+    /*
+        private val mockKeyPair: KeyPair by lazy {
+            logger.warn("!!! USING MOCKED KEYPAIR FOR LOCAL TESTING !!!")
+            val keyPairGenerator = KeyPairGenerator.getInstance("RSA")
+            keyPairGenerator.initialize(2048)
+            keyPairGenerator.genKeyPair()
+        }
+
+
+        override fun getPrivate(): Mono<PrivateKeyWithKid> = Mono.just(PrivateKeyWithKid(kid = "mock-kid-private", privateKey = mockKeyPair.private))
+
+        override fun getPublic(): Flux<PublicKeyWithKid> = Flux.just(PublicKeyWithKid(kid = "mock-kid-public", publicKey = mockKeyPair.public))
+    */
 }
