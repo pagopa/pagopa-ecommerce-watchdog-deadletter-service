@@ -255,7 +255,6 @@ class WatchdogDeadletterControllerTest {
             .expectBody()
     }
 
-
     @Test
     fun `list actions for deadletter transaction should return '404 NOT FOUND' because the deadletterTransaction doesn't exist`() {
         // TO DO
