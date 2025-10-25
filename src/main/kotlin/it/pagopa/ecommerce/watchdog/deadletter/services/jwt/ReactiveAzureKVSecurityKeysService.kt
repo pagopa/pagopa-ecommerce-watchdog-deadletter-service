@@ -4,9 +4,12 @@ import com.azure.security.keyvault.certificates.CertificateAsyncClient
 import com.azure.security.keyvault.certificates.models.KeyVaultCertificate
 import com.azure.security.keyvault.secrets.SecretAsyncClient
 import com.azure.security.keyvault.secrets.models.KeyVaultSecret
+import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.jwk.Curve
 import com.nimbusds.jose.jwk.ECKey
 import com.nimbusds.jose.jwk.JWK
+import com.nimbusds.jose.jwk.KeyOperation
+import com.nimbusds.jose.jwk.KeyUse
 import it.pagopa.ecommerce.watchdog.deadletter.config.azure.AzureSecretConfigProperties
 import it.pagopa.ecommerce.watchdog.deadletter.domain.jwt.PrivateKeyWithKid
 import it.pagopa.ecommerce.watchdog.deadletter.domain.jwt.PublicKeyWithKid
@@ -85,7 +88,11 @@ class ReactiveAzureKVSecurityKeysService(
             val kid = getKid(certificate.encoded)
             val publicKey = certificate.publicKey as ECPublicKey
 
-            ECKey.Builder(Curve.P_256, publicKey).keyID(kid).build()
+            ECKey.Builder(Curve.P_256, publicKey)
+                .keyID(kid)
+                .algorithm(JWSAlgorithm.ES256)
+                .keyUse(KeyUse.SIGNATURE)
+                .build()
         }
     }
 
@@ -98,7 +105,13 @@ class ReactiveAzureKVSecurityKeysService(
             val privateKey =
                 it.getKey(alias, azureSecretConfig.password.toCharArray()) as ECPrivateKey
 
-            ECKey.Builder(Curve.P_256, publicKey).privateKey(privateKey).keyID(kid).build()
+            ECKey.Builder(Curve.P_256, publicKey)
+                .privateKey(privateKey)
+                .keyID(kid)
+                .algorithm(JWSAlgorithm.ES256)
+                .keyUse(KeyUse.SIGNATURE)
+                .keyOperations(setOf(KeyOperation.SIGN, KeyOperation.VERIFY))
+                .build()
         }
     }
 
