@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
+import java.security.interfaces.ECPrivateKey
 
 @Component
 class ReactiveAzureKVSecurityKeysService(
@@ -88,6 +89,20 @@ class ReactiveAzureKVSecurityKeysService(
         }
     }
 
+    fun getSignerJwk(): Mono<ECKey> {
+        return this.getKeyStore().map {
+            val alias = it.aliases().nextElement()
+            val certificate = it.getCertificate(alias) as X509Certificate
+            val kid = getKid(certificate.encoded)
+            val publicKey = certificate.publicKey as ECPublicKey
+            val privateKey = it.getKey(alias, azureSecretConfig.password.toCharArray()) as ECPrivateKey
+
+            ECKey.Builder(Curve.P_256, publicKey)
+                .privateKey(privateKey)
+                .keyID(kid)
+                .build()
+        }
+    }
     override fun getPrivate(): Mono<PrivateKeyWithKid> {
         return this.getKeyStore().map {
             val alias = it.aliases().nextElement()
