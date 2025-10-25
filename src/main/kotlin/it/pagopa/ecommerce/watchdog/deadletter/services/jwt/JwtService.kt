@@ -17,7 +17,7 @@ class JwtService(
     fun generateUserJwtToken(userDetails: UserDetails): Mono<String> {
         return reactiveAzureKVSecurityKeysService
             .getPrivate()
-            .map { jwtUtils.generateJwtToken(userDetails.toMap(), it) }
+            .flatMap { jwtUtils.generateJwtToken(userDetails.toMap(), it) }
             .doOnNext { logger.info("User token generated successfully") }
     }
 }

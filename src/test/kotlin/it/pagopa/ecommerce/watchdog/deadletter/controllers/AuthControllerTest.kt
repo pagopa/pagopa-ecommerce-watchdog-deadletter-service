@@ -1,5 +1,6 @@
 package it.pagopa.ecommerce.watchdog.deadletter.controllers
 
+import it.pagopa.ecommerce.watchdog.deadletter.config.TestSecurityConfig
 import it.pagopa.ecommerce.watchdog.deadletter.domain.UserDetails
 import it.pagopa.ecommerce.watchdog.deadletter.exception.UserUnauthorizedException
 import it.pagopa.ecommerce.watchdog.deadletter.services.AuthService
@@ -10,6 +11,7 @@ import org.mockito.BDDMockito.given
 import org.mockito.kotlin.any
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest
+import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
 import org.springframework.test.context.TestPropertySource
 import org.springframework.test.context.bean.override.mockito.MockitoBean
@@ -18,6 +20,7 @@ import reactor.core.publisher.Mono
 
 @WebFluxTest(AuthController::class)
 @TestPropertySource(locations = ["classpath:application.test.properties"])
+@Import(TestSecurityConfig::class)
 class AuthControllerTest {
     @Autowired private lateinit var webClient: WebTestClient
 

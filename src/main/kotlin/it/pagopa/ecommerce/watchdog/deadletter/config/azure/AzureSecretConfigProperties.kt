@@ -1,4 +1,4 @@
-package it.pagopa.ecommerce.watchdog.deadletter.config.jwt
+package it.pagopa.ecommerce.watchdog.deadletter.config.azure
 
 import org.springframework.boot.context.properties.ConfigurationProperties
 
