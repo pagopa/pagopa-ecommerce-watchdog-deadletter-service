@@ -2,6 +2,7 @@ package it.pagopa.ecommerce.watchdog.deadletter.utils.jwt
 
 import io.jsonwebtoken.Claims
 import io.jsonwebtoken.Jwts
+import io.jsonwebtoken.SignatureAlgorithm
 import it.pagopa.ecommerce.watchdog.deadletter.domain.jwt.PrivateKeyWithKid
 import java.time.Duration
 import java.time.Instant
@@ -41,7 +42,7 @@ class JwtUtils(@Value("\${auth.jwt.validityTimeMinutes}") private val jwtDuratio
                 .setExpiration(expiryDate) // exp
                 .setAudience(WATCHDOG_AUDIENCE) // aud
                 .setIssuer(JWT_ISSUER) // iss
-                .signWith(privateKey.privateKey)
+                .signWith(privateKey.privateKey, SignatureAlgorithm.ES256)
         return jwtBuilder.compact()
     }
 }
