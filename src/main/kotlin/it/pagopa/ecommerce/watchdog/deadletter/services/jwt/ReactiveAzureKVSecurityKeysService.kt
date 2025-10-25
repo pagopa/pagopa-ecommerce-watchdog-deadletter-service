@@ -4,6 +4,9 @@ import com.azure.security.keyvault.certificates.CertificateAsyncClient
 import com.azure.security.keyvault.certificates.models.KeyVaultCertificate
 import com.azure.security.keyvault.secrets.SecretAsyncClient
 import com.azure.security.keyvault.secrets.models.KeyVaultSecret
+import com.nimbusds.jose.jwk.Curve
+import com.nimbusds.jose.jwk.ECKey
+import com.nimbusds.jose.jwk.JWK
 import it.pagopa.ecommerce.watchdog.deadletter.config.azure.AzureSecretConfigProperties
 import it.pagopa.ecommerce.watchdog.deadletter.domain.jwt.PrivateKeyWithKid
 import it.pagopa.ecommerce.watchdog.deadletter.domain.jwt.PublicKeyWithKid
@@ -13,6 +16,7 @@ import java.security.MessageDigest
 import java.security.PrivateKey
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
+import java.security.interfaces.ECPublicKey
 import java.time.OffsetDateTime
 import java.util.Base64
 import org.slf4j.LoggerFactory
@@ -72,7 +76,16 @@ class ReactiveAzureKVSecurityKeysService(
             keystore
         }
     }
+    fun getPublicJwkFromKeyStore(): Mono<JWK> {
+        return this.getKeyStore().map {
+            val alias = it.aliases().nextElement()
+            val certificate = it.getCertificate(alias) as X509Certificate
+            val kid = getKid(certificate.encoded)
+            val publicKey = certificate.publicKey as ECPublicKey
 
+            ECKey.Builder(Curve.P_256, publicKey).keyID(kid).build()
+        }
+    }
     override fun getPrivate(): Mono<PrivateKeyWithKid> {
         return this.getKeyStore().map {
             val alias = it.aliases().nextElement()
@@ -98,6 +111,8 @@ class ReactiveAzureKVSecurityKeysService(
         // Convert to Base64 URL-encoded string
         return Base64.getUrlEncoder().withoutPadding().encodeToString(hash)
     }
+
+
 
     /*
     private val mockKeyPair: KeyPair by lazy {
