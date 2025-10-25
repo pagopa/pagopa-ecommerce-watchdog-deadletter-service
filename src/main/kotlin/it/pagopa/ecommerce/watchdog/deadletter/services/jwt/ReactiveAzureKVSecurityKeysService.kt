@@ -30,7 +30,6 @@ class ReactiveAzureKVSecurityKeysService(
     private val certClient: CertificateAsyncClient,
     private val azureSecretConfig: AzureSecretConfigProperties,
 ) : IReactiveSecurityKeysService {
-    private val keystore = KeyStore.getInstance("PKCS12")
     private val certFactory = CertificateFactory.getInstance("X.509")
     private val logger = LoggerFactory.getLogger(javaClass)
 
@@ -68,6 +67,7 @@ class ReactiveAzureKVSecurityKeysService(
 
     fun getKeyStore(): Mono<KeyStore> {
         return this.getSecret().map {
+            val keystore = KeyStore.getInstance("PKCS12")
             val decodedPfx = Base64.getDecoder().decode(it.value)
             keystore.load(
                 ByteArrayInputStream(decodedPfx),
