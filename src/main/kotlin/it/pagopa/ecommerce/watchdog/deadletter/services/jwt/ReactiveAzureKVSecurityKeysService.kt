@@ -16,6 +16,7 @@ import java.security.MessageDigest
 import java.security.PrivateKey
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
+import java.security.interfaces.ECPrivateKey
 import java.security.interfaces.ECPublicKey
 import java.time.OffsetDateTime
 import java.util.Base64
@@ -23,7 +24,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
-import java.security.interfaces.ECPrivateKey
 
 @Component
 class ReactiveAzureKVSecurityKeysService(
@@ -95,14 +95,13 @@ class ReactiveAzureKVSecurityKeysService(
             val certificate = it.getCertificate(alias) as X509Certificate
             val kid = getKid(certificate.encoded)
             val publicKey = certificate.publicKey as ECPublicKey
-            val privateKey = it.getKey(alias, azureSecretConfig.password.toCharArray()) as ECPrivateKey
+            val privateKey =
+                it.getKey(alias, azureSecretConfig.password.toCharArray()) as ECPrivateKey
 
-            ECKey.Builder(Curve.P_256, publicKey)
-                .privateKey(privateKey)
-                .keyID(kid)
-                .build()
+            ECKey.Builder(Curve.P_256, publicKey).privateKey(privateKey).keyID(kid).build()
         }
     }
+
     override fun getPrivate(): Mono<PrivateKeyWithKid> {
         return this.getKeyStore().map {
             val alias = it.aliases().nextElement()
