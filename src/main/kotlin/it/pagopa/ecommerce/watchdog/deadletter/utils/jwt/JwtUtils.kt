@@ -6,12 +6,13 @@ import com.nimbusds.jose.crypto.ECDSASigner
 import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.SignedJWT
 import it.pagopa.ecommerce.watchdog.deadletter.domain.jwt.PrivateKeyWithKid
-import it.pagopa.ecommerce.watchdog.deadletter.services.jwt.ReactiveAzureKVSecurityKeysService // Importa
+import it.pagopa.ecommerce.watchdog.deadletter.services.jwt.ReactiveAzureKVSecurityKeysService
 import java.time.Duration
 import java.time.Instant
 import java.util.Date
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
+import reactor.core.publisher.Mono // <-- Importa questo
 
 @Component
 class JwtUtils(
@@ -23,30 +24,29 @@ class JwtUtils(
         private const val JWT_ISSUER = "watchdog-deadletter-service"
     }
 
-    fun generateJwtToken(privateClaims: Map<String, Any>, kid: PrivateKeyWithKid): String {
-        val ecSigningKey =
-            keyService.getSignerJwk().block()
-                ?: throw IllegalStateException("Failed to load signing key from KV")
+    fun generateJwtToken(privateClaims: Map<String, Any>, kid: PrivateKeyWithKid): Mono<String> {
 
-        val signer = ECDSASigner(ecSigningKey)
+        return keyService.getSignerJwk().map { ecSigningKey ->
+            val signer = ECDSASigner(ecSigningKey)
 
-        val header = JWSHeader.Builder(JWSAlgorithm.ES256).keyID(ecSigningKey.keyID).build()
+            val header = JWSHeader.Builder(JWSAlgorithm.ES256).keyID(ecSigningKey.keyID).build()
 
-        val now = Instant.now()
-        val expiryDate = now.plus(Duration.ofMinutes(jwtDuration.toLong()))
+            val now = Instant.now()
+            val expiryDate = now.plus(Duration.ofMinutes(jwtDuration.toLong()))
 
-        val claimsSetBuilder =
-            JWTClaimsSet.Builder()
-                .issuer(JWT_ISSUER)
-                .audience(WATCHDOG_AUDIENCE)
-                .issueTime(Date.from(now))
-                .expirationTime(Date.from(expiryDate))
+            val claimsSetBuilder =
+                JWTClaimsSet.Builder()
+                    .issuer(JWT_ISSUER)
+                    .audience(WATCHDOG_AUDIENCE)
+                    .issueTime(Date.from(now))
+                    .expirationTime(Date.from(expiryDate))
 
-        privateClaims.forEach { (key, value) -> claimsSetBuilder.claim(key, value) }
+            privateClaims.forEach { (key, value) -> claimsSetBuilder.claim(key, value) }
 
-        val signedJWT = SignedJWT(header, claimsSetBuilder.build())
-        signedJWT.sign(signer)
+            val signedJWT = SignedJWT(header, claimsSetBuilder.build())
+            signedJWT.sign(signer)
 
-        return signedJWT.serialize()
+            signedJWT.serialize()
+        }
     }
 }
