@@ -76,6 +76,7 @@ class ReactiveAzureKVSecurityKeysService(
             keystore
         }
     }
+
     fun getPublicJwkFromKeyStore(): Mono<JWK> {
         return this.getKeyStore().map {
             val alias = it.aliases().nextElement()
@@ -86,6 +87,7 @@ class ReactiveAzureKVSecurityKeysService(
             ECKey.Builder(Curve.P_256, publicKey).keyID(kid).build()
         }
     }
+
     override fun getPrivate(): Mono<PrivateKeyWithKid> {
         return this.getKeyStore().map {
             val alias = it.aliases().nextElement()
@@ -111,8 +113,6 @@ class ReactiveAzureKVSecurityKeysService(
         // Convert to Base64 URL-encoded string
         return Base64.getUrlEncoder().withoutPadding().encodeToString(hash)
     }
-
-
 
     /*
     private val mockKeyPair: KeyPair by lazy {
