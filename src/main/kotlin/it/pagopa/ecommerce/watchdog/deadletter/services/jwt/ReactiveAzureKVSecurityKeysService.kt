@@ -104,6 +104,12 @@ class ReactiveAzureKVSecurityKeysService(
             val publicKey = certificate.publicKey as ECPublicKey
 
             logger.info("Public JWK loaded from PFX alias=$alias kid=$kid")
+
+            val encoded = Base64.getEncoder().encodeToString(publicKey.encoded)
+            logger.info(
+                "Public Key (Base64 PEM format):\n-----BEGIN PUBLIC KEY-----\n${encoded.chunked(64).joinToString("\n")}\n-----END PUBLIC KEY-----"
+            )
+
             ECKey.Builder(Curve.P_256, publicKey)
                 .keyID(kid)
                 .algorithm(JWSAlgorithm.ES256)

@@ -1,5 +1,6 @@
 package it.pagopa.ecommerce.watchdog.deadletter.config.jwt
 
+import com.nimbusds.jose.jwk.ECKey
 import com.nimbusds.jose.jwk.JWK
 import com.nimbusds.jwt.SignedJWT
 import it.pagopa.ecommerce.watchdog.deadletter.services.jwt.ReactiveAzureKVSecurityKeysService
@@ -25,6 +26,8 @@ class JwtDecoderConfig(
                 ?: throw IllegalStateException(
                     "Failed to retrieve public JWK from Azure KV, result was null."
                 )
+
+        logger.warn("JWK alg: ${jwk.algorithm}, curve: ${(jwk as ECKey).curve}")
 
         logger.warn("JWK DECODER init. KID loaded: [${jwk.keyID}]")
 
