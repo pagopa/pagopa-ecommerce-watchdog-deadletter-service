@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult
 import org.springframework.security.oauth2.jwt.NimbusReactiveJwtDecoder
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder
 import reactor.core.publisher.Flux
@@ -31,7 +32,11 @@ class JwtDecoderConfig(
 
         logger.warn("JWK DECODER init. KID loaded: [${jwk.keyID}]")
 
-        return NimbusReactiveJwtDecoder.withJwkSource { _: SignedJWT? -> Flux.just<JWK?>(jwk) }
-            .build()
+        val decoder =
+            NimbusReactiveJwtDecoder.withJwkSource { _: SignedJWT? -> Flux.just<JWK?>(jwk) }.build()
+
+        decoder.setJwtValidator { jwt -> OAuth2TokenValidatorResult.success() }
+
+        return decoder
     }
 }
