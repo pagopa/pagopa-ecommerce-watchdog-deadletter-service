@@ -1,4 +1,4 @@
-package it.pagopa.ecommerce.watchdog.deadletter.services.jwt
+package it.pagopa.ecommerce.watchdog.deadletter.services
 
 import it.pagopa.ecommerce.watchdog.deadletter.domain.UserDetails
 import it.pagopa.ecommerce.watchdog.deadletter.utils.jwt.JwtUtils

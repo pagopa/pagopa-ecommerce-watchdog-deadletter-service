@@ -14,6 +14,7 @@ import it.pagopa.ecommerce.watchdog.deadletter.JwtKeyGenerationTestUtils.Compani
 import it.pagopa.ecommerce.watchdog.deadletter.config.azure.AzureSecretConfigProperties
 import it.pagopa.ecommerce.watchdog.deadletter.domain.jwt.PrivateKeyWithKid
 import it.pagopa.ecommerce.watchdog.deadletter.domain.jwt.PublicKeyWithKid
+import it.pagopa.ecommerce.watchdog.deadletter.services.ReactiveAzureKVSecurityKeysService
 import java.time.OffsetDateTime
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test

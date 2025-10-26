@@ -1,4 +1,4 @@
-package it.pagopa.ecommerce.watchdog.deadletter.services.jwt
+package it.pagopa.ecommerce.watchdog.deadletter.services
 
 import com.azure.security.keyvault.certificates.CertificateAsyncClient
 import com.azure.security.keyvault.certificates.models.KeyVaultCertificate
@@ -33,7 +33,7 @@ class ReactiveAzureKVSecurityKeysService(
     private val secretClient: SecretAsyncClient,
     private val certClient: CertificateAsyncClient,
     private val azureSecretConfig: AzureSecretConfigProperties,
-) : IReactiveSecurityKeysService {
+) {
     private val certFactory = CertificateFactory.getInstance("X.509")
     private val logger = LoggerFactory.getLogger(javaClass)
 
@@ -115,7 +115,7 @@ class ReactiveAzureKVSecurityKeysService(
         }
     }
 
-    override fun getPrivate(): Mono<PrivateKeyWithKid> {
+    fun getPrivate(): Mono<PrivateKeyWithKid> {
         return this.getKeyStore().map {
             val alias = it.aliases().nextElement()
             PrivateKeyWithKid(
@@ -125,7 +125,7 @@ class ReactiveAzureKVSecurityKeysService(
         }
     }
 
-    override fun getPublic(): Flux<PublicKeyWithKid> {
+    fun getPublic(): Flux<PublicKeyWithKid> {
         return this.getCerts().map {
             val x509Cert: X509Certificate =
                 certFactory.generateCertificate(ByteArrayInputStream(it.cer)) as X509Certificate
@@ -133,7 +133,7 @@ class ReactiveAzureKVSecurityKeysService(
         }
     }
 
-    private fun getKid(encodedCert: ByteArray): String {
+    fun getKid(encodedCert: ByteArray): String {
         // Compute SHA-256 hash
         val digest = MessageDigest.getInstance("SHA-256")
         val hash = digest.digest(encodedCert)

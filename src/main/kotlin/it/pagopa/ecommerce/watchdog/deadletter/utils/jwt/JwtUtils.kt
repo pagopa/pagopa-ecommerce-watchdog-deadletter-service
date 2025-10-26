@@ -1,18 +1,16 @@
 package it.pagopa.ecommerce.watchdog.deadletter.utils.jwt
 
-import com.nimbusds.jose.JWSAlgorithm
-import com.nimbusds.jose.JWSHeader
-import com.nimbusds.jose.crypto.ECDSASigner
-import com.nimbusds.jwt.JWTClaimsSet
-import com.nimbusds.jwt.SignedJWT
+import io.jsonwebtoken.Claims
+import io.jsonwebtoken.Jwts
 import it.pagopa.ecommerce.watchdog.deadletter.domain.jwt.PrivateKeyWithKid
-import it.pagopa.ecommerce.watchdog.deadletter.services.jwt.ReactiveAzureKVSecurityKeysService
+import it.pagopa.ecommerce.watchdog.deadletter.services.ReactiveAzureKVSecurityKeysService
 import java.time.Duration
 import java.time.Instant
 import java.util.Date
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import reactor.core.publisher.Mono // <-- Importa questo
+import reactor.core.scheduler.Schedulers
 
 @Component
 class JwtUtils(
@@ -22,31 +20,41 @@ class JwtUtils(
     companion object {
         private const val WATCHDOG_AUDIENCE = "watchdog"
         private const val JWT_ISSUER = "watchdog-deadletter-service"
+        private val PUBLIC_CLAIMS =
+            setOf(
+                Claims.ISSUER,
+                Claims.ID,
+                Claims.AUDIENCE,
+                Claims.SUBJECT,
+                Claims.EXPIRATION,
+                Claims.ISSUED_AT,
+                Claims.NOT_BEFORE,
+            )
     }
 
-    fun generateJwtToken(privateClaims: Map<String, Any>, kid: PrivateKeyWithKid): Mono<String> {
+    fun generateJwtToken(
+        privateClaims: Map<String, Any>,
+        privateKey: PrivateKeyWithKid,
+    ): Mono<String> {
 
-        return keyService.getSignerJwk().map { ecSigningKey ->
-            val signer = ECDSASigner(ecSigningKey)
+        return Mono.fromCallable {
+                val now = Instant.now()
+                val issuedAtDate = Date.from(now)
+                val expiryDate = Date.from(now.plus(Duration.ofMinutes(jwtDuration.toLong())))
+                val headerParams = mapOf("kid" to privateKey.kid)
+                val filteredPrivateClaims =
+                    privateClaims.filterNot { PUBLIC_CLAIMS.contains(it.key) }
 
-            val header = JWSHeader.Builder(JWSAlgorithm.ES256).keyID(ecSigningKey.keyID).build()
-
-            val now = Instant.now()
-            val expiryDate = now.plus(Duration.ofMinutes(jwtDuration.toLong()))
-
-            val claimsSetBuilder =
-                JWTClaimsSet.Builder()
-                    .issuer(JWT_ISSUER)
-                    .audience(WATCHDOG_AUDIENCE)
-                    .issueTime(Date.from(now))
-                    .expirationTime(Date.from(expiryDate))
-
-            privateClaims.forEach { (key, value) -> claimsSetBuilder.claim(key, value) }
-
-            val signedJWT = SignedJWT(header, claimsSetBuilder.build())
-            signedJWT.sign(signer)
-
-            signedJWT.serialize()
-        }
+                Jwts.builder()
+                    .setHeaderParams(headerParams)
+                    .setClaims(filteredPrivateClaims)
+                    .setIssuedAt(issuedAtDate)
+                    .setExpiration(expiryDate)
+                    .setAudience(WATCHDOG_AUDIENCE)
+                    .setIssuer(JWT_ISSUER)
+                    .signWith(privateKey.privateKey)
+                    .compact()
+            }
+            .subscribeOn(Schedulers.boundedElastic())
     }
 }
