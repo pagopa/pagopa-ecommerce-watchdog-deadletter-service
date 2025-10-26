@@ -72,7 +72,7 @@ class WatchdogDeadletterController(
 
     override fun listDeadletterTransactions(
         @RequestParam("pageNumber") @NotNull @Min(value = 0) pageNumber: Int,
-        @RequestParam("pageSize") @NotNull @Min(value = 1) @Max(value = 20) pageSize: Int,
+        @RequestParam("pageSize") @NotNull @Min(value = 1) @Max(value = 500) pageSize: Int,
         @RequestParam("date") date: LocalDate,
         exchange: ServerWebExchange,
     ): Mono<ResponseEntity<ListDeadletterTransactions200ResponseDto>> {
