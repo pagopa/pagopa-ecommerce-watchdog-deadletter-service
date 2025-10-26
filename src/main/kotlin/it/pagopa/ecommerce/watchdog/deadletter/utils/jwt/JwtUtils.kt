@@ -3,20 +3,16 @@ package it.pagopa.ecommerce.watchdog.deadletter.utils.jwt
 import io.jsonwebtoken.Claims
 import io.jsonwebtoken.Jwts
 import it.pagopa.ecommerce.watchdog.deadletter.domain.jwt.PrivateKeyWithKid
-import it.pagopa.ecommerce.watchdog.deadletter.services.ReactiveAzureKVSecurityKeysService
 import java.time.Duration
 import java.time.Instant
 import java.util.Date
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
-import reactor.core.publisher.Mono // <-- Importa questo
+import reactor.core.publisher.Mono
 import reactor.core.scheduler.Schedulers
 
 @Component
-class JwtUtils(
-    @Value("\${auth.jwt.validityTimeMinutes}") private val jwtDuration: Int,
-    private val keyService: ReactiveAzureKVSecurityKeysService,
-) {
+class JwtUtils(@Value("\${auth.jwt.validityTimeMinutes}") private val jwtDuration: Int) {
     companion object {
         private const val WATCHDOG_AUDIENCE = "watchdog"
         private const val JWT_ISSUER = "watchdog-deadletter-service"
@@ -36,7 +32,6 @@ class JwtUtils(
         privateClaims: Map<String, Any>,
         privateKey: PrivateKeyWithKid,
     ): Mono<String> {
-
         return Mono.fromCallable {
                 val now = Instant.now()
                 val issuedAtDate = Date.from(now)
