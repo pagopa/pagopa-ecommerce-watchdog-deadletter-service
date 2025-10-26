@@ -81,6 +81,7 @@ class ReactiveAzureKVSecurityKeysService(
         }
     }
 
+    /*
     fun getPublicJwkFromKeyStore(): Mono<JWK> {
         return this.getKeyStore().map {
             val alias = it.aliases().nextElement()
@@ -88,6 +89,21 @@ class ReactiveAzureKVSecurityKeysService(
             val kid = getKid(certificate.encoded)
             val publicKey = certificate.publicKey as ECPublicKey
 
+            ECKey.Builder(Curve.P_256, publicKey)
+                .keyID(kid)
+                .algorithm(JWSAlgorithm.ES256)
+                .keyUse(KeyUse.SIGNATURE)
+                .build()
+        }
+    }*/
+    fun getPublicJwkFromKeyStore(): Mono<JWK> {
+        return this.getKeyStore().map {
+            val alias = it.aliases().nextElement()
+            val certificate = it.getCertificate(alias) as X509Certificate
+            val kid = getKid(certificate.encoded)
+            val publicKey = certificate.publicKey as ECPublicKey
+
+            logger.info("Public JWK loaded from PFX alias=$alias kid=$kid")
             ECKey.Builder(Curve.P_256, publicKey)
                 .keyID(kid)
                 .algorithm(JWSAlgorithm.ES256)
