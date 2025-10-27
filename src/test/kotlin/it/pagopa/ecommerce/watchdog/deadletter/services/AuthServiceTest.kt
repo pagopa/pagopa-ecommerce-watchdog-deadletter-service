@@ -58,6 +58,7 @@ class AuthServiceTest {
         StepVerifier.create(result).expectNext("12345").verifyComplete()
     }
 
+    @Test
     fun `should fail authentication for invalid password`() {
         // pre-requisites
         val credentials = AuthenticationCredentialsDto("user", "wrong_password")
