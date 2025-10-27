@@ -66,6 +66,7 @@ dependencies {
   implementation("org.springframework.boot:spring-boot-starter-actuator")
   implementation("org.springframework.boot:spring-boot-starter-data-redis")
   implementation("org.springframework.boot:spring-boot-starter-data-mongodb-reactive")
+  implementation("org.springframework.boot:spring-boot-starter-security")
   implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
   implementation("org.openapitools:jackson-databind-nullable:0.2.6")
   implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")

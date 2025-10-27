@@ -1,5 +1,6 @@
 package it.pagopa.ecommerce.watchdog.deadletter.controllers
 
+import it.pagopa.ecommerce.watchdog.deadletter.config.TestSecurityConfig
 import it.pagopa.ecommerce.watchdog.deadletter.documents.DeadletterTransactionAction
 import it.pagopa.ecommerce.watchdog.deadletter.services.DeadletterTransactionsService
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.DeadletterTransactionActionInputDto
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.BDDMockito.given
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest
+import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
 import org.springframework.test.context.TestPropertySource
 import org.springframework.test.context.bean.override.mockito.MockitoBean
@@ -22,6 +24,7 @@ import reactor.core.publisher.Mono
 
 @WebFluxTest(WatchdogDeadletterController::class)
 @TestPropertySource(locations = ["classpath:application.test.properties"])
+@Import(TestSecurityConfig::class)
 class WatchdogDeadletterControllerTest {
     @Autowired private lateinit var webClient: WebTestClient
 
