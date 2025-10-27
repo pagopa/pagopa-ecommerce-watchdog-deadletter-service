@@ -6,6 +6,7 @@ import it.pagopa.ecommerce.watchdog.deadletter.repositories.OperatorsRepository
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.AuthenticationCredentialsDto
 import org.slf4j.LoggerFactory
 import org.springframework.security.core.context.ReactiveSecurityContextHolder
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Mono
 
@@ -13,13 +14,11 @@ import reactor.core.publisher.Mono
 class AuthService(private val userRepository: OperatorsRepository) {
 
     private val logger = LoggerFactory.getLogger(this.javaClass)
+    private val encoder = BCryptPasswordEncoder(16)
 
     /**
-     * Authenticates a user based on the provided credentials.
-     *
-     * **NOTE:** This method currently uses plain-text password comparison. This is a temporary
-     * implementation and will be replaced with a secure PasswordEncoder (e.g., BCrypt) in a
-     * dedicated future Pull Request.
+     * Authenticates a user based on the provided credentials using Spring Security PasswordEncoder
+     * (BCrypt).
      *
      * @param incomingCredentials The user's login credentials (username and password).
      * @return A [Mono] emitting [UserDetails] on success, or an [InvalidCredentialsException] if
@@ -29,8 +28,8 @@ class AuthService(private val userRepository: OperatorsRepository) {
         return userRepository
             .findById(incomingCredentials.username)
             .flatMap { user ->
-                // Plain-text password comparison (temporary)!
-                if (user.password == incomingCredentials.password) {
+                // Using spring security encoder to verify
+                if (encoder.matches(incomingCredentials.password, user.password)) {
                     logger.debug(
                         "Authentication successful for user: ${incomingCredentials.username}"
                     )
