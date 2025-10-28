@@ -4,8 +4,8 @@ import java.time.Instant
 import org.springframework.data.annotation.Id
 import org.springframework.data.mongodb.core.mapping.Document
 
-@Document(collection = "deadletter-transaction-actions")
-data class DeadletterTransactionAction(
+@Document(collection = "actions")
+data class Action(
     @Id val id: String,
     val transactionId: String,
     val userId: String,

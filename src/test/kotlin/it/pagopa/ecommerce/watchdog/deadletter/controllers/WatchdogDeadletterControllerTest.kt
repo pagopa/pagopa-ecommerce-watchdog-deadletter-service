@@ -1,7 +1,7 @@
 package it.pagopa.ecommerce.watchdog.deadletter.controllers
 
 import it.pagopa.ecommerce.watchdog.deadletter.config.TestSecurityConfig
-import it.pagopa.ecommerce.watchdog.deadletter.documents.DeadletterTransactionAction
+import it.pagopa.ecommerce.watchdog.deadletter.documents.Action
 import it.pagopa.ecommerce.watchdog.deadletter.services.AuthService
 import it.pagopa.ecommerce.watchdog.deadletter.services.DeadletterTransactionsService
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.DeadletterTransactionActionInputDto
@@ -50,7 +50,7 @@ class WatchdogDeadletterControllerTest {
             )
             .willReturn(
                 Mono.just(
-                    DeadletterTransactionAction(
+                    Action(
                         "test-id",
                         deadletterTransactionId,
                         userId,
@@ -227,14 +227,8 @@ class WatchdogDeadletterControllerTest {
     fun `list actions for deadletter transaction should return '200 OKAY' and return the list of action in the body`() {
         val deadletterTransactionId: String = "00000000"
         val userId: String = "test-user"
-        val deadletterTransactionAction: DeadletterTransactionAction =
-            DeadletterTransactionAction(
-                "test-id",
-                deadletterTransactionId,
-                userId,
-                "testvalue",
-                Instant.now(),
-            )
+        val action: Action =
+            Action("test-id", deadletterTransactionId, userId, "testvalue", Instant.now())
 
         given(
                 deadletterTransactionsService.listActionsForDeadletterTransaction(
@@ -242,7 +236,7 @@ class WatchdogDeadletterControllerTest {
                     userId,
                 )
             )
-            .willReturn(Flux.just<DeadletterTransactionAction>(deadletterTransactionAction))
+            .willReturn(Flux.just<Action>(action))
 
         given(authService.getAuthenticatedUserId()).willReturn(Mono.just(userId))
 
