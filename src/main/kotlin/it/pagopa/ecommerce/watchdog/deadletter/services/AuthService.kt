@@ -5,6 +5,7 @@ import it.pagopa.ecommerce.watchdog.deadletter.exception.InvalidCredentialsExcep
 import it.pagopa.ecommerce.watchdog.deadletter.repositories.OperatorsRepository
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.AuthenticationCredentialsDto
 import org.slf4j.LoggerFactory
+import org.springframework.security.core.context.ReactiveSecurityContextHolder
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Mono
@@ -19,7 +20,7 @@ class AuthService(private val userRepository: OperatorsRepository) {
      * Authenticates a user based on the provided credentials using Spring Security PasswordEncoder
      * (BCrypt).
      *
-     * @param credentials The user's login credentials (username and password).
+     * @param incomingCredentials The user's login credentials (username and password).
      * @return A [Mono] emitting [UserDetails] on success, or an [InvalidCredentialsException] if
      *   the username is not found or the password does not match.
      */
@@ -48,5 +49,21 @@ class AuthService(private val userRepository: OperatorsRepository) {
                     Mono.error(InvalidCredentialsException())
                 }
             )
+    }
+
+    /**
+     * Returns the current authenticated user's id.
+     *
+     * @return A [Mono] emitting the user's id on success, or an [IllegalStateException] if a valid
+     *   [UserDetails] authentication principal is not found in Spring SecurityContext.
+     */
+    fun getAuthenticatedUserId(): Mono<String> {
+        return ReactiveSecurityContextHolder.getContext().flatMap { securityContext ->
+            when (val principal = securityContext.authentication.principal) {
+                is UserDetails -> Mono.just(principal.id)
+                else ->
+                    Mono.error(IllegalStateException("User details not found in security context"))
+            }
+        }
     }
 }

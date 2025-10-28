@@ -3,7 +3,10 @@ package it.pagopa.ecommerce.watchdog.deadletter.services.jwt
 import it.pagopa.ecommerce.watchdog.deadletter.JwtKeyGenerationTestUtils.Companion.getKeyPairEC
 import it.pagopa.ecommerce.watchdog.deadletter.domain.UserDetails
 import it.pagopa.ecommerce.watchdog.deadletter.domain.jwt.PrivateKeyWithKid
+import it.pagopa.ecommerce.watchdog.deadletter.services.JwtService
+import it.pagopa.ecommerce.watchdog.deadletter.services.ReactiveAzureKVSecurityKeysService
 import it.pagopa.ecommerce.watchdog.deadletter.utils.jwt.JwtUtils
+import kotlinx.coroutines.reactor.mono
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.*
 import reactor.core.publisher.Mono
@@ -18,11 +21,11 @@ class JwtServiceTest {
     fun `Should generate user token successfully`() {
         // pre-conditions
         val userDetails = UserDetails("id", "name", "surname", "test@email.com")
-        val token = "jwtToken"
+        val token: String = "jwtToken"
         val privateKey = getKeyPairEC()
         val privateKeyWithKid = PrivateKeyWithKid("kid", privateKey.private)
         given(kvService.getPrivate()).willReturn(Mono.just(privateKeyWithKid))
-        given(jwtUtils.generateJwtToken(any(), any())).willReturn(token)
+        given(jwtUtils.generateJwtToken(any(), any())).willReturn(mono { token })
 
         // test
         StepVerifier.create(jwtService.generateUserJwtToken(userDetails))

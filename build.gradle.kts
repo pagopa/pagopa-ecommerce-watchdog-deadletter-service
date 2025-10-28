@@ -67,6 +67,9 @@ dependencies {
   implementation("org.springframework.boot:spring-boot-starter-data-redis")
   implementation("org.springframework.boot:spring-boot-starter-data-mongodb-reactive")
   implementation("org.springframework.boot:spring-boot-starter-security")
+  implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
+  implementation("org.springframework.security:spring-security-oauth2-resource-server")
+  implementation("org.springframework.security:spring-security-oauth2-jose")
   implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
   implementation("org.openapitools:jackson-databind-nullable:0.2.6")
   implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
@@ -94,6 +97,7 @@ dependencies {
   )
   implementation("com.azure:azure-identity:${Deps.azureIdentityVersion}")
 
+  testImplementation("org.springframework.security:spring-security-test")
   testImplementation("org.bouncycastle:bcpkix-jdk18on:${Deps.bouncyCastleVersion}")
   testImplementation("org.bouncycastle:bcprov-jdk18on:${Deps.bouncyCastleVersion}")
   testImplementation("org.springframework.boot:spring-boot-starter-test")
