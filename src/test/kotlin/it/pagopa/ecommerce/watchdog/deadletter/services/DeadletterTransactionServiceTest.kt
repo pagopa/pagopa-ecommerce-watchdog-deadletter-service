@@ -2,6 +2,7 @@ package it.pagopa.ecommerce.watchdog.deadletter.services
 
 import it.pagopa.ecommerce.watchdog.deadletter.clients.EcommerceHelpdeskServiceClient
 import it.pagopa.ecommerce.watchdog.deadletter.clients.NodoTechnicalSupportClient
+import it.pagopa.ecommerce.watchdog.deadletter.config.ActionTypeConfig
 import it.pagopa.ecommerce.watchdog.deadletter.documents.Action
 import it.pagopa.ecommerce.watchdog.deadletter.repositories.DeadletterTransactionActionRepository
 import it.pagopa.generated.ecommerce.helpdesk.model.DeadLetterEventDto
@@ -15,6 +16,7 @@ import it.pagopa.generated.ecommerce.helpdesk.model.SearchTransactionResponseDto
 import it.pagopa.generated.ecommerce.helpdesk.model.TransactionInfoDto
 import it.pagopa.generated.ecommerce.helpdesk.model.TransactionResultDto
 import it.pagopa.generated.ecommerce.helpdesk.model.UserInfoDto
+import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.ActionTypeDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.ListDeadletterTransactions200ResponseDto
 import it.pagopa.generated.nodo.support.model.TransactionResponseDto
 import java.time.Instant
@@ -35,11 +37,13 @@ class DeadletterTransactionServiceTest {
     private val nodoTechnicalSupportClient: NodoTechnicalSupportClient = mock()
     private val deadletterTransactionActionRepository: DeadletterTransactionActionRepository =
         mock()
+    private val actionConfig : ActionTypeConfig = ActionTypeConfig()
     private val deadletterTransactionsService: DeadletterTransactionsService =
         DeadletterTransactionsService(
             ecommerceHelpdeskServiceV1,
             nodoTechnicalSupportClient,
             deadletterTransactionActionRepository,
+            actionConfig
         )
 
     @Test
@@ -148,7 +152,85 @@ class DeadletterTransactionServiceTest {
     }
 
     @Test
-    fun `getDeadletterTransactions should return an empy ListDeadletterTransactions200ResponseDto because of the searchTransactions error`() {
+    fun `getDeadletterTransactions should return an empty ListDeadletterTransactions200ResponseDto because of the getDeadletterTransactionsByFilter error`() {
+        val date: LocalDate = LocalDate.parse("2025-08-19")
+        val pageNumber: Int = 0
+        val pageSize: Int = 1
+
+        val transactionInfo: DeadLetterTransactionInfoDto = DeadLetterTransactionInfoDto()
+        transactionInfo.transactionId = "testTransactionId"
+
+        val deadletterEventDto: DeadLetterEventDto = DeadLetterEventDto()
+        deadletterEventDto.data = "2025-08-19"
+        deadletterEventDto.transactionInfo = transactionInfo
+
+        val deadletterEvents: ArrayList<DeadLetterEventDto> = ArrayList<DeadLetterEventDto>()
+        deadletterEvents.add(deadletterEventDto)
+
+        val searchDeadLetterEventResponseDto: SearchDeadLetterEventResponseDto =
+            SearchDeadLetterEventResponseDto()
+        searchDeadLetterEventResponseDto.deadLetterEvents = deadletterEvents
+        val pageInfoDto: PageInfoDto = PageInfoDto()
+        pageInfoDto.current = 0
+        pageInfoDto.total = 0
+        searchDeadLetterEventResponseDto.page = pageInfoDto
+
+        val transactionResultDto: TransactionResultDto = TransactionResultDto()
+        val paymentInfoDto: PaymentInfoDto = PaymentInfoDto()
+        paymentInfoDto.origin = "CHECKOUT"
+        val paymentDetailInfoDto: PaymentDetailInfoDto = PaymentDetailInfoDto()
+        paymentDetailInfoDto.rptId = "00000000000000"
+        val details = ArrayList<PaymentDetailInfoDto>()
+        details.add(paymentDetailInfoDto)
+        paymentInfoDto.details = details
+        val transactionInfoDto: TransactionInfoDto = TransactionInfoDto()
+        transactionInfoDto.creationDate = OffsetDateTime.MIN
+
+        transactionResultDto.transactionInfo = transactionInfoDto
+        transactionResultDto.paymentInfo = paymentInfoDto
+
+        val searchTransactionResponseDto: SearchTransactionResponseDto =
+            SearchTransactionResponseDto()
+        searchTransactionResponseDto.transactions.add(transactionResultDto)
+
+        val expectedError: Exception = Exception("Error during the fetch")
+
+        whenever(ecommerceHelpdeskServiceV1.getDeadletterTransactionsByFilter(any(), any(), any()))
+            .thenReturn(Mono.error(expectedError))
+
+        whenever(ecommerceHelpdeskServiceV1.searchTransactions(any()))
+            .thenReturn(Mono.just(searchTransactionResponseDto))
+
+        whenever(ecommerceHelpdeskServiceV1.searchNpgOperations(any()))
+            .thenReturn(Mono.just(SearchNpgOperationsResponseDto()))
+
+        whenever(
+            nodoTechnicalSupportClient.searchNodoGivenNoticeNumberAndFiscalCode(
+                any(),
+                any(),
+                any(),
+                any(),
+            )
+        )
+            .thenReturn(Mono.just(TransactionResponseDto()))
+
+        StepVerifier.create(
+            deadletterTransactionsService.getDeadletterTransactions(date, pageNumber, pageSize)
+        )
+            .expectNextMatches { response ->
+                response.javaClass == ListDeadletterTransactions200ResponseDto::class.java &&
+                        response.deadletterTransactions.isEmpty() &&
+                        // response.deadletterTransactions[0].getNodoDetails() == null &&
+                        // response.deadletterTransactions[0].geteCommerceDetails() == null &&
+                        // response.deadletterTransactions[0].transactionId == "testTransactionId" &&
+                        response.page.current == 0 &&
+                        response.page.total == 0
+            }
+            .verifyComplete()
+    }
+
+    @Test
+    fun `getDeadletterTransactions should return an empty ListDeadletterTransactions200ResponseDto because of the searchTransactions error`() {
         val date: LocalDate = LocalDate.parse("2025-08-19")
         val pageNumber: Int = 0
         val pageSize: Int = 1
@@ -620,10 +702,11 @@ class DeadletterTransactionServiceTest {
     fun `addActionToDeadletterTransaction should save a deadletterTransactionAction`() {
         val transactionId = "testId"
         val userId = "userIdTest"
-        val actionValue = "valueTest"
+        val actionValueType = ActionTypeDto("test", ActionTypeDto.TypeEnum.NOT_FINAL)
+        val actionValue = "test"
 
         val action: Action =
-            Action(UUID.randomUUID().toString(), transactionId, userId, actionValue, Instant.now())
+            Action(UUID.randomUUID().toString(), transactionId, userId, actionValueType, Instant.now())
 
         whenever(deadletterTransactionActionRepository.save(any())).thenReturn(Mono.just(action))
 
@@ -646,17 +729,17 @@ class DeadletterTransactionServiceTest {
         assertNotNull(newDeadLetterActionCapture.timestamp)
         assertEquals(newDeadLetterActionCapture.transactionId, transactionId)
         assertEquals(newDeadLetterActionCapture.userId, userId)
-        assertEquals(newDeadLetterActionCapture.value, actionValue)
+        assertEquals(newDeadLetterActionCapture.action.value, actionValue)
     }
 
     @Test
     fun `listActionsForDeadletterTransaction should return all the action associated with a certain transactionId`() {
         val transactionId = "testId"
         val userId = "userIdTest"
-        val actionValue = "valueTest"
+        val actionValueType = ActionTypeDto("test", ActionTypeDto.TypeEnum.NOT_FINAL)
 
         val action: Action =
-            Action(UUID.randomUUID().toString(), transactionId, userId, actionValue, Instant.now())
+            Action(UUID.randomUUID().toString(), transactionId, userId, actionValueType, Instant.now())
 
         whenever(deadletterTransactionActionRepository.findByTransactionId(any()))
             .thenReturn(Flux.just(action))

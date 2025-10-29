@@ -4,6 +4,7 @@ import it.pagopa.ecommerce.watchdog.deadletter.config.TestSecurityConfig
 import it.pagopa.ecommerce.watchdog.deadletter.documents.Action
 import it.pagopa.ecommerce.watchdog.deadletter.services.AuthService
 import it.pagopa.ecommerce.watchdog.deadletter.services.DeadletterTransactionsService
+import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.ActionTypeDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.DeadletterTransactionActionInputDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.DeadletterTransactionDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.ListDeadletterTransactions200ResponseDto
@@ -41,6 +42,8 @@ class WatchdogDeadletterControllerTest {
         val deadletterTransactionActionInputDto =
             DeadletterTransactionActionInputDto("testActionValue")
 
+        val action = ActionTypeDto("testActionValue", ActionTypeDto.TypeEnum.NOT_FINAL)
+
         given(
                 deadletterTransactionsService.addActionToDeadletterTransaction(
                     deadletterTransactionId,
@@ -54,7 +57,7 @@ class WatchdogDeadletterControllerTest {
                         "test-id",
                         deadletterTransactionId,
                         userId,
-                        deadletterTransactionActionInputDto.value,
+                        action,
                         Instant.now(),
                     )
                 )
@@ -224,11 +227,31 @@ class WatchdogDeadletterControllerTest {
     }
 
     @Test
+    fun `list deadletter transaction should return '500 BAD REQUEST' `() {
+        var date: String = "2025-08-19EWR222"
+        var pageNumber: Int = 0
+
+        webClient
+            .get()
+            .uri { uriBuilder ->
+                uriBuilder
+                    .path("/deadletter-transactions")
+                    .queryParam("date", date)
+                    .queryParam("pageNumber", pageNumber)
+                    .build()
+            }
+            .exchange()
+            .expectStatus()
+            .isBadRequest
+    }
+
+    @Test
     fun `list actions for deadletter transaction should return '200 OKAY' and return the list of action in the body`() {
         val deadletterTransactionId: String = "00000000"
         val userId: String = "test-user"
+        val actionType = ActionTypeDto("testActionValue", ActionTypeDto.TypeEnum.NOT_FINAL)
         val action: Action =
-            Action("test-id", deadletterTransactionId, userId, "testvalue", Instant.now())
+            Action("test-id", deadletterTransactionId, userId, actionType, Instant.now())
 
         given(
                 deadletterTransactionsService.listActionsForDeadletterTransaction(
