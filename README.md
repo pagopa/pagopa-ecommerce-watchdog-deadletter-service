@@ -260,6 +260,15 @@ Finally, you can add new dependencies both to gradle.lockfile writing verificati
 For more information read the
 following [article](https://docs.gradle.org/8.1/userguide/dependency_verification.html#sec:checksum-verification)
 
+## Password hashing
+
+Passwords stored in the database are hashed using the [bcrypt](https://en.wikipedia.org/wiki/Bcrypt) password-hashing function.
+
+To hash a new password to be added on the database, install the [Spring Boot CLI](https://docs.spring.io/spring-boot/installing.html#getting-started.installing.cli) and run the following command:
+```shell
+    spring encodepassword PASSWORD_TO_BE_HASHED
+```
+
 ## Contributors 👥
 
 Made with ❤️ by PagoPA S.p.A.
