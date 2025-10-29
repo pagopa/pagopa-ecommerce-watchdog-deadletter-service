@@ -180,6 +180,25 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProblemJson'
+  /actions:
+    get:
+      tags:
+        - deadletter-transactions-actions
+      summary: List of available actions
+      operationId: listActions
+      security:
+        - bearerAuth: [ ]
+      responses:
+        '200':
+          description: List of available actions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DeadletterTransactionAction'
+        '401':
+          description: Unauthorized. Missing or invalid authentication token.
 components:
   securitySchemes:
     bearerAuth:
@@ -252,8 +271,8 @@ components:
           type: string
         userId:
           type: string
-        value:
-          type: string
+        action:
+          $ref: '#/components/schemas/ActionType'
         timestamp:
           type: string
           format: date-time
@@ -261,8 +280,21 @@ components:
         - id
         - transactionId
         - userId
-        - value
+        - action
         - timestamp
+    ActionType:
+      type: object
+      properties:
+        value:
+          type: string
+        type:
+          type: string
+          enum:
+            - "FINAL"
+            - "NOT_FINAL"
+      required:
+        - value
+        - type
     DeadletterTransactionActionInput:
       type: object
       properties:
