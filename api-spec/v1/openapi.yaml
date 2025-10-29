@@ -183,7 +183,7 @@ paths:
   /actions:
     get:
       tags:
-        - deadletter-transactions-actions
+        - action-types
       summary: List of available actions
       operationId: listActions
       security:
@@ -196,7 +196,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/DeadletterTransactionAction'
+                  $ref: '#/components/schemas/ActionType'
         '401':
           description: Unauthorized. Missing or invalid authentication token.
 components:
