@@ -2,7 +2,7 @@ package it.pagopa.ecommerce.watchdog.deadletter.services
 
 import it.pagopa.ecommerce.watchdog.deadletter.clients.EcommerceHelpdeskServiceClient
 import it.pagopa.ecommerce.watchdog.deadletter.clients.NodoTechnicalSupportClient
-import it.pagopa.ecommerce.watchdog.deadletter.documents.DeadletterTransactionAction
+import it.pagopa.ecommerce.watchdog.deadletter.documents.Action
 import it.pagopa.ecommerce.watchdog.deadletter.repositories.DeadletterTransactionActionRepository
 import it.pagopa.ecommerce.watchdog.deadletter.utils.ObfuscationUtils.obfuscateEmail
 import it.pagopa.generated.ecommerce.helpdesk.model.DeadLetterEventDto
@@ -216,9 +216,9 @@ class DeadletterTransactionsService(
         transactionId: String,
         userId: String,
         actionValue: String,
-    ): Mono<DeadletterTransactionAction> {
+    ): Mono<Action> {
         val newAction =
-            DeadletterTransactionAction(
+            Action(
                 id = UUID.randomUUID().toString(),
                 transactionId = transactionId,
                 userId = userId,
@@ -229,10 +229,7 @@ class DeadletterTransactionsService(
         return deadletterTransactionActionRepository.save(newAction)
     }
 
-    fun listActionsForDeadletterTransaction(
-        transactionId: String,
-        userId: String,
-    ): Flux<DeadletterTransactionAction> {
+    fun listActionsForDeadletterTransaction(transactionId: String, userId: String): Flux<Action> {
         logger.info(
             "Retrieving actions for deadletter transaction with ID: [{}] requested by user: [{}]",
             transactionId,

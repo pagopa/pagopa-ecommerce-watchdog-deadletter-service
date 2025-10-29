@@ -2,7 +2,7 @@ package it.pagopa.ecommerce.watchdog.deadletter.services
 
 import it.pagopa.ecommerce.watchdog.deadletter.clients.EcommerceHelpdeskServiceClient
 import it.pagopa.ecommerce.watchdog.deadletter.clients.NodoTechnicalSupportClient
-import it.pagopa.ecommerce.watchdog.deadletter.documents.DeadletterTransactionAction
+import it.pagopa.ecommerce.watchdog.deadletter.documents.Action
 import it.pagopa.ecommerce.watchdog.deadletter.repositories.DeadletterTransactionActionRepository
 import it.pagopa.generated.ecommerce.helpdesk.model.DeadLetterEventDto
 import it.pagopa.generated.ecommerce.helpdesk.model.DeadLetterTransactionInfoDto
@@ -622,17 +622,10 @@ class DeadletterTransactionServiceTest {
         val userId = "userIdTest"
         val actionValue = "valueTest"
 
-        val deadletterTransactionAction: DeadletterTransactionAction =
-            DeadletterTransactionAction(
-                UUID.randomUUID().toString(),
-                transactionId,
-                userId,
-                actionValue,
-                Instant.now(),
-            )
+        val action: Action =
+            Action(UUID.randomUUID().toString(), transactionId, userId, actionValue, Instant.now())
 
-        whenever(deadletterTransactionActionRepository.save(any()))
-            .thenReturn(Mono.just(deadletterTransactionAction))
+        whenever(deadletterTransactionActionRepository.save(any())).thenReturn(Mono.just(action))
 
         val resultMono =
             deadletterTransactionsService.addActionToDeadletterTransaction(
@@ -641,13 +634,10 @@ class DeadletterTransactionServiceTest {
                 actionValue,
             )
 
-        StepVerifier.create(resultMono)
-            .expectNext(deadletterTransactionAction)
-            .expectComplete()
-            .verify()
+        StepVerifier.create(resultMono).expectNext(action).expectComplete().verify()
 
         // Verify the object pass to the repository and his parameters
-        val actionCaptor = argumentCaptor<DeadletterTransactionAction>()
+        val actionCaptor = argumentCaptor<Action>()
         verify(deadletterTransactionActionRepository).save(actionCaptor.capture())
 
         val newDeadLetterActionCapture = actionCaptor.firstValue
@@ -665,25 +655,16 @@ class DeadletterTransactionServiceTest {
         val userId = "userIdTest"
         val actionValue = "valueTest"
 
-        val deadletterTransactionAction: DeadletterTransactionAction =
-            DeadletterTransactionAction(
-                UUID.randomUUID().toString(),
-                transactionId,
-                userId,
-                actionValue,
-                Instant.now(),
-            )
+        val action: Action =
+            Action(UUID.randomUUID().toString(), transactionId, userId, actionValue, Instant.now())
 
         whenever(deadletterTransactionActionRepository.findByTransactionId(any()))
-            .thenReturn(Flux.just(deadletterTransactionAction))
+            .thenReturn(Flux.just(action))
 
         val resultFlux =
             deadletterTransactionsService.listActionsForDeadletterTransaction(transactionId, userId)
 
-        StepVerifier.create(resultFlux)
-            .expectNext(deadletterTransactionAction)
-            .expectComplete()
-            .verify()
+        StepVerifier.create(resultFlux).expectNext(action).expectComplete().verify()
 
         // Verify the object pass to the repository and his parameters
         val actionCaptor = argumentCaptor<String>()
