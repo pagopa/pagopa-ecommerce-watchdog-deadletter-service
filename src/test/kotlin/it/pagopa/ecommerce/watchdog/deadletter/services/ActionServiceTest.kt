@@ -10,23 +10,22 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.TestPropertySource
 import reactor.test.StepVerifier
+import kotlin.test.assertEquals
 
 @SpringBootTest
 @TestPropertySource(locations = ["classpath:application.test.properties"])
 class ActionServiceTest {
 
-    @Autowired private val actionConfig : ActionTypeConfig = ActionTypeConfig()
-    private val actionService: ActionService = ActionService(actionConfig)
-    private val actionTypesList : ArrayList<ActionTypeDto> = ArrayList()
+    @Autowired private lateinit var actionService: ActionService
 
 
     @Test
     fun `getActionType should return the Flux of ActionTypeDto with the ActionType available`(){
         StepVerifier.create(actionService.getActionType())
-            .expectNextMatches {
-                result -> result.javaClass == ActionTypeDto::class.java &&
-                result.type == ActionTypeDto.TypeEnum.NOT_FINAL
-            }
+            .assertNext { action ->
+                assertEquals(action.type, ActionTypeDto.TypeEnum.FINAL, "The action type is not the same")
+                assertEquals(action.value,"Nessuna azione richiesta", "The action value is not the same")
+            }.verifyComplete()
     }
 
 
