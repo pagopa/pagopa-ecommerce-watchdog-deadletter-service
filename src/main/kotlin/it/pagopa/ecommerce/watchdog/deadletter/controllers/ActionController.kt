@@ -22,6 +22,5 @@ class ActionController(@Autowired val actionService: ActionService) : ActionsApi
         exchange: ServerWebExchange?
     ): Mono<ResponseEntity<Flux<ActionTypeDto>?>> {
         return Mono.just(ResponseEntity.ok(actionService.getActionType()))
-            .switchIfEmpty(Mono.just(ResponseEntity.ok(Flux.just(ActionTypeDto()))))
     }
 }
