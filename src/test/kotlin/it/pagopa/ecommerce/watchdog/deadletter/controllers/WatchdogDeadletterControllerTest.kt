@@ -52,15 +52,7 @@ class WatchdogDeadletterControllerTest {
                 )
             )
             .willReturn(
-                Mono.just(
-                    Action(
-                        "test-id",
-                        deadletterTransactionId,
-                        userId,
-                        action,
-                        Instant.now(),
-                    )
-                )
+                Mono.just(Action("test-id", deadletterTransactionId, userId, action, Instant.now()))
             )
         given(authService.getAuthenticatedUserId()).willReturn(Mono.just(userId))
 

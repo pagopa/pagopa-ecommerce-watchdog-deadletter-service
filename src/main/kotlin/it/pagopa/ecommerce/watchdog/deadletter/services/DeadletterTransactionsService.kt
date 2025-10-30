@@ -31,7 +31,7 @@ class DeadletterTransactionsService(
     private val ecommerceHelpdeskServiceV1: EcommerceHelpdeskServiceClient,
     private val nodoTechnicalSupportClient: NodoTechnicalSupportClient,
     private val deadletterTransactionActionRepository: DeadletterTransactionActionRepository,
-    @Autowired val actionTypeConfig: ActionTypeConfig
+    @Autowired val actionTypeConfig: ActionTypeConfig,
 ) {
 
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -223,19 +223,18 @@ class DeadletterTransactionsService(
         actionValue: String,
     ): Mono<Action> {
 
-            val actionTypeDto : ActionTypeDto? = actionTypeConfig.types.find{actionValue in it.value}
-            if( actionTypeDto != null ) {
-                val newAction =
-                    Action(
-                        id = UUID.randomUUID().toString(),
-                        transactionId = transactionId,
-                        userId = userId,
-                        action = actionTypeDto,
-                        timestamp = Instant.now(),
-                    )
-                return deadletterTransactionActionRepository.save(newAction)
-            }else
-                 return Mono.error(InvalidActionValue())
+        val actionTypeDto: ActionTypeDto? = actionTypeConfig.types.find { actionValue in it.value }
+        if (actionTypeDto != null) {
+            val newAction =
+                Action(
+                    id = UUID.randomUUID().toString(),
+                    transactionId = transactionId,
+                    userId = userId,
+                    action = actionTypeDto,
+                    timestamp = Instant.now(),
+                )
+            return deadletterTransactionActionRepository.save(newAction)
+        } else return Mono.error(InvalidActionValue())
     }
 
     fun listActionsForDeadletterTransaction(transactionId: String, userId: String): Flux<Action> {

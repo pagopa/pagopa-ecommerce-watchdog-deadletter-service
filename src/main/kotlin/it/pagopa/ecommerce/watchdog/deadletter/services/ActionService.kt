@@ -7,11 +7,9 @@ import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
 
 @Service
-class ActionService(
-    @Autowired val actionTypeConfig : ActionTypeConfig
-) {
+class ActionService(@Autowired val actionTypeConfig: ActionTypeConfig) {
 
-    fun getActionType() : Flux<ActionTypeDto> {
+    fun getActionType(): Flux<ActionTypeDto> {
         return Flux.fromIterable(actionTypeConfig.types)
     }
 }
