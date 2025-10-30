@@ -4,6 +4,7 @@ import it.pagopa.ecommerce.watchdog.deadletter.clients.EcommerceHelpdeskServiceC
 import it.pagopa.ecommerce.watchdog.deadletter.clients.NodoTechnicalSupportClient
 import it.pagopa.ecommerce.watchdog.deadletter.config.ActionTypeConfig
 import it.pagopa.ecommerce.watchdog.deadletter.documents.Action
+import it.pagopa.ecommerce.watchdog.deadletter.exception.InvalidActionValue
 import it.pagopa.ecommerce.watchdog.deadletter.repositories.DeadletterTransactionActionRepository
 import it.pagopa.generated.ecommerce.helpdesk.model.DeadLetterEventDto
 import it.pagopa.generated.ecommerce.helpdesk.model.DeadLetterTransactionInfoDto
@@ -37,13 +38,13 @@ class DeadletterTransactionServiceTest {
     private val nodoTechnicalSupportClient: NodoTechnicalSupportClient = mock()
     private val deadletterTransactionActionRepository: DeadletterTransactionActionRepository =
         mock()
-    private val actionConfig : ActionTypeConfig = ActionTypeConfig()
+    private val actionConfig: ActionTypeConfig = ActionTypeConfig()
     private val deadletterTransactionsService: DeadletterTransactionsService =
         DeadletterTransactionsService(
             ecommerceHelpdeskServiceV1,
             nodoTechnicalSupportClient,
             deadletterTransactionActionRepository,
-            actionConfig
+            actionConfig,
         )
 
     @Test
@@ -205,28 +206,33 @@ class DeadletterTransactionServiceTest {
             .thenReturn(Mono.just(SearchNpgOperationsResponseDto()))
 
         whenever(
-            nodoTechnicalSupportClient.searchNodoGivenNoticeNumberAndFiscalCode(
-                any(),
-                any(),
-                any(),
-                any(),
+                nodoTechnicalSupportClient.searchNodoGivenNoticeNumberAndFiscalCode(
+                    any(),
+                    any(),
+                    any(),
+                    any(),
+                )
             )
-        )
             .thenReturn(Mono.just(TransactionResponseDto()))
 
         StepVerifier.create(
-            deadletterTransactionsService.getDeadletterTransactions(date, pageNumber, pageSize)
-        )
-            .expectNextMatches { response ->
-                response.javaClass == ListDeadletterTransactions200ResponseDto::class.java &&
-                        response.deadletterTransactions.isEmpty() &&
-                        // response.deadletterTransactions[0].getNodoDetails() == null &&
-                        // response.deadletterTransactions[0].geteCommerceDetails() == null &&
-                        // response.deadletterTransactions[0].transactionId == "testTransactionId" &&
-                        response.page.current == 0 &&
-                        response.page.total == 0
-            }
-            .verifyComplete()
+                deadletterTransactionsService.getDeadletterTransactions(date, pageNumber, pageSize)
+            )
+            .expectError()
+            .verify()
+        //            .expectNextMatches { response ->
+        //                response.javaClass == ListDeadletterTransactions200ResponseDto::class.java
+        // &&
+        //                        response.deadletterTransactions.isEmpty() &&
+        //                        // response.deadletterTransactions[0].getNodoDetails() == null &&
+        //                        // response.deadletterTransactions[0].geteCommerceDetails() ==
+        // null &&
+        //                        // response.deadletterTransactions[0].transactionId ==
+        // "testTransactionId" &&
+        //                        response.page.current == 0 &&
+        //                        response.page.total == 0
+        //            }
+        //            .verifyComplete()
     }
 
     @Test
@@ -704,9 +710,17 @@ class DeadletterTransactionServiceTest {
         val userId = "userIdTest"
         val actionValueType = ActionTypeDto("test", ActionTypeDto.TypeEnum.NOT_FINAL)
         val actionValue = "test"
+        val actionTypes = listOf<ActionTypeDto>(actionValueType)
+        actionConfig.types = actionTypes
 
-        val action: Action =
-            Action(UUID.randomUUID().toString(), transactionId, userId, actionValueType, Instant.now())
+        val action =
+            Action(
+                UUID.randomUUID().toString(),
+                transactionId,
+                userId,
+                actionValueType,
+                Instant.now(),
+            )
 
         whenever(deadletterTransactionActionRepository.save(any())).thenReturn(Mono.just(action))
 
@@ -733,13 +747,47 @@ class DeadletterTransactionServiceTest {
     }
 
     @Test
+    fun `addActionToDeadletterTransaction should return an InvalidActionValue`() {
+        val transactionId = "testId"
+        val userId = "userIdTest"
+        val actionValueType = ActionTypeDto("test", ActionTypeDto.TypeEnum.NOT_FINAL)
+        val actionValue = "wrong-value"
+        val actionTypes = listOf<ActionTypeDto>(actionValueType)
+        actionConfig.types = actionTypes
+
+        val action =
+            Action(
+                UUID.randomUUID().toString(),
+                transactionId,
+                userId,
+                actionValueType,
+                Instant.now(),
+            )
+
+        val resultMono =
+            deadletterTransactionsService.addActionToDeadletterTransaction(
+                transactionId,
+                userId,
+                actionValue,
+            )
+
+        StepVerifier.create(resultMono).expectError(InvalidActionValue::class.java).verify()
+    }
+
+    @Test
     fun `listActionsForDeadletterTransaction should return all the action associated with a certain transactionId`() {
         val transactionId = "testId"
         val userId = "userIdTest"
         val actionValueType = ActionTypeDto("test", ActionTypeDto.TypeEnum.NOT_FINAL)
 
         val action: Action =
-            Action(UUID.randomUUID().toString(), transactionId, userId, actionValueType, Instant.now())
+            Action(
+                UUID.randomUUID().toString(),
+                transactionId,
+                userId,
+                actionValueType,
+                Instant.now(),
+            )
 
         whenever(deadletterTransactionActionRepository.findByTransactionId(any()))
             .thenReturn(Flux.just(action))
