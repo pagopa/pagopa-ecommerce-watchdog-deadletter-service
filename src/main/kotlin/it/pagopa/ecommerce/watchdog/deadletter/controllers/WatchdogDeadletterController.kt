@@ -62,7 +62,7 @@ class WatchdogDeadletterController(
                             it.id,
                             it.transactionId,
                             it.userId,
-                            it.value,
+                            it.action,
                             it.timestamp.atOffset(ZoneOffset.UTC),
                         )
                     }
