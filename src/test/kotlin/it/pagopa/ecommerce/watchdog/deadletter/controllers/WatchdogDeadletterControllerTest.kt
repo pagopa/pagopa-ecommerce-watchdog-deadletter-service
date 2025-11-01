@@ -35,7 +35,7 @@ class WatchdogDeadletterControllerTest {
     @MockitoBean lateinit var authService: AuthService
 
     @Test
-    fun `add action to deadletter-transaction return '202 Accepted'`() {
+    fun `add action to deadletter-transaction return '201 Created'`() {
 
         val deadletterTransactionId: String = "00000000"
         val userId: String = "test-user"
@@ -63,7 +63,7 @@ class WatchdogDeadletterControllerTest {
             .bodyValue(deadletterTransactionActionInputDto)
             .exchange()
             .expectStatus()
-            .isAccepted
+            .isCreated
     }
 
     @Test
