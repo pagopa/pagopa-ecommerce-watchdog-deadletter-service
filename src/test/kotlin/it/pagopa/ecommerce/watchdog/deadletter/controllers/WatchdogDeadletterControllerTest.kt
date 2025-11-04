@@ -2,6 +2,7 @@ package it.pagopa.ecommerce.watchdog.deadletter.controllers
 
 import it.pagopa.ecommerce.watchdog.deadletter.config.TestSecurityConfig
 import it.pagopa.ecommerce.watchdog.deadletter.documents.Action
+import it.pagopa.ecommerce.watchdog.deadletter.exception.InvalidTransactionId
 import it.pagopa.ecommerce.watchdog.deadletter.services.AuthService
 import it.pagopa.ecommerce.watchdog.deadletter.services.DeadletterTransactionsService
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.ActionTypeDto
@@ -27,6 +28,7 @@ import reactor.core.publisher.Mono
 @WebFluxTest(WatchdogDeadletterController::class)
 @TestPropertySource(locations = ["classpath:application.test.properties"])
 @Import(TestSecurityConfig::class)
+
 class WatchdogDeadletterControllerTest {
     @Autowired private lateinit var webClient: WebTestClient
 
@@ -64,6 +66,36 @@ class WatchdogDeadletterControllerTest {
             .exchange()
             .expectStatus()
             .isAccepted
+    }
+
+    @Test
+    fun `add action to deadletter-transaction return '404 NOT FOUND' transaction doesn't exist`() {
+
+        val deadletterTransactionId: String = "00000000"
+        val userId: String = "test-user"
+        val deadletterTransactionActionInputDto =
+            DeadletterTransactionActionInputDto("Nessuna azione richiesta")
+
+        given(authService.getAuthenticatedUserId()).willReturn(Mono.just(userId))
+        given(
+            deadletterTransactionsService.addActionToDeadletterTransaction(
+                deadletterTransactionId,
+                userId,
+                deadletterTransactionActionInputDto.value,
+            )
+        )
+            .willReturn(
+                Mono.error(InvalidTransactionId())
+            )
+
+        webClient
+            .post()
+            .uri("/deadletter-transactions/$deadletterTransactionId/actions")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(deadletterTransactionActionInputDto)
+            .exchange()
+            .expectStatus()
+            .isNotFound
     }
 
     @Test
