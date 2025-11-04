@@ -219,7 +219,7 @@ class DeadletterTransactionsService(
     ): Mono<Action> {
 
         val actionTypeDto: ActionTypeDto? = actionTypeConfig.types.find { actionValue in it.value }
-        if (actionTypeDto != null) {
+        return if (actionTypeDto != null) {
             val newAction =
                 Action(
                     id = UUID.randomUUID().toString(),
@@ -228,8 +228,8 @@ class DeadletterTransactionsService(
                     action = actionTypeDto,
                     timestamp = Instant.now(),
                 )
-            return deadletterTransactionActionRepository.save(newAction)
-        } else return Mono.error(InvalidActionValue())
+            deadletterTransactionActionRepository.save(newAction)
+        } else  Mono.error(InvalidActionValue())
     }
 
     fun listActionsForDeadletterTransaction(transactionId: String, userId: String): Flux<Action> {
