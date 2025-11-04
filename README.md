@@ -1,5 +1,8 @@
 # PagoPA eCommerce watchdog deadletter
 
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=pagopa_pagopa-ecommerce-watchdog-deadletter-service&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=pagopa_pagopa-ecommerce-watchdog-deadletter-service)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=pagopa_pagopa-ecommerce-watchdog-deadletter-service&metric=coverage)](https://sonarcloud.io/summary/new_code?id=pagopa_pagopa-ecommerce-watchdog-deadletter-service)
+
 ## Overview
 
 `pagopa-ecommerce-watchdog-deadletter-service` is a Kotlin-based microservice designed to support deadletter monitoring for the eCommerce transactions.
