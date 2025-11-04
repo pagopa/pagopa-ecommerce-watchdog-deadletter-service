@@ -229,7 +229,7 @@ class DeadletterTransactionsService(
                     timestamp = Instant.now(),
                 )
             deadletterTransactionActionRepository.save(newAction)
-        } else  Mono.error(InvalidActionValue())
+        } else Mono.error(InvalidActionValue())
     }
 
     fun listActionsForDeadletterTransaction(transactionId: String, userId: String): Flux<Action> {
