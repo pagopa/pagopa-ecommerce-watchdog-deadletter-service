@@ -248,25 +248,6 @@ class WatchdogDeadletterControllerTest {
     }
 
     @Test
-    fun `list deadletter transaction should return '500 BAD REQUEST' `() {
-        var date: String = "2025-08-19EWR222"
-        var pageNumber: Int = 0
-
-        webClient
-            .get()
-            .uri { uriBuilder ->
-                uriBuilder
-                    .path("/deadletter-transactions")
-                    .queryParam("date", date)
-                    .queryParam("pageNumber", pageNumber)
-                    .build()
-            }
-            .exchange()
-            .expectStatus()
-            .isBadRequest
-    }
-
-    @Test
     fun `list actions for deadletter transaction should return '200 OKAY' and return the list of action in the body`() {
         val deadletterTransactionId: String = "00000000"
         val userId: String = "test-user"

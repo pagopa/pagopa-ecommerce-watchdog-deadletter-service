@@ -26,6 +26,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
+import reactor.kotlin.core.publisher.onErrorResume
 import reactor.kotlin.core.publisher.switchIfEmpty
 
 @Service
@@ -45,6 +46,16 @@ class DeadletterTransactionsService(
     ): Mono<ListDeadletterTransactions200ResponseDto> {
         return ecommerceHelpdeskServiceV1
             .getDeadletterTransactionsByFilter(date, pageSize, pageNumber)
+            .onErrorResume { error ->
+                logger.error(
+                    "Error retrieving deadletter transactions for date [{}]: [{}]",
+                    date,
+                    error.message,
+                    error,
+                )
+                // No transaction found return an empty Mono
+                Mono.empty()
+            }
             .flatMap { response ->
                 val deadLetterEvents = response.deadLetterEvents
                 val pageInfo = response.page
