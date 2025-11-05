@@ -5,6 +5,7 @@ import it.pagopa.ecommerce.watchdog.deadletter.clients.NodoTechnicalSupportClien
 import it.pagopa.ecommerce.watchdog.deadletter.config.ActionTypeConfig
 import it.pagopa.ecommerce.watchdog.deadletter.documents.Action
 import it.pagopa.ecommerce.watchdog.deadletter.exception.InvalidActionValue
+import it.pagopa.ecommerce.watchdog.deadletter.exception.InvalidTransactionId
 import it.pagopa.ecommerce.watchdog.deadletter.repositories.DeadletterTransactionActionRepository
 import it.pagopa.ecommerce.watchdog.deadletter.utils.ObfuscationUtils.obfuscateEmail
 import it.pagopa.generated.ecommerce.helpdesk.model.DeadLetterEventDto
@@ -219,17 +220,22 @@ class DeadletterTransactionsService(
     ): Mono<Action> {
 
         val actionTypeDto: ActionTypeDto? = actionTypeConfig.types.find { actionValue in it.value }
-        return if (actionTypeDto != null) {
-            val newAction =
-                Action(
-                    id = UUID.randomUUID().toString(),
-                    transactionId = transactionId,
-                    userId = userId,
-                    action = actionTypeDto,
-                    timestamp = Instant.now(),
-                )
-            deadletterTransactionActionRepository.save(newAction)
-        } else Mono.error(InvalidActionValue())
+        if (actionTypeDto != null) {
+            return ecommerceHelpdeskServiceV1
+                .searchTransactions(transactionId)
+                .flatMap { value ->
+                    val newAction =
+                        Action(
+                            id = UUID.randomUUID().toString(),
+                            transactionId = transactionId,
+                            userId = userId,
+                            action = actionTypeDto,
+                            timestamp = Instant.now(),
+                        )
+                    deadletterTransactionActionRepository.save(newAction)
+                }
+                .switchIfEmpty(Mono.error(InvalidTransactionId()))
+        } else return Mono.error(InvalidActionValue())
     }
 
     fun listActionsForDeadletterTransaction(transactionId: String, userId: String): Flux<Action> {

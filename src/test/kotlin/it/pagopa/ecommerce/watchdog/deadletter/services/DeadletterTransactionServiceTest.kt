@@ -5,6 +5,7 @@ import it.pagopa.ecommerce.watchdog.deadletter.clients.NodoTechnicalSupportClien
 import it.pagopa.ecommerce.watchdog.deadletter.config.ActionTypeConfig
 import it.pagopa.ecommerce.watchdog.deadletter.documents.Action
 import it.pagopa.ecommerce.watchdog.deadletter.exception.InvalidActionValue
+import it.pagopa.ecommerce.watchdog.deadletter.exception.InvalidTransactionId
 import it.pagopa.ecommerce.watchdog.deadletter.repositories.DeadletterTransactionActionRepository
 import it.pagopa.generated.ecommerce.helpdesk.model.DeadLetterEventDto
 import it.pagopa.generated.ecommerce.helpdesk.model.DeadLetterTransactionInfoDto
@@ -547,6 +548,9 @@ class DeadletterTransactionServiceTest {
             .expectNextMatches { response ->
                 response.javaClass == ListDeadletterTransactions200ResponseDto::class.java &&
                     response.deadletterTransactions.isNotEmpty() &&
+                    response.deadletterTransactions[0].nodoDetails == null &&
+                    // response.deadletterTransactions[0].geteCommerceDetails() != null &&
+                    // response.deadletterTransactions[0].npgDetails != null &&
                     response.page.current == 0 &&
                     response.page.total == 0
             }
@@ -721,7 +725,8 @@ class DeadletterTransactionServiceTest {
                 actionValueType,
                 Instant.now(),
             )
-
+        whenever(ecommerceHelpdeskServiceV1.searchTransactions(any()))
+            .thenReturn(Mono.just(SearchTransactionResponseDto()))
         whenever(deadletterTransactionActionRepository.save(any())).thenReturn(Mono.just(action))
 
         val resultMono =
@@ -735,6 +740,7 @@ class DeadletterTransactionServiceTest {
 
         // Verify the object pass to the repository and his parameters
         val actionCaptor = argumentCaptor<Action>()
+        verify(ecommerceHelpdeskServiceV1).searchTransactions(transactionId)
         verify(deadletterTransactionActionRepository).save(actionCaptor.capture())
 
         val newDeadLetterActionCapture = actionCaptor.firstValue
@@ -755,15 +761,6 @@ class DeadletterTransactionServiceTest {
         val actionTypes = listOf<ActionTypeDto>(actionValueType)
         actionConfig.types = actionTypes
 
-        val action =
-            Action(
-                UUID.randomUUID().toString(),
-                transactionId,
-                userId,
-                actionValueType,
-                Instant.now(),
-            )
-
         val resultMono =
             deadletterTransactionsService.addActionToDeadletterTransaction(
                 transactionId,
@@ -772,6 +769,27 @@ class DeadletterTransactionServiceTest {
             )
 
         StepVerifier.create(resultMono).expectError(InvalidActionValue::class.java).verify()
+    }
+
+    @Test
+    fun `addActionToDeadletterTransaction should return an InvalidTransactionId`() {
+        val transactionId = "testId"
+        val userId = "userIdTest"
+        val actionValueType = ActionTypeDto("test", ActionTypeDto.TypeEnum.NOT_FINAL)
+        val actionValue = "test"
+        val actionTypes = listOf<ActionTypeDto>(actionValueType)
+        actionConfig.types = actionTypes
+
+        whenever(ecommerceHelpdeskServiceV1.searchTransactions(any())).thenReturn(Mono.empty())
+
+        val resultMono =
+            deadletterTransactionsService.addActionToDeadletterTransaction(
+                transactionId,
+                userId,
+                actionValue,
+            )
+        verify(ecommerceHelpdeskServiceV1).searchTransactions(transactionId)
+        StepVerifier.create(resultMono).expectError(InvalidTransactionId::class.java).verify()
     }
 
     @Test
