@@ -548,9 +548,9 @@ class DeadletterTransactionServiceTest {
             .expectNextMatches { response ->
                 response.javaClass == ListDeadletterTransactions200ResponseDto::class.java &&
                     response.deadletterTransactions.isNotEmpty() &&
-                    response.deadletterTransactions[0].nodoDetails == null  &&
-                    response.deadletterTransactions[0].geteCommerceDetails() != null  &&
-                    response.deadletterTransactions[0].npgDetails != null  &&
+                    response.deadletterTransactions[0].nodoDetails == null &&
+                    response.deadletterTransactions[0].geteCommerceDetails() != null &&
+                    response.deadletterTransactions[0].npgDetails != null &&
                     response.page.current == 0 &&
                     response.page.total == 0
             }
@@ -725,7 +725,8 @@ class DeadletterTransactionServiceTest {
                 actionValueType,
                 Instant.now(),
             )
-        whenever(ecommerceHelpdeskServiceV1.searchTransactions(any())).thenReturn(Mono.just(SearchTransactionResponseDto()))
+        whenever(ecommerceHelpdeskServiceV1.searchTransactions(any()))
+            .thenReturn(Mono.just(SearchTransactionResponseDto()))
         whenever(deadletterTransactionActionRepository.save(any())).thenReturn(Mono.just(action))
 
         val resultMono =
@@ -760,7 +761,6 @@ class DeadletterTransactionServiceTest {
         val actionTypes = listOf<ActionTypeDto>(actionValueType)
         actionConfig.types = actionTypes
 
-
         val resultMono =
             deadletterTransactionsService.addActionToDeadletterTransaction(
                 transactionId,
@@ -779,7 +779,6 @@ class DeadletterTransactionServiceTest {
         val actionValue = "test"
         val actionTypes = listOf<ActionTypeDto>(actionValueType)
         actionConfig.types = actionTypes
-
 
         whenever(ecommerceHelpdeskServiceV1.searchTransactions(any())).thenReturn(Mono.empty())
 

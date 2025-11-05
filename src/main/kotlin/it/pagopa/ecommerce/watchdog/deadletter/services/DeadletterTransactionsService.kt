@@ -224,12 +224,8 @@ class DeadletterTransactionsService(
         actionValue: String,
     ): Mono<Action> {
 
-
-        //val actionTypeDto: ActionTypeDto? = actionTypeConfig.types.find { actionValue in it.value }
-        val actionTypeDto: ActionTypeDto = actionTypeConfig.types.get(0)
+        val actionTypeDto: ActionTypeDto? = actionTypeConfig.types.find { actionValue in it.value }
         if (actionTypeDto != null) {
-
-
             return ecommerceHelpdeskServiceV1
                 .searchTransactions(transactionId)
                 .flatMap { value ->
@@ -242,9 +238,8 @@ class DeadletterTransactionsService(
                             timestamp = Instant.now(),
                         )
                     deadletterTransactionActionRepository.save(newAction)
-                }.switchIfEmpty(Mono.error(InvalidTransactionId()))
-
-
+                }
+                .switchIfEmpty(Mono.error(InvalidTransactionId()))
         } else return Mono.error(InvalidActionValue())
     }
 

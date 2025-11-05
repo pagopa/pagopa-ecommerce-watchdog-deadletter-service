@@ -28,7 +28,6 @@ import reactor.core.publisher.Mono
 @WebFluxTest(WatchdogDeadletterController::class)
 @TestPropertySource(locations = ["classpath:application.test.properties"])
 @Import(TestSecurityConfig::class)
-
 class WatchdogDeadletterControllerTest {
     @Autowired private lateinit var webClient: WebTestClient
 
@@ -78,15 +77,13 @@ class WatchdogDeadletterControllerTest {
 
         given(authService.getAuthenticatedUserId()).willReturn(Mono.just(userId))
         given(
-            deadletterTransactionsService.addActionToDeadletterTransaction(
-                deadletterTransactionId,
-                userId,
-                deadletterTransactionActionInputDto.value,
+                deadletterTransactionsService.addActionToDeadletterTransaction(
+                    deadletterTransactionId,
+                    userId,
+                    deadletterTransactionActionInputDto.value,
+                )
             )
-        )
-            .willReturn(
-                Mono.error(InvalidTransactionId())
-            )
+            .willReturn(Mono.error(InvalidTransactionId()))
 
         webClient
             .post()
