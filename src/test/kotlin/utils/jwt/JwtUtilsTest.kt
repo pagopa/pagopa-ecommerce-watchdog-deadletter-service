@@ -41,7 +41,10 @@ class JwtUtilsTest {
         val generatedToken =
             jwtUtils.generateJwtToken(privateClaims = privateClaims, privateKey = privateKeyWithKid)
         val parsedToken =
-            Jwts.parserBuilder().setSigningKey(privateKey.public).build().parse(generatedToken)
+            Jwts.parserBuilder()
+                .setSigningKey(privateKey.public)
+                .build()
+                .parse(generatedToken.block())
         val header = parsedToken.header
         val body = parsedToken.body as Claims
         // verify header claims

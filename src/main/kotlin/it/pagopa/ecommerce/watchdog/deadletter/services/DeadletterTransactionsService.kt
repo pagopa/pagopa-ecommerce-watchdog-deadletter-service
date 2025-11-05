@@ -2,13 +2,17 @@ package it.pagopa.ecommerce.watchdog.deadletter.services
 
 import it.pagopa.ecommerce.watchdog.deadletter.clients.EcommerceHelpdeskServiceClient
 import it.pagopa.ecommerce.watchdog.deadletter.clients.NodoTechnicalSupportClient
-import it.pagopa.ecommerce.watchdog.deadletter.documents.DeadletterTransactionAction
+import it.pagopa.ecommerce.watchdog.deadletter.config.ActionTypeConfig
+import it.pagopa.ecommerce.watchdog.deadletter.documents.Action
+import it.pagopa.ecommerce.watchdog.deadletter.exception.InvalidActionValue
+import it.pagopa.ecommerce.watchdog.deadletter.exception.InvalidTransactionId
 import it.pagopa.ecommerce.watchdog.deadletter.repositories.DeadletterTransactionActionRepository
 import it.pagopa.ecommerce.watchdog.deadletter.utils.ObfuscationUtils.obfuscateEmail
 import it.pagopa.generated.ecommerce.helpdesk.model.DeadLetterEventDto
 import it.pagopa.generated.ecommerce.helpdesk.model.SearchNpgOperationsResponseDto
 import it.pagopa.generated.ecommerce.helpdesk.model.TransactionResultDto
 import it.pagopa.generated.ecommerce.helpdesk.model.UserInfoDto
+import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.ActionTypeDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.DeadletterTransactionDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.ListDeadletterTransactions200ResponseDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.PageInfoDto
@@ -18,15 +22,18 @@ import java.time.LocalDate
 import java.time.format.DateTimeParseException
 import java.util.*
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
+import reactor.kotlin.core.publisher.switchIfEmpty
 
 @Service
 class DeadletterTransactionsService(
     private val ecommerceHelpdeskServiceV1: EcommerceHelpdeskServiceClient,
     private val nodoTechnicalSupportClient: NodoTechnicalSupportClient,
     private val deadletterTransactionActionRepository: DeadletterTransactionActionRepository,
+    @Autowired val actionTypeConfig: ActionTypeConfig,
 ) {
 
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -108,31 +115,25 @@ class DeadletterTransactionsService(
                                         Mono.empty()
                                     }
 
-                                Mono.zip(
-                                        Mono.justOrEmpty(ecommerceDetails),
-                                        Mono.justOrEmpty(npgDetails),
-                                        nodoDetailsMono,
-                                    )
-                                    .map { nestedTuple ->
-                                        val ecommerceDetailsResult = nestedTuple.t1
-                                        val npgDetailsResult = nestedTuple.t2
-                                        val nodoDetailsResult = nestedTuple.t3
-
+                                nodoDetailsMono
+                                    .map {
                                         buildDeadletterTransactionDto(
                                             deadLetterEvent,
-                                            ecommerceDetailsResult,
-                                            npgDetailsResult,
-                                            nodoDetailsResult,
+                                            ecommerceDetails,
+                                            npgDetails,
+                                            it,
                                         )
                                     }
-                                    .defaultIfEmpty(
-                                        buildDeadletterTransactionDto(
-                                            deadLetterEvent,
-                                            null,
-                                            null,
-                                            null,
+                                    .switchIfEmpty {
+                                        Mono.just(
+                                            buildDeadletterTransactionDto(
+                                                deadLetterEvent,
+                                                ecommerceDetails,
+                                                npgDetails,
+                                                null,
+                                            )
                                         )
-                                    )
+                                    }
                             }
                         } else {
                             Mono.just(
@@ -216,23 +217,28 @@ class DeadletterTransactionsService(
         transactionId: String,
         userId: String,
         actionValue: String,
-    ): Mono<DeadletterTransactionAction> {
-        val newAction =
-            DeadletterTransactionAction(
-                id = UUID.randomUUID().toString(),
-                transactionId = transactionId,
-                userId = userId,
-                value = actionValue,
-                timestamp = Instant.now(),
-            )
+    ): Mono<Action> {
 
-        return deadletterTransactionActionRepository.save(newAction)
+        val actionTypeDto: ActionTypeDto? = actionTypeConfig.types.find { actionValue in it.value }
+        if (actionTypeDto != null) {
+            return ecommerceHelpdeskServiceV1
+                .searchTransactions(transactionId)
+                .flatMap { value ->
+                    val newAction =
+                        Action(
+                            id = UUID.randomUUID().toString(),
+                            transactionId = transactionId,
+                            userId = userId,
+                            action = actionTypeDto,
+                            timestamp = Instant.now(),
+                        )
+                    deadletterTransactionActionRepository.save(newAction)
+                }
+                .switchIfEmpty(Mono.error(InvalidTransactionId()))
+        } else return Mono.error(InvalidActionValue())
     }
 
-    fun listActionsForDeadletterTransaction(
-        transactionId: String,
-        userId: String,
-    ): Flux<DeadletterTransactionAction> {
+    fun listActionsForDeadletterTransaction(transactionId: String, userId: String): Flux<Action> {
         logger.info(
             "Retrieving actions for deadletter transaction with ID: [{}] requested by user: [{}]",
             transactionId,

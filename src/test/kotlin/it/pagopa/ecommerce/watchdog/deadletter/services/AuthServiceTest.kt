@@ -7,6 +7,9 @@ import it.pagopa.ecommerce.watchdog.deadletter.repositories.OperatorsRepository
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.AuthenticationCredentialsDto
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.*
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.core.context.ReactiveSecurityContextHolder
+import org.springframework.security.core.context.SecurityContextImpl
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.test.context.TestPropertySource
 import reactor.core.publisher.Mono
@@ -42,6 +45,21 @@ class AuthServiceTest {
         StepVerifier.create(authService.authenticateUser(credentials))
             .expectNext(userDetails)
             .verifyComplete()
+    }
+
+    @Test
+    fun `should return authenticated user id`() {
+        // pre-requisites
+        val userDetails = UserDetails("12345", "Mario", "Rossi", "mock@email.com")
+        val auth = UsernamePasswordAuthenticationToken(userDetails, null, null)
+        val context = SecurityContextImpl(auth)
+        val result =
+            authService
+                .getAuthenticatedUserId()
+                .contextWrite(ReactiveSecurityContextHolder.withSecurityContext(Mono.just(context)))
+
+        // test
+        StepVerifier.create(result).expectNext("12345").verifyComplete()
     }
 
     @Test

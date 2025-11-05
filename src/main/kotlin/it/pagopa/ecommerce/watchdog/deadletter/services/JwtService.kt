@@ -1,4 +1,4 @@
-package it.pagopa.ecommerce.watchdog.deadletter.services.jwt
+package it.pagopa.ecommerce.watchdog.deadletter.services
 
 import it.pagopa.ecommerce.watchdog.deadletter.domain.UserDetails
 import it.pagopa.ecommerce.watchdog.deadletter.utils.jwt.JwtUtils
@@ -17,7 +17,7 @@ class JwtService(
     fun generateUserJwtToken(userDetails: UserDetails): Mono<String> {
         return reactiveAzureKVSecurityKeysService
             .getPrivate()
-            .map { jwtUtils.generateJwtToken(userDetails.toMap(), it) }
+            .flatMap { jwtUtils.generateJwtToken(userDetails.toMap(), it) }
             .doOnNext { logger.info("User token generated successfully") }
     }
 }
