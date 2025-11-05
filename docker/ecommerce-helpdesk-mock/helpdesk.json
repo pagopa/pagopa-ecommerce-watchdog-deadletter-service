@@ -40,11 +40,63 @@
           },
           "product": "ECOMMERCE"
         }
-      ],
+      ]
+  },
+
+  "searchDeadLetterEvents": {
+    "deadLetterEvents": [
+      {
+        "queueName": "pagopa-u-weu-ecommerce-transactions-dead-letter-queue",
+        "data": "{\"event\":{\"_class\":\"it.pagopa.ecommerce.commons.documents.v2.TransactionActivatedEvent\",\"id\":\"2ca0c1b5-314d-42de-906a-1fa6d670aff5\",\"transactionId\":\"f6b85ca9fd8c4b58b2c02a7de7918a3d\",\"creationDate\":\"2025-10-28T10:50:43.292763359Z[GMT]\",\"data\":{\"email\":{\"data\":\"dff928ff-89bd-40e7-99cb-1e6371f7d566\"},\"paymentNotices\":[{\"paymentToken\":\"86124cfe5d93429ca2c291ebe1dc0966\",\"rptId\":\"01973900838301000000000028044\",\"description\":\"TEST PAGAMENTO PER MYPAY 4.1 - 2\",\"amount\":1000,\"paymentContextCode\":null,\"transferList\":[{\"paFiscalCode\":\"01973900838\",\"digitalStamp\":false,\"transferAmount\":1000,\"transferCategory\":\"0301105TS\"}],\"companyName\":\"Municipia s.p.a\",\"creditorReferenceId\":\"01000000000028044\",\"allCCP\":true}],\"faultCode\":null,\"faultCodeString\":null,\"clientId\":\"CHECKOUT_CART\",\"idCart\":\"IDS-aea08163-a718-45c5-ae59-e44f099fc174\",\"paymentTokenValiditySeconds\":900,\"transactionGatewayActivationData\":{\"type\":\"NPG\",\"orderId\":\"E1761648625872p5K4\",\"correlationId\":\"7663705b-9f94-4bef-a484-e667d920bf0a\"},\"userId\":null},\"eventCode\":\"TRANSACTION_ACTIVATED_EVENT\"},\"tracingInfo\":{\"traceparent\":\"00-d4de439f16ead109c5e41aca48f0d0ec-8eff5f5dd311e05a-01\",\"tracestate\":null,\"baggage\":null}}",
+        "timestamp": "2025-10-28T11:56:06.869755143Z",
+        "transactionInfo": {
+          "transactionId": "f6b85ca9fd8c4b58b2c02a7de7918a3d",
+          "authorizationRequestId": "E1761648625872p5K4",
+          "eCommerceStatus": "EXPIRED",
+          "paymentGateway": "NPG",
+          "paymentTokens": [
+            "86124cfe5d93429ca2c291ebe1dc0966"
+          ],
+          "pspId": "CIPBITMM",
+          "paymentMethodName": "CARDS",
+          "grandTotal": 1100,
+          "rrn": "530112377490",
+          "details": {
+            "type": "NPG",
+            "operationResult": "EXECUTED",
+            "operationId": "299797516565953019",
+            "correlationId": "7663705b-9f94-4bef-a484-e667d920bf0a",
+            "paymentEndToEndId": "299797516565953019",
+            "outcome": null
+          }
+        }
+      }
+    ],
     "page": {
       "current": 0,
       "total": 1,
       "results": 1
     }
+  },
+
+  "searchNpgOperations": {
+    "operations": [
+      {
+        "additionalData": {
+          "authorizationCode": "105199",
+          "rrn": "530112377490"
+        },
+        "operationAmount": "1100",
+        "operationCurrency": "EUR",
+        "operationId": "299797516565953019",
+        "operationResult": "EXECUTED",
+        "operationTime": "2025-10-28 11:51:03.455",
+        "operationType": "AUTHORIZATION",
+        "orderId": "E1761648625872p5K4",
+        "paymentCircuit": "MC",
+        "paymentEndToEndId": "299797516565953019",
+        "paymentMethod": "CARD"
+      }
+    ]
   }
 }
