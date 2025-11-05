@@ -247,7 +247,6 @@ class WatchdogDeadletterControllerTest {
             .isBadRequest
     }
 
-
     @Test
     fun `list actions for deadletter transaction should return '200 OKAY' and return the list of action in the body`() {
         val deadletterTransactionId: String = "00000000"
