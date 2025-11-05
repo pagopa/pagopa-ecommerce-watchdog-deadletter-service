@@ -549,8 +549,8 @@ class DeadletterTransactionServiceTest {
                 response.javaClass == ListDeadletterTransactions200ResponseDto::class.java &&
                     response.deadletterTransactions.isNotEmpty() &&
                     response.deadletterTransactions[0].nodoDetails == null &&
-                    //response.deadletterTransactions[0].geteCommerceDetails() != null &&
-                    //response.deadletterTransactions[0].npgDetails != null &&
+                    // response.deadletterTransactions[0].geteCommerceDetails() != null &&
+                    // response.deadletterTransactions[0].npgDetails != null &&
                     response.page.current == 0 &&
                     response.page.total == 0
             }
