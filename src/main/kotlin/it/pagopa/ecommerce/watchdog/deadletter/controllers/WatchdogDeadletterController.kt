@@ -10,6 +10,7 @@ import jakarta.validation.Valid
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.NotNull
+import java.net.URI
 import java.time.LocalDate
 import java.time.ZoneOffset
 import org.slf4j.LoggerFactory
@@ -46,7 +47,7 @@ class WatchdogDeadletterController(
                     )
                 }
             }
-            .thenReturn(ResponseEntity.accepted().build())
+            .thenReturn(ResponseEntity.created(URI("")).build())
     }
 
     override fun listActionsForDeadletterTransaction(
