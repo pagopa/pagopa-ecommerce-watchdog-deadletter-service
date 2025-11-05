@@ -26,6 +26,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
+import reactor.kotlin.core.publisher.switchIfEmpty
 
 @Service
 class DeadletterTransactionsService(
@@ -114,31 +115,25 @@ class DeadletterTransactionsService(
                                         Mono.empty()
                                     }
 
-                                Mono.zip(
-                                        Mono.justOrEmpty(ecommerceDetails),
-                                        Mono.justOrEmpty(npgDetails),
-                                        nodoDetailsMono,
-                                    )
-                                    .map { nestedTuple ->
-                                        val ecommerceDetailsResult = nestedTuple.t1
-                                        val npgDetailsResult = nestedTuple.t2
-                                        val nodoDetailsResult = nestedTuple.t3
-
+                                nodoDetailsMono
+                                    .map {
                                         buildDeadletterTransactionDto(
                                             deadLetterEvent,
-                                            ecommerceDetailsResult,
-                                            npgDetailsResult,
-                                            nodoDetailsResult,
+                                            ecommerceDetails,
+                                            npgDetails,
+                                            it,
                                         )
                                     }
-                                    .defaultIfEmpty(
-                                        buildDeadletterTransactionDto(
-                                            deadLetterEvent,
-                                            null,
-                                            null,
-                                            null,
+                                    .switchIfEmpty {
+                                        Mono.just(
+                                            buildDeadletterTransactionDto(
+                                                deadLetterEvent,
+                                                ecommerceDetails,
+                                                npgDetails,
+                                                null,
+                                            )
                                         )
-                                    )
+                                    }
                             }
                         } else {
                             Mono.just(
