@@ -9,6 +9,7 @@ import it.pagopa.ecommerce.watchdog.deadletter.exception.InvalidTransactionId
 import it.pagopa.ecommerce.watchdog.deadletter.repositories.DeadletterTransactionActionRepository
 import it.pagopa.ecommerce.watchdog.deadletter.utils.ObfuscationUtils.obfuscateEmail
 import it.pagopa.generated.ecommerce.helpdesk.model.DeadLetterEventDto
+import it.pagopa.generated.ecommerce.helpdesk.model.SearchDeadLetterEventResponseDto
 import it.pagopa.generated.ecommerce.helpdesk.model.SearchNpgOperationsResponseDto
 import it.pagopa.generated.ecommerce.helpdesk.model.TransactionResultDto
 import it.pagopa.generated.ecommerce.helpdesk.model.UserInfoDto
@@ -23,9 +24,14 @@ import java.time.format.DateTimeParseException
 import java.util.*
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpStatus
+import org.springframework.http.HttpStatusCode
 import org.springframework.stereotype.Service
+import org.springframework.web.reactive.function.client.WebClientResponseException
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
+import reactor.kotlin.core.publisher.onErrorResume
+import reactor.kotlin.core.publisher.onErrorReturn
 import reactor.kotlin.core.publisher.switchIfEmpty
 
 @Service
@@ -45,6 +51,16 @@ class DeadletterTransactionsService(
     ): Mono<ListDeadletterTransactions200ResponseDto> {
         return ecommerceHelpdeskServiceV1
             .getDeadletterTransactionsByFilter(date, pageSize, pageNumber)
+            .onErrorResume { error ->
+                logger.error(
+                    "Error retrieving deadletter transactions for date [{}]: [{}]",
+                    date,
+                    error.message,
+                    error,
+                )
+                // No transaction found return an empty Mono
+                Mono.empty()
+            }
             .flatMap { response ->
                 val deadLetterEvents = response.deadLetterEvents
                 val pageInfo = response.page

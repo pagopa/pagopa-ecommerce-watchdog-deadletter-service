@@ -219,21 +219,19 @@ class DeadletterTransactionServiceTest {
         StepVerifier.create(
                 deadletterTransactionsService.getDeadletterTransactions(date, pageNumber, pageSize)
             )
-            .expectError()
-            .verify()
-        //            .expectNextMatches { response ->
-        //                response.javaClass == ListDeadletterTransactions200ResponseDto::class.java
-        // &&
-        //                        response.deadletterTransactions.isEmpty() &&
-        //                        // response.deadletterTransactions[0].getNodoDetails() == null &&
-        //                        // response.deadletterTransactions[0].geteCommerceDetails() ==
-        // null &&
-        //                        // response.deadletterTransactions[0].transactionId ==
-        // "testTransactionId" &&
-        //                        response.page.current == 0 &&
-        //                        response.page.total == 0
-        //            }
-        //            .verifyComplete()
+            .expectNextMatches { response ->
+                response.javaClass == ListDeadletterTransactions200ResponseDto::class.java &&
+                        response.deadletterTransactions.isEmpty() &&
+                        // response.deadletterTransactions[0].geteCommerceDetails() == null &&
+                        // response.deadletterTransactions[0].nodoDetails == null &&
+                        // response.deadletterTransactions[0].geteCommerceStatus() == null &&
+                        // response.deadletterTransactions[0].gatewayAuthorizationStatus == null &&
+                        // response.deadletterTransactions[0].npgDetails == null &&
+                        response.page.current == 0 &&
+                        response.page.total == 0
+            }
+            .verifyComplete()
+
     }
 
     @Test
