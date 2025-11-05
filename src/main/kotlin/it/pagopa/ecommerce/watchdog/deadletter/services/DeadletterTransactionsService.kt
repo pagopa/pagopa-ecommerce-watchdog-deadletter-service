@@ -163,7 +163,7 @@ class DeadletterTransactionsService(
             .switchIfEmpty(
                 Mono.fromCallable {
                     logger.warn("No deadletter transactions found for date [{}]", date)
-                    ListDeadletterTransactions200ResponseDto(emptyList(), PageInfoDto(0, 0, 0))
+                    ListDeadletterTransactions200ResponseDto(ArrayList(), PageInfoDto(0, 0, 0))
                 }
             )
             .onErrorMap { ex ->
