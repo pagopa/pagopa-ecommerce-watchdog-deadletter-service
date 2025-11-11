@@ -37,15 +37,17 @@ class WatchdogDeadletterController(
         deadletterTransactionActionInputDto: @Valid Mono<DeadletterTransactionActionInputDto>,
         exchange: ServerWebExchange,
     ): Mono<ResponseEntity<Void>> {
-        return Mono.just(ResponseEntity.created(URI("")).build())
-        /*
         return deadletterTransactionActionInputDto
             .flatMap { actionDto ->
                 authService.getAuthenticatedUserId().flatMap { userId ->
+                    deadletterTransactionsService.addActionToDeadletterTransaction(
+                        deadletterTransactionId,
+                        userId,
+                        actionDto.value,
                     )
                 }
             }
-            .thenReturn(ResponseEntity.created(URI("")).build())*/
+            .thenReturn(ResponseEntity.created(URI("")).build())
     }
 
     override fun listActionsForDeadletterTransaction(
