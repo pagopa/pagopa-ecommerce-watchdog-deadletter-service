@@ -31,7 +31,7 @@ microservice-chart:
       - 8080
   ingress:
     create: true
-    host: "weuprod.checkout.internal.platform.pagopa.it"
+    host: "weuprod.ecommerce.internal.platform.pagopa.it"
     path: /pagopa-ecommerce-watchdog-deadletter-service/(.*)
     servicePort: 8080
   serviceAccount:
@@ -94,7 +94,7 @@ microservice-chart:
     MONGO_WAITING_QUEUE_MS: "2000"
     MONGO_HEARTBEAT_FREQUENCY_MS: "5000"
     MONGO_REPLICA_SET_OPTION: "&replicaSet=globaldb"
-    AUTH_LOGIN_REDIRECT_URL: "https://weuprod.checkout.internal.platform.pagopa.it/pagopa-ecommerce-watchdog-deadletter-fe/"
+    AUTH_LOGIN_REDIRECT_URL: "https://weuprod.ecommerce.internal.platform.pagopa.it/pagopa-ecommerce-watchdog-deadletter-fe/"
     AUTH_JWT_VALIDITY_TIME_MINUTES: "60"
     AUTH_JWT_SECRET_KEY_NAME: "watchdog-jwt-cert"
     AUTH_JWT_SECRET_KEY_PASSWORD: ""
