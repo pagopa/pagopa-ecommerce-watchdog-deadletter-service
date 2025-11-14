@@ -56,6 +56,7 @@ class DeadletterTransactionServiceTest {
 
         val transactionInfo: DeadLetterTransactionInfoDto = DeadLetterTransactionInfoDto()
         transactionInfo.transactionId = "testTransactionId"
+        transactionInfo.paymentGateway = "NPG"
 
         val deadletterEventDto: DeadLetterEventDto = DeadLetterEventDto()
         deadletterEventDto.data = "2025-08-19"
@@ -388,7 +389,6 @@ class DeadletterTransactionServiceTest {
         verify(ecommerceHelpdeskServiceV1)
             .getDeadletterTransactionsByFilter(date, pageSize, pageNumber)
         verify(ecommerceHelpdeskServiceV1).searchTransactions("testTransactionId")
-        verify(ecommerceHelpdeskServiceV1).searchNpgOperations("testTransactionId")
     }
 
     @Test
@@ -399,6 +399,7 @@ class DeadletterTransactionServiceTest {
 
         val transactionInfo: DeadLetterTransactionInfoDto = DeadLetterTransactionInfoDto()
         transactionInfo.transactionId = "testTransactionId"
+        transactionInfo.paymentGateway = "NPG"
 
         val deadletterEventDto: DeadLetterEventDto = DeadLetterEventDto()
         deadletterEventDto.data = "2025-08-19"
@@ -484,6 +485,7 @@ class DeadletterTransactionServiceTest {
 
         val transactionInfo: DeadLetterTransactionInfoDto = DeadLetterTransactionInfoDto()
         transactionInfo.transactionId = "testTransactionId"
+        transactionInfo.paymentGateway = "NPG"
 
         val deadletterEventDto: DeadLetterEventDto = DeadLetterEventDto()
         deadletterEventDto.data = "2025-08-19"
@@ -628,7 +630,7 @@ class DeadletterTransactionServiceTest {
 
         val transactionInfo: DeadLetterTransactionInfoDto = DeadLetterTransactionInfoDto()
         transactionInfo.transactionId = "testTransactionId"
-
+        transactionInfo.paymentGateway = "NPG"
         val deadletterEventDto: DeadLetterEventDto = DeadLetterEventDto()
         deadletterEventDto.data = "2025-08-19"
         deadletterEventDto.transactionInfo = transactionInfo

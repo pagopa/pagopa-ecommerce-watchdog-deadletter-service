@@ -65,6 +65,7 @@ class DeadletterTransactionsService(
                 Flux.fromIterable(deadLetterEvents)
                     .flatMap { deadLetterEvent ->
                         val transactionId = deadLetterEvent.transactionInfo?.transactionId
+                        val paymentGateway = deadLetterEvent.transactionInfo?.paymentGateway
 
                         if (transactionId != null) {
                             val ecommerceDetailsMono: Mono<TransactionResultDto?> =
@@ -81,16 +82,20 @@ class DeadletterTransactionsService(
                                     }
 
                             val npgDetailsMono: Mono<SearchNpgOperationsResponseDto?> =
-                                ecommerceHelpdeskServiceV1
-                                    .searchNpgOperations(transactionId)
-                                    .onErrorResume { e ->
-                                        logger.error(
-                                            "Error retrieving NPG details for transactionId [{}]: [{}]",
-                                            transactionId,
-                                            e.message,
-                                        )
-                                        Mono.empty()
-                                    }
+                                if (paymentGateway == "NPG") {
+                                    ecommerceHelpdeskServiceV1
+                                        .searchNpgOperations(transactionId)
+                                        .onErrorResume { e ->
+                                            logger.error(
+                                                "Error retrieving NPG details for transactionId [{}]: [{}]",
+                                                transactionId,
+                                                e.message,
+                                            )
+                                            Mono.justOrEmpty(null)
+                                        }
+                                } else {
+                                    Mono.justOrEmpty<SearchNpgOperationsResponseDto?>(null)
+                                }
 
                             Mono.zip(ecommerceDetailsMono, npgDetailsMono).flatMap { tuple ->
                                 val ecommerceDetails = tuple.t1
