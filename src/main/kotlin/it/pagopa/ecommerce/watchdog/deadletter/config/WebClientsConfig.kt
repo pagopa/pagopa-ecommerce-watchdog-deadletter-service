@@ -45,6 +45,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.client.reactive.ReactorClientHttpConnector
+import org.springframework.web.reactive.function.client.ExchangeStrategies
 import org.springframework.web.reactive.function.client.WebClient
 import reactor.netty.Connection
 import reactor.netty.http.client.HttpClient
@@ -90,7 +91,11 @@ class WebClientsConfig {
     fun ecommerceHelpdeskClient(
         @Value("\${ecommerce-helpdesk.server.uri}") serverUri: String,
         @Value("\${ecommerce-helpdesk.server.readTimeoutMillis}") readTimeoutMillis: Int,
-        @Value("\${ecommerce-helpdesk.server.connectionTimeoutMillis}") connectionTimeoutMillis: Int,
+        @Value("\${ecommerce-helpdesk.server.connectionTimeoutMillis}")
+        connectionTimeoutMillis: Int,
+        // Default size is 1MB (1048576 bytes). Increased from default 256KB to handle large DL
+        // (until 1000 tx)
+        @Value("\${ecommerce-helpdesk.server.maxInMemorySize:1048576}") maxInMemorySize: Int,
     ): WebClient {
 
         val httpClient =
@@ -103,9 +108,17 @@ class WebClientsConfig {
                 }
                 .resolver { nameResolverSpec: NameResolverSpec -> nameResolverSpec.ndots(1) }
 
+        val exchangeStrategies =
+            ExchangeStrategies.builder()
+                .codecs { configurer ->
+                    configurer.defaultCodecs().maxInMemorySize(maxInMemorySize)
+                }
+                .build()
+
         return EcommerceHelpdeskApiClient.buildWebClientBuilder()
             .clientConnector(ReactorClientHttpConnector(httpClient))
             .baseUrl(serverUri)
+            .exchangeStrategies(exchangeStrategies)
             .build()
     }
 
