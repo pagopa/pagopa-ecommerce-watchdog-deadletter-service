@@ -100,6 +100,7 @@ class DeadletterTransactionServiceTest {
         whenever(ecommerceHelpdeskServiceV1.searchNpgOperations(any()))
             .thenReturn(Mono.just(SearchNpgOperationsResponseDto()))
 
+        /*
         whenever(
                 nodoTechnicalSupportClient.searchNodoGivenNoticeNumberAndFiscalCode(
                     any(),
@@ -109,6 +110,7 @@ class DeadletterTransactionServiceTest {
                 )
             )
             .thenReturn(Mono.just(TransactionResponseDto()))
+        */
 
         StepVerifier.create(
                 deadletterTransactionsService.getDeadletterTransactions(date, pageNumber, pageSize)
@@ -126,8 +128,8 @@ class DeadletterTransactionServiceTest {
             .getDeadletterTransactionsByFilter(date, pageSize, pageNumber)
         verify(ecommerceHelpdeskServiceV1).searchTransactions("testTransactionId")
         verify(ecommerceHelpdeskServiceV1).searchNpgOperations("testTransactionId")
-        verify(nodoTechnicalSupportClient)
-            .searchNodoGivenNoticeNumberAndFiscalCode(any(), any(), any(), any())
+        // verify(nodoTechnicalSupportClient)
+        //    .searchNodoGivenNoticeNumberAndFiscalCode(any(), any(), any(), any())
     }
 
     @Test
@@ -703,8 +705,8 @@ class DeadletterTransactionServiceTest {
             .getDeadletterTransactionsByFilter(date, pageSize, pageNumber)
         verify(ecommerceHelpdeskServiceV1).searchTransactions("testTransactionId")
         verify(ecommerceHelpdeskServiceV1).searchNpgOperations("testTransactionId")
-        verify(nodoTechnicalSupportClient)
-            .searchNodoGivenNoticeNumberAndFiscalCode(any(), any(), any(), any())
+        // verify(nodoTechnicalSupportClient)
+        //     .searchNodoGivenNoticeNumberAndFiscalCode(any(), any(), any(), any())
     }
 
     @Test

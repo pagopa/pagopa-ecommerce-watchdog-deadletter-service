@@ -100,10 +100,12 @@ class DeadletterTransactionsService(
                             Mono.zip(ecommerceDetailsMono, npgDetailsMono).flatMap { tuple ->
                                 val ecommerceDetails = tuple.t1
                                 val npgDetails = tuple.t2
-                                val rptId =
-                                    ecommerceDetails.paymentInfo.details?.firstOrNull()?.rptId
-                                val creationDate = ecommerceDetails.transactionInfo.creationDate
-
+                                // val rptId =
+                                //     ecommerceDetails.paymentInfo.details?.firstOrNull()?.rptId
+                                // val creationDate = ecommerceDetails.transactionInfo.creationDate
+                                // TODO Disable Nodo helpdesk waiting new api PIDM-1117
+                                val nodoDetailsMono: Mono<TransactionResponseDto> = Mono.empty()
+                                /*
                                 val nodoDetailsMono: Mono<TransactionResponseDto?> =
                                     if (rptId != null && creationDate != null) {
                                         val organizationFiscalCode = rptId.substring(0, 11)
@@ -130,7 +132,7 @@ class DeadletterTransactionsService(
                                     } else {
                                         Mono.empty()
                                     }
-
+                                */
                                 nodoDetailsMono
                                     .map {
                                         buildDeadletterTransactionDto(
