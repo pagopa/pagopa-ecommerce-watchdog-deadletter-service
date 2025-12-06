@@ -4,7 +4,7 @@ microservice-chart:
   fullnameOverride: "pagopa-ecommerce-watchdog-deadletter-service"
   image:
     repository: pagopaucommonacr.azurecr.io/pagopaecommercewatchdogdeadletterservice
-    tag: "1.22.2"
+    tag: "1.22.3"
     pullPolicy: Always
   livenessProbe:
     handlerType: httpGet
