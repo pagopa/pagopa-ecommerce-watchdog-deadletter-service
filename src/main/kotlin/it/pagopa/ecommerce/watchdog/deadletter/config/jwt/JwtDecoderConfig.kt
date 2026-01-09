@@ -22,13 +22,13 @@ class JwtDecoderConfig(
     @Value("\${auth.jwt.secret.cache.ttl}") private val cacheSecretTtl: Long,
 ) {
 
-    protected val logger = LoggerFactory.getLogger(this.javaClass)
+    private val logger = LoggerFactory.getLogger(this.javaClass)
 
     class RefreshableCachedJwkSource(
         private val azureKVSecurityKeysService: ReactiveAzureKVSecurityKeysService,
         val cacheTtl: Long,
     ) {
-        protected val logger = LoggerFactory.getLogger(this.javaClass)
+        private val logger = LoggerFactory.getLogger(this.javaClass)
 
         @Volatile private var currentCachedMono: Mono<JWK>
 
