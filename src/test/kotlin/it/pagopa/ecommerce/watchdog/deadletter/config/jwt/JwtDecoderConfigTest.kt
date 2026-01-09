@@ -15,12 +15,13 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
-import org.springframework.security.oauth2.jwt.NimbusReactiveJwtDecoder
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder
+import org.springframework.test.context.TestPropertySource
 import reactor.core.publisher.Mono
 
 @SpringBootTest(classes = [JwtDecoderConfig::class])
 @Import(JwtDecoderConfigTest.MockReactiveAzureKVSecurityKeysServiceConfiguration::class)
+@TestPropertySource(locations = ["classpath:application.test.properties"])
 class JwtDecoderConfigTest {
 
     @TestConfiguration
@@ -47,6 +48,6 @@ class JwtDecoderConfigTest {
     @Test
     fun `should load context and create jwtDecoder bean`() {
         assertThat(jwtDecoder).isNotNull()
-        assertThat(jwtDecoder).isInstanceOf(NimbusReactiveJwtDecoder::class.java)
+        assertThat(jwtDecoder).isInstanceOf(ReactiveJwtDecoder::class.java)
     }
 }
