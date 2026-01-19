@@ -78,7 +78,7 @@ stages:
             - script: |
                 echo "Attendo l'avvio del servizio..."
                 # Prova per 30 volte con sleep di 5s (totale 150s)
-                for i in {1..5}; do
+                for i in {1..15}; do
                   STATUS=$(curl -s -o /dev/null -w '%{http_code}' localhost:8080/actuator/health/liveness)
                   if [ "$STATUS" == "200" ]; then
                     echo "Servizio UP!"
