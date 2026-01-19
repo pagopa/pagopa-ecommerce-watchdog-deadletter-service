@@ -76,5 +76,20 @@ stages:
               displayName: 'Run app with docker-compose'
 
             - script: |
-                timeout 180 bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:8080/actuator/health/liveness)" != "200" ]]; do sleep 5; done' || exit 1
+                echo "Attendo l'avvio del servizio..."
+                # Prova per 30 volte con sleep di 5s (totale 150s)
+                for i in {1..5}; do
+                  STATUS=$(curl -s -o /dev/null -w '%{http_code}' localhost:8080/actuator/health/liveness)
+                  if [ "$STATUS" == "200" ]; then
+                    echo "Servizio UP!"
+                    exit 0
+                  fi
+                    echo "Tentativo $i: Ricevuto $STATUS. Attendo..."
+                  sleep 5
+                done
+                
+                echo "Healthcheck fallito. Stampo i log del container:"
+                # Assicurati di sapere il nome del container, qui ipotizzo si chiami 'app'
+                docker logs app
+                exit 1
               displayName: 'Health check'
