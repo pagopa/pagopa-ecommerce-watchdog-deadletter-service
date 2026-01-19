@@ -98,7 +98,7 @@ microservice-chart:
     AUTH_JWT_VALIDITY_TIME_MINUTES: "60"
     AUTH_JWT_SECRET_KEY_NAME: "watchdog-jwt-cert"
     AUTH_JWT_SECRET_KEY_PASSWORD: ""
-    AUTH_JWT_SECRET_CACHE_TTL: "3600"
+    AUTH_JWT_SECRET_CACHE_TTL_MINUTES: "3600"
     AUTH_AZURE_KV_ENDPOINT: "https://pagopa-u-ecommerce-kv.vault.azure.net/"
     AUTH_AZURE_MAX_RETRY: "3"
     AUTH_AZURE_RETRY_DELAY_MILLIS: "500"
