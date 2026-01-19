@@ -76,5 +76,19 @@ stages:
               displayName: 'Run app with docker-compose'
 
             - script: |
-                timeout 180 bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:8080/actuator/health/liveness)" != "200" ]]; do sleep 5; done' || exit 1
+                echo "Waiting the start of the service..."
+                
+                for i in {1..15}; do
+                  STATUS=$(curl -s -o /dev/null -w '%{http_code}' localhost:8080/actuator/health/liveness)
+                  if [ "$STATUS" == "200" ]; then
+                    echo "Service UP!"
+                    exit 0
+                  fi
+                    echo "Try number $i: Received $STATUS. Waiting..."
+                  sleep 5
+                done
+                
+                echo "Healthcheck failed. Container's log:"
+                docker logs pagopa-ecommerce-watchdog-deadletter-service
+                exit 1
               displayName: 'Health check'
