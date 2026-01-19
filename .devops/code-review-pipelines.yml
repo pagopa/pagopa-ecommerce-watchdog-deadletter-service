@@ -90,6 +90,6 @@ stages:
                 
                 echo "Healthcheck fallito. Stampo i log del container:"
                 # Assicurati di sapere il nome del container, qui ipotizzo si chiami 'app'
-                docker logs app
+                docker logs pagopa-ecommerce-watchdog-deadletter-service
                 exit 1
               displayName: 'Health check'
