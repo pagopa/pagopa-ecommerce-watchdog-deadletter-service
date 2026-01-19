@@ -80,7 +80,7 @@ class JwtDecoderConfig(
                 .build()
 
         return ReactiveJwtDecoder { token ->
-            nimbusDelegate.decode(token).onErrorResume(BadJwtException::class.java) { ex ->
+            nimbusDelegate.decode(token).onErrorResume(BadJwtException::class.java) { _ ->
                 logger.warn("Error during the validation of the token, possible expired key")
 
                 // Refresh the cached key
