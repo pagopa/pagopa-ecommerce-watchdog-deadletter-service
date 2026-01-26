@@ -47,8 +47,12 @@ class JwtDecoderConfig(
                             "Failed to retrieve public JWK from Azure KV, result was null."
                         )
                     } else {
-                        logger.debug("JWK DECODER initialized. KID loaded: [${jwk.keyID}]")
+                        logger.info("JWK DECODER initialized. KID loaded: [${jwk.keyID}]")
                     }
+                }
+                .doOnError { err ->
+                    logger.error("Error during retrieve of JWK from Azure KV")
+                    logger.error(err.stackTraceToString())
                 }
                 .cache(
                     { _ -> Duration.ofMinutes(cacheTtl) },
@@ -80,16 +84,11 @@ class JwtDecoderConfig(
                 .build()
 
         return ReactiveJwtDecoder { token ->
-            nimbusDelegate.decode(token).onErrorResume(BadJwtException::class.java) { _ ->
+            nimbusDelegate.decode(token).doOnError(BadJwtException::class.java) { _ ->
                 logger.warn("Error during the validation of the token, possible expired key")
 
                 // Refresh the cached key
                 cachedJwtResource.refresh()
-
-                nimbusDelegate.decode(token).onErrorMap(BadJwtException::class.java) { retryEx ->
-                    logger.error("Validation failed after the refresh of the key!")
-                    retryEx
-                }
             }
         }
     }
