@@ -89,7 +89,7 @@ class JwtDecoderConfig(
 
                 // Refresh the cached key
                 cachedJwtResource.refresh().flatMap { _ ->
-                    nimbusDelegate.decode(token).doOnError(BadJwtException::class.java) { it ->
+                    nimbusDelegate.decode(token).doOnError(BadJwtException::class.java) {
                         logger.error("Validation failed after the refresh of the key!", it)
                     }
                 }
