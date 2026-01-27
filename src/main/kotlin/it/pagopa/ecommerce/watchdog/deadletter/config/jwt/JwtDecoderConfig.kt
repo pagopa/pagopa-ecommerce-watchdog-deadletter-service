@@ -51,8 +51,7 @@ class JwtDecoderConfig(
                     }
                 }
                 .doOnError { err ->
-                    logger.error("Error during retrieve of JWK from Azure KV")
-                    logger.error(err.stackTraceToString())
+                    logger.error("Error during retrieve of JWK from Azure KV", err)
                 }
                 .cache(
                     { _ -> Duration.ofMinutes(cacheTtl) },
