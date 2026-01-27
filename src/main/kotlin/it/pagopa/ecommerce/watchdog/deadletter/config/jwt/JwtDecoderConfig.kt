@@ -65,8 +65,9 @@ class JwtDecoderConfig(
             return currentCachedMono
         }
 
-        fun refresh() {
+        fun refresh(): Mono<JWK> {
             currentCachedMono = createCache()
+            return currentCachedMono
         }
     }
 
@@ -84,11 +85,17 @@ class JwtDecoderConfig(
                 .build()
 
         return ReactiveJwtDecoder { token ->
-            nimbusDelegate.decode(token).doOnError(BadJwtException::class.java) { _ ->
+            nimbusDelegate.decode(token).onErrorResume(BadJwtException::class.java) { _ ->
                 logger.warn("Error during the validation of the token, possible expired key")
 
                 // Refresh the cached key
-                cachedJwtResource.refresh()
+                cachedJwtResource.refresh().flatMap { _ ->
+                    nimbusDelegate.decode(token).onErrorMap(BadJwtException::class.java) { retryEx
+                        ->
+                        logger.error("Validation failed after the refresh of the key!")
+                        retryEx
+                    }
+                }
             }
         }
     }
