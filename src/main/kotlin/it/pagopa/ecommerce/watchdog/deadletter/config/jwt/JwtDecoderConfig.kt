@@ -47,8 +47,11 @@ class JwtDecoderConfig(
                             "Failed to retrieve public JWK from Azure KV, result was null."
                         )
                     } else {
-                        logger.debug("JWK DECODER initialized. KID loaded: [${jwk.keyID}]")
+                        logger.info("JWK DECODER initialized. KID loaded: [${jwk.keyID}]")
                     }
+                }
+                .doOnError { err ->
+                    logger.error("Error during retrieve of JWK from Azure KV", err)
                 }
                 .cache(
                     { _ -> Duration.ofMinutes(cacheTtl) },
@@ -61,8 +64,9 @@ class JwtDecoderConfig(
             return currentCachedMono
         }
 
-        fun refresh() {
+        fun refresh(): Mono<JWK> {
             currentCachedMono = createCache()
+            return currentCachedMono
         }
     }
 
@@ -84,11 +88,10 @@ class JwtDecoderConfig(
                 logger.warn("Error during the validation of the token, possible expired key")
 
                 // Refresh the cached key
-                cachedJwtResource.refresh()
-
-                nimbusDelegate.decode(token).onErrorMap(BadJwtException::class.java) { retryEx ->
-                    logger.error("Validation failed after the refresh of the key!")
-                    retryEx
+                cachedJwtResource.refresh().flatMap { _ ->
+                    nimbusDelegate.decode(token).doOnError(BadJwtException::class.java) {
+                        logger.error("Validation failed after the refresh of the key!", it)
+                    }
                 }
             }
         }
