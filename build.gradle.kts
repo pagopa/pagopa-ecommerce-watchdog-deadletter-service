@@ -170,8 +170,7 @@ tasks.register<org.openapitools.generator.gradle.plugin.tasks.GenerateTask>("wat
   inputSpec.set("$rootDir/api-spec/v2/openapi.yaml")
   outputDir.set(layout.buildDirectory.get().dir("generated").asFile.toString())
   apiPackage.set("it.pagopa.generated.ecommerce.watchdog.deadletter.v2.api")
-  // The model package is the same of the v1 because the model are the same
-  modelPackage.set("it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model")
+  modelPackage.set("it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model")
   generateApiDocumentation.set(false)
   generateApiTests.set(false)
   generateModelTests.set(false)
@@ -259,7 +258,7 @@ tasks.register<org.openapitools.generator.gradle.plugin.tasks.GenerateTask>(
 }
 
 tasks.withType<KotlinCompile> {
-  dependsOn("watchdog-v1", "ecommerce-helpdesk-service", "nodo-technical-support")
+  dependsOn("watchdog-v1", "ecommerce-helpdesk-service", "nodo-technical-support", "watchdog-v2")
   compilerOptions { jvmTarget.set(JvmTarget.JVM_21) }
 }
 

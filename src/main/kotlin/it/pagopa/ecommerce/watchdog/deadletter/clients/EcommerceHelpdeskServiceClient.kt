@@ -13,6 +13,7 @@ import reactor.core.publisher.Mono
 class EcommerceHelpdeskServiceClient(private val eCommerceHelpdeskApi: ECommerceApi) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
+    @Deprecated("Switch to getDeadletterTransactionsByDateRange")
     fun getDeadletterTransactionsByFilter(
         date: LocalDate,
         pageSize: Int,
@@ -21,6 +22,43 @@ class EcommerceHelpdeskServiceClient(private val eCommerceHelpdeskApi: ECommerce
 
         val startDate: OffsetDateTime = date.atStartOfDay().atOffset(ZoneOffset.UTC)
         val endDate: OffsetDateTime = date.plusDays(1).atStartOfDay().atOffset(ZoneOffset.UTC)
+
+        val timeRange = DeadLetterSearchDateTimeRangeDto().startDate(startDate).endDate(endDate)
+
+        val excludedStatuses =
+            DeadLetterExcludedStatusesDto()
+                .ecommerceStatuses(
+                    listOf(
+                        "CANCELED",
+                        "NOTIFIED_OK",
+                        "NOTIFICATION_REQUESTED",
+                        "EXPIRED_NOT_AUTHORIZED",
+                    )
+                )
+                .npgStatuses(listOf("CANCELED"))
+
+        val requestDto =
+            EcommerceSearchDeadLetterEventsRequestDto()
+                .source(DeadLetterSearchEventSourceDto.ECOMMERCE)
+                .timeRange(timeRange)
+                .excludedStatuses(excludedStatuses)
+
+        return eCommerceHelpdeskApi.ecommerceSearchDeadLetterEvents(
+            pageNumber,
+            pageSize,
+            requestDto,
+        )
+    }
+
+    fun getDeadletterTransactionsByDateRange(
+        dateFrom: LocalDate,
+        dateTo: LocalDate,
+        pageSize: Int,
+        pageNumber: Int,
+    ): Mono<SearchDeadLetterEventResponseDto> {
+
+        val startDate: OffsetDateTime = dateFrom.atStartOfDay().atOffset(ZoneOffset.UTC)
+        val endDate: OffsetDateTime = dateTo.atStartOfDay().atOffset(ZoneOffset.UTC)
 
         val timeRange = DeadLetterSearchDateTimeRangeDto().startDate(startDate).endDate(endDate)
 

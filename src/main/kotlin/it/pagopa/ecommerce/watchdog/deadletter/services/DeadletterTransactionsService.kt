@@ -8,14 +8,21 @@ import it.pagopa.ecommerce.watchdog.deadletter.exception.InvalidActionValue
 import it.pagopa.ecommerce.watchdog.deadletter.exception.InvalidTransactionId
 import it.pagopa.ecommerce.watchdog.deadletter.repositories.DeadletterTransactionActionRepository
 import it.pagopa.ecommerce.watchdog.deadletter.utils.ObfuscationUtils.obfuscateEmail
+import it.pagopa.generated.ecommerce.helpdesk.model.DeadLetterEventDto as DeadLetterEventDtoV2
 import it.pagopa.generated.ecommerce.helpdesk.model.DeadLetterEventDto
+import it.pagopa.generated.ecommerce.helpdesk.model.SearchNpgOperationsResponseDto as SearchNpgOperationsResponseDtoV2
 import it.pagopa.generated.ecommerce.helpdesk.model.SearchNpgOperationsResponseDto
+import it.pagopa.generated.ecommerce.helpdesk.model.TransactionResultDto as TransactionResultDtoV2
 import it.pagopa.generated.ecommerce.helpdesk.model.TransactionResultDto
 import it.pagopa.generated.ecommerce.helpdesk.model.UserInfoDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.ActionTypeDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.DeadletterTransactionDto
-import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.ListDeadletterTransactions200ResponseDto
+import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.ListDeadletterTransactions200ResponseDto as ListDeadletterTransactions200ResponseDtoV1
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.PageInfoDto
+import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.DeadletterTransactionDto as DeadletterTransactionDtoV2
+import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.ListDeadletterTransactions200ResponseDto as ListDeadletterTransactions200ResponseDtoV2
+import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.PageInfoDto as PageInfoDtoV2
+import it.pagopa.generated.nodo.support.model.TransactionResponseDto as TransactionResponseDtoV2
 import it.pagopa.generated.nodo.support.model.TransactionResponseDto
 import java.time.Instant
 import java.time.LocalDate
@@ -26,8 +33,9 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
-import reactor.kotlin.core.publisher.onErrorResume
 import reactor.kotlin.core.publisher.switchIfEmpty
+import reactor.kotlin.core.util.function.component1
+import reactor.kotlin.core.util.function.component2
 
 @Service
 class DeadletterTransactionsService(
@@ -43,7 +51,7 @@ class DeadletterTransactionsService(
         date: LocalDate,
         pageNumber: Int,
         pageSize: Int,
-    ): Mono<ListDeadletterTransactions200ResponseDto> {
+    ): Mono<ListDeadletterTransactions200ResponseDtoV1> {
         return ecommerceHelpdeskServiceV1
             .getDeadletterTransactionsByFilter(date, pageSize, pageNumber)
             .onErrorResume { error ->
@@ -161,7 +169,7 @@ class DeadletterTransactionsService(
                     }
                     .collectList()
                     .map { enrichedDeadletterTransactions ->
-                        ListDeadletterTransactions200ResponseDto(
+                        ListDeadletterTransactions200ResponseDtoV1(
                             enrichedDeadletterTransactions,
                             PageInfoDto(pageInfo.current, pageInfo.total, pageInfo.results),
                         )
@@ -170,13 +178,115 @@ class DeadletterTransactionsService(
             .switchIfEmpty(
                 Mono.fromCallable {
                     logger.warn("No deadletter transactions found for date [{}]", date)
-                    ListDeadletterTransactions200ResponseDto(ArrayList(), PageInfoDto(0, 0, 0))
+                    ListDeadletterTransactions200ResponseDtoV1(ArrayList(), PageInfoDto(0, 0, 0))
                 }
             )
             .onErrorMap { ex ->
                 logger.error(
                     "Error retrieving deadletter transactions for date [{}]: [{}]",
                     date,
+                    ex.message,
+                    ex,
+                )
+                ex
+            }
+    }
+
+    fun getDeadletterTransactionsByDateRange(
+        fromDate: LocalDate,
+        toDate: LocalDate,
+        pageNumber: Int,
+        pageSize: Int,
+    ): Mono<ListDeadletterTransactions200ResponseDtoV2> {
+        return ecommerceHelpdeskServiceV1
+            .getDeadletterTransactionsByDateRange(fromDate, toDate, pageSize, pageNumber)
+            .onErrorResume { error ->
+                logger.error(
+                    "Error retrieving deadletter transactions for range date [{},{}]: [{}]",
+                    fromDate,
+                    toDate,
+                    error.message,
+                    error,
+                )
+                Mono.empty()
+            }
+            .flatMap { response ->
+                val deadLetterEvents = response.deadLetterEvents
+                val pageInfo = response.page
+
+                Flux.fromIterable(deadLetterEvents)
+                    .flatMap { deadLetterEvent ->
+                        val transactionId = deadLetterEvent.transactionInfo?.transactionId
+                        val paymentGateway = deadLetterEvent.transactionInfo?.paymentGateway
+
+                        if (transactionId != null) {
+                            val ecommerceDetailsMono: Mono<TransactionResultDto?> =
+                                ecommerceHelpdeskServiceV1
+                                    .searchTransactions(transactionId)
+                                    .map { it.transactions.firstOrNull() }
+                                    .onErrorResume { e ->
+                                        logger.error(
+                                            "Error retrieving eCommerce details by transactionId [{}]: [{}]",
+                                            transactionId,
+                                            e.message,
+                                        )
+                                        Mono.empty()
+                                    }
+
+                            val npgDetailsMono: Mono<SearchNpgOperationsResponseDto?> =
+                                if (paymentGateway == "NPG") {
+                                    ecommerceHelpdeskServiceV1
+                                        .searchNpgOperations(transactionId)
+                                        .onErrorResume { e ->
+                                            logger.error(
+                                                "Error retrieving NPG details by transactionId [{}]: [{}]",
+                                                transactionId,
+                                                e.message,
+                                            )
+                                            Mono.justOrEmpty(null)
+                                        }
+                                } else {
+                                    Mono.justOrEmpty<SearchNpgOperationsResponseDto?>(null)
+                                }
+
+                            Mono.zip(ecommerceDetailsMono, npgDetailsMono).map {
+                                (ecommerceDetails, npgDetails) ->
+                                buildDeadletterTransactionDtoV2(
+                                    deadLetterEvent,
+                                    ecommerceDetails,
+                                    npgDetails,
+                                    null,
+                                )
+                            }
+                        } else {
+                            Mono.just(
+                                buildDeadletterTransactionDtoV2(deadLetterEvent, null, null, null)
+                            )
+                        }
+                    }
+                    .collectList()
+                    .map { enrichedDeadletterTransactions ->
+                        ListDeadletterTransactions200ResponseDtoV2(
+                            enrichedDeadletterTransactions,
+                            PageInfoDtoV2(pageInfo.current, pageInfo.total, pageInfo.results),
+                        )
+                    }
+            }
+            .switchIfEmpty(
+                Mono.fromCallable {
+                    logger.warn(
+                        "No deadletter transactions found for date range [{},{}]",
+                        toDate,
+                        fromDate,
+                    )
+                    ListDeadletterTransactions200ResponseDtoV2(ArrayList(), PageInfoDtoV2(0, 0, 0))
+                }
+            )
+            .onErrorMap { ex ->
+                logger.error(
+                    "Error retrieving deadletter transactions for date range [{},{}]: [{}]",
+                    toDate,
+                    fromDate,
                     ex.message,
                     ex,
                 )
@@ -206,6 +316,44 @@ class DeadletterTransactionsService(
         }
 
         return DeadletterTransactionDto().apply {
+            transactionId = info?.transactionId ?: "N/A"
+            insertionDate = deadLetterEvent.timestamp
+            paymentToken(paymentToken)
+            paymentMethodName = info?.paymentMethodName ?: "N/A"
+            pspId = info?.pspId ?: "N/A"
+            eCommerceStatus(ecommerceStatus)
+            gatewayAuthorizationStatus(gatewayAuthorizationStatus)
+            paymentEndToEndId = info?.details?.paymentEndToEndId
+            operationId = info?.details?.operationId
+            deadletterTransactionDetails = deadLetterEvent
+            eCommerceDetails(ecommerceDetails)
+            npgDetails(npgDetails)
+            nodoDetails(nodoDetails)
+        }
+    }
+
+    private fun buildDeadletterTransactionDtoV2(
+        deadLetterEvent: DeadLetterEventDtoV2,
+        ecommerceDetails: TransactionResultDtoV2?,
+        npgDetails: SearchNpgOperationsResponseDtoV2?,
+        nodoDetails: TransactionResponseDtoV2?,
+    ): DeadletterTransactionDtoV2 {
+        val info = deadLetterEvent.transactionInfo
+        val ecommerceStatus = ecommerceDetails?.transactionInfo?.eventStatus.toString()
+        val gatewayAuthorizationStatus =
+            ecommerceDetails?.transactionInfo?.gatewayAuthorizationStatus.toString()
+
+        val paymentToken = info?.paymentTokens?.firstOrNull() ?: "N/A"
+
+        // TO DO: review obfuscatedEmail to avoid side effect
+        val userInfo: UserInfoDto? = ecommerceDetails?.userInfo
+        if (userInfo != null && userInfo.notificationEmail != null) {
+            val obfuscatedEmail: String? = obfuscateEmail(userInfo.notificationEmail)
+            userInfo.notificationEmail(obfuscatedEmail)
+            ecommerceDetails.userInfo(userInfo)
+        }
+
+        return DeadletterTransactionDtoV2().apply {
             transactionId = info?.transactionId ?: "N/A"
             insertionDate = deadLetterEvent.timestamp
             paymentToken(paymentToken)
