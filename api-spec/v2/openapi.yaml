@@ -1,0 +1,165 @@
+openapi: 3.0.0
+info:
+  version: 1.0.0
+  title: PagoPA Ecommerce Watchdog Service API
+  description: API service to monitor deadletter transactions and manually track recovery or follow-up actions.
+servers:
+  - url: https://${host}
+tags:
+  - name: deadletter-transactions
+    description: Deadletter transaction management
+  - name: deadletter-transactions-actions
+    description: Manual actions or notes related to deadletter transactions
+  - name: authentication
+    description: User authentication
+paths:
+  /deadletter-transactions:
+    get:
+      tags:
+        - deadletter-transactions
+      summary: List all deadletter transactions
+      operationId: listDeadletterTransactions
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: fromDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+            example: '2025-08-19'
+          description: Filter transactions by a starting date (format YYYY-MM-DD)
+        - name: toDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+            example: '2025-08-19'
+          description: Filter transactions by a ending date (format YYYY-MM-DD)
+        - name: pageNumber
+          in: query
+          required: true
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+          description: Searched page number, starting from 0
+        - name: pageSize
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 20
+            default: 10
+          description: Max element per page
+      responses:
+        '200':
+          description: List of deadletter transactions with pagination
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deadletterTransactions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DeadletterTransaction'
+                  page:
+                    $ref: '#/components/schemas/PageInfo'
+                required:
+                  - deadletterTransactions
+                  - page
+        '400':
+          description: Invalid request or query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+        '401':
+          description: Unauthorized. Missing or invalid authentication token.
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    PageInfo:
+      description: Information about the returned query page
+      type: object
+      properties:
+        current:
+          type: integer
+          description: Current returned page index (0-based)
+        total:
+          type: integer
+          description: Total pages for the query (based on requested page size)
+        results:
+          type: integer
+          description: Transactions returned into the current page
+      required:
+        - current
+        - results
+        - total
+    DeadletterTransaction:
+      type: object
+      properties:
+        transactionId:
+          type: string
+        insertionDate:
+          type: string
+          format: date-time
+        paymentToken:
+          type: string
+        paymentMethodName:
+          type: string
+        pspId:
+          type: string
+        eCommerceStatus:
+          type: string
+        gatewayAuthorizationStatus:
+          type: string
+        paymentEndToEndId:
+          type: string
+        operationId:
+          type: string
+        deadletterTransactionDetails:
+          type: object
+        eCommerceDetails:
+          type: object
+        nodoDetails:
+          type: object
+        npgDetails:
+          type: object
+      required:
+        - id
+        - insertionDate
+        - transactionId
+        - paymentToken
+        - paymentMethodName
+        - pspId
+        - eCommerceStatus
+        - deadletterTransactionDetails
+    ProblemJson:
+      type: object
+      properties:
+        type:
+          type: string
+          format: uri
+          example: https://example.com/problem/invalid-request
+        title:
+          type: string
+          example: Invalid Request
+        status:
+          type: integer
+          example: 400
+        detail:
+          type: string
+          example: The provided input is not valid
+        instance:
+          type: string
+          format: uri
+          example: /deadletter-transactions/123/actions
