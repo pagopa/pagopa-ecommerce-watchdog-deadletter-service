@@ -17,6 +17,7 @@ import it.pagopa.generated.ecommerce.helpdesk.model.SearchNpgOperationsResponseD
 import it.pagopa.generated.ecommerce.helpdesk.model.SearchTransactionResponseDto
 import it.pagopa.generated.ecommerce.helpdesk.model.TransactionInfoDto
 import it.pagopa.generated.ecommerce.helpdesk.model.TransactionResultDto
+import it.pagopa.generated.ecommerce.helpdesk.model.TransactionStatusDto
 import it.pagopa.generated.ecommerce.helpdesk.model.UserInfoDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.ActionTypeDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.ListDeadletterTransactions200ResponseDto
@@ -822,5 +823,118 @@ class DeadletterTransactionServiceTest {
 
         val transactionIdValuePassed = actionCaptor.firstValue
         assertEquals(transactionIdValuePassed, transactionId)
+    }
+
+    @Test
+    fun `getDeadletterTransactionsByDateRange should return a ListDeadletterTransactions200ResponseDto V2 with elements`() {
+
+        val fromDate = LocalDate.parse("2025-01-01")
+        val toDate = LocalDate.parse("2025-01-02")
+        val pageNumber = 0
+        val pageSize = 10
+
+        val deadLetterEventV2 =
+            DeadLetterEventDto().apply {
+                transactionInfo =
+                    DeadLetterTransactionInfoDto().apply {
+                        transactionId = "transactionIdV2"
+                        paymentGateway = "NPG"
+                    }
+            }
+
+        val searchResponseV2 =
+            SearchDeadLetterEventResponseDto().apply {
+                deadLetterEvents = listOf(deadLetterEventV2)
+                page =
+                    PageInfoDto().apply {
+                        current = 0
+                        total = 1
+                        results = 1
+                    }
+            }
+
+        val transactionResultV2 =
+            TransactionResultDto().apply {
+                transactionInfo =
+                    TransactionInfoDto().apply { eventStatus = TransactionStatusDto.CLOSED }
+            }
+
+        val searchTransactionResponseV2 =
+            SearchTransactionResponseDto().apply {
+                transactions = mutableListOf(transactionResultV2)
+            }
+
+        whenever(
+                ecommerceHelpdeskServiceV1.getDeadletterTransactionsByDateRange(
+                    any(),
+                    any(),
+                    any(),
+                    any(),
+                )
+            )
+            .thenReturn(Mono.just(searchResponseV2))
+
+        whenever(ecommerceHelpdeskServiceV1.searchTransactions("transactionIdV2"))
+            .thenReturn(Mono.just(searchTransactionResponseV2))
+
+        whenever(ecommerceHelpdeskServiceV1.searchNpgOperations("transactionIdV2"))
+            .thenReturn(
+                Mono.just(
+                    it.pagopa.generated.ecommerce.helpdesk.model.SearchNpgOperationsResponseDto()
+                )
+            )
+
+        val resultMono =
+            deadletterTransactionsService.getDeadletterTransactionsByDateRange(
+                fromDate,
+                toDate,
+                pageNumber,
+                pageSize,
+            )
+
+        StepVerifier.create(resultMono)
+            .expectNextMatches { response ->
+                response is
+                    it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.ListDeadletterTransactions200ResponseDto &&
+                    response.deadletterTransactions.size == 1 &&
+                    response.deadletterTransactions[0].transactionId == "transactionIdV2" &&
+                    response.page.total == 1
+            }
+            .verifyComplete()
+
+        verify(ecommerceHelpdeskServiceV1)
+            .getDeadletterTransactionsByDateRange(fromDate, toDate, pageSize, pageNumber)
+        verify(ecommerceHelpdeskServiceV1).searchTransactions("transactionIdV2")
+        verify(ecommerceHelpdeskServiceV1).searchNpgOperations("transactionIdV2")
+    }
+
+    @Test
+    fun `getDeadletterTransactionsByDateRange should return empty response on client error`() {
+        val fromDate = LocalDate.now()
+        val toDate = LocalDate.now()
+
+        whenever(
+                ecommerceHelpdeskServiceV1.getDeadletterTransactionsByDateRange(
+                    any(),
+                    any(),
+                    any(),
+                    any(),
+                )
+            )
+            .thenReturn(Mono.error(RuntimeException("Service Down")))
+
+        val resultMono =
+            deadletterTransactionsService.getDeadletterTransactionsByDateRange(
+                fromDate,
+                toDate,
+                0,
+                10,
+            )
+
+        StepVerifier.create(resultMono)
+            .expectNextMatches { response ->
+                response.deadletterTransactions.isEmpty() && response.page.total == 0
+            }
+            .verifyComplete()
     }
 }

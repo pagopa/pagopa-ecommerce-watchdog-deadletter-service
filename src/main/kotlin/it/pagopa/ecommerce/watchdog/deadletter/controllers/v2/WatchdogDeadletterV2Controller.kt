@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.ResponseEntity
 import org.springframework.validation.annotation.Validated
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.server.ServerWebExchange
 import reactor.core.publisher.Mono
@@ -27,11 +28,11 @@ class WatchdogDeadletterV2Controller(
     private val logger = LoggerFactory.getLogger(this.javaClass)
 
     override fun listDeadletterTransactions(
-        fromDate: @NotNull @Valid LocalDate,
-        toDate: @NotNull @Valid LocalDate,
-        pageNumber: @NotNull @Min(value = 0) @Valid Int,
-        pageSize: @NotNull @Min(value = 1) @Max(value = 20) @Valid Int,
-        exchange: ServerWebExchange?,
+        @RequestParam("fromDate") @NotNull @Valid fromDate: LocalDate,
+        @RequestParam("toDate") @NotNull @Valid toDate: LocalDate,
+        @RequestParam("pageNumber") @NotNull @Min(value = 0) @Valid pageNumber: Int,
+        @RequestParam("pageSize") @NotNull @Min(value = 1) @Max(value = 20) @Valid pageSize: Int,
+        exchange: ServerWebExchange,
     ): Mono<ResponseEntity<ListDeadletterTransactions200ResponseDto?>?>? {
         logger.info("Received listDeadletterTransactions request for [{}] ", fromDate)
         return deadletterTransactionsService
