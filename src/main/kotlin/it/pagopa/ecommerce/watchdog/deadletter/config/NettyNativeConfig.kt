@@ -12,6 +12,8 @@ import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.Authentication
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.AuthenticationOkDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.DeadletterTransactionDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.ListDeadletterTransactions200ResponseDto
+import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.DeadletterTransactionDto as DeadletterTransactionDtoV2
+import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.ListDeadletterTransactions200ResponseDto as ListDeadletterTransactions200ResponseDtoV2
 import org.springframework.aot.hint.annotation.RegisterReflectionForBinding
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -40,6 +42,8 @@ class NettyNativeConfig {
         AuthenticationCredentialsDto::class,
         AuthenticationOkDto::class,
         DeadletterTransactionDto::class,
+        DeadletterTransactionDtoV2::class,
+        ListDeadletterTransactions200ResponseDtoV2::class,
 
         // Azure KeyVault classes
         SecretBundle::class,
