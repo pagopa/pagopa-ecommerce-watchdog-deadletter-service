@@ -213,6 +213,14 @@ class DeadletterTransactionsService(
             .flatMap { response ->
                 val deadLetterEvents = response.deadLetterEvents
                 val pageInfo = response.page
+                val size = deadLetterEvents.size
+
+                logger.info(
+                    "Retrieved [{}] deadletter transactions for range date [{},{}]:",
+                    size,
+                    fromDate,
+                    toDate,
+                )
 
                 Flux.fromIterable(deadLetterEvents)
                     .flatMap { deadLetterEvent ->
@@ -279,8 +287,8 @@ class DeadletterTransactionsService(
                 Mono.fromCallable {
                     logger.warn(
                         "No deadletter transactions found for date range [{},{}]",
-                        toDate,
                         fromDate,
+                        toDate,
                     )
                     ListDeadletterTransactions200ResponseDtoV2(ArrayList(), PageInfoDtoV2(0, 0, 0))
                 }
@@ -288,8 +296,8 @@ class DeadletterTransactionsService(
             .onErrorMap { ex ->
                 logger.error(
                     "Error retrieving deadletter transactions for date range [{},{}]: [{}]",
-                    toDate,
                     fromDate,
+                    toDate,
                     ex.message,
                     ex,
                 )
