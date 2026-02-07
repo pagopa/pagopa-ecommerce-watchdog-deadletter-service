@@ -220,41 +220,44 @@ class DeadletterTransactionsService(
                         val paymentGateway = deadLetterEvent.transactionInfo?.paymentGateway
 
                         if (transactionId != null) {
-                            val ecommerceDetailsMono: Mono<TransactionResultDto?> =
+                            val ecommerceDetailsMono: Mono<Optional<TransactionResultDto>> =
                                 ecommerceHelpdeskServiceV1
                                     .searchTransactions(transactionId)
-                                    .map { it.transactions.firstOrNull() }
+                                    .map { Optional.ofNullable(it.transactions.firstOrNull()) }
                                     .onErrorResume { e ->
                                         logger.error(
                                             "Error retrieving eCommerce details by transactionId [{}]: [{}]",
                                             transactionId,
                                             e.message,
                                         )
-                                        Mono.empty()
+                                        Mono.just(Optional.empty())
                                     }
+                                    .defaultIfEmpty(Optional.empty())
 
-                            val npgDetailsMono: Mono<SearchNpgOperationsResponseDto?> =
+                            val npgDetailsMono: Mono<Optional<SearchNpgOperationsResponseDto>> =
                                 if (paymentGateway == "NPG") {
                                     ecommerceHelpdeskServiceV1
                                         .searchNpgOperations(transactionId)
+                                        .map { Optional.ofNullable(it) }
                                         .onErrorResume { e ->
                                             logger.error(
                                                 "Error retrieving NPG details by transactionId [{}]: [{}]",
                                                 transactionId,
                                                 e.message,
                                             )
-                                            Mono.justOrEmpty(null)
+                                            Mono.just(Optional.empty())
                                         }
+                                        .defaultIfEmpty(Optional.empty())
                                 } else {
-                                    Mono.justOrEmpty<SearchNpgOperationsResponseDto?>(null)
+                                    Mono.just(Optional.empty())
                                 }
 
-                            Mono.zip(ecommerceDetailsMono, npgDetailsMono).map {
-                                (ecommerceDetails, npgDetails) ->
+                            ecommerceDetailsMono.zipWith(npgDetailsMono).map {
+                                (ecommerceOpt, npgOpt) ->
                                 buildDeadletterTransactionDtoV2(
                                     deadLetterEvent,
-                                    ecommerceDetails,
-                                    npgDetails,
+                                    ecommerceOpt.orElse(null),
+                                    npgOpt.orElse(null),
                                     null,
                                 )
                             }
