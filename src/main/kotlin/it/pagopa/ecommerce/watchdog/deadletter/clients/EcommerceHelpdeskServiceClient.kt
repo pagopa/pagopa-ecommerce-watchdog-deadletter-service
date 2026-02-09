@@ -101,7 +101,7 @@ class EcommerceHelpdeskServiceClient(private val eCommerceHelpdeskApi: ECommerce
         val pageSize = 10
 
         val request =
-            EcommerceSearchTransactionRequestDto()
+            SearchTransactionRequestTransactionIdDto()
                 .type("TRANSACTION_ID")
                 .transactionId(transactionId)
 
@@ -124,7 +124,7 @@ class EcommerceHelpdeskServiceClient(private val eCommerceHelpdeskApi: ECommerce
     fun searchNpgOperations(transactionId: String): Mono<SearchNpgOperationsResponseDto> {
         val request = SearchNpgOperationsRequestDto().idTransaction(transactionId)
 
-        return eCommerceHelpdeskApi.ecommerceSearchNpgOperationsPost(request).doOnError {
+        return eCommerceHelpdeskApi.ecommerceSearchNpgOperations(request).doOnError {
             logger.error(
                 "Error calling searchNpgOperations API for transactionId: $transactionId",
                 it,
