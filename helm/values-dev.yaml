@@ -74,7 +74,7 @@ microservice-chart:
     OTEL_METRICS_EXPORTER: otlp
     OTEL_LOGS_EXPORTER: none
     OTEL_TRACES_SAMPLER: "always_on"
-    ECOMMERCE_HELPDESK_SERVER_URI: "https://api.dev.platform.pagopa.it/ecommerce/helpdesk-service"
+    ECOMMERCE_HELPDESK_SERVER_URI: "https://api.platform.pagopa.it/ecommerce/helpdesk-service"
     ECOMMERCE_HELPDESK_SERVER_READ_TIMEOUT_MILLIS: "10000"
     ECOMMERCE_HELPDESK_SERVER_CONNECTION_TIMEOUT_MILLIS: "10000"
     NODO_TECHNICAL_SUPPORT_SERVER_URI: "https://api.dev.platform.pagopa.it/technical-support/ndp/api/v1"
