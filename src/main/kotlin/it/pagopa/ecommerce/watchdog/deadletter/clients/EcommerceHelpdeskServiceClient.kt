@@ -74,11 +74,14 @@ class EcommerceHelpdeskServiceClient(private val eCommerceHelpdeskApi: ECommerce
                 )
                 .npgStatuses(listOf("CANCELED"))
 
+        val excludedPaymentGateway = listOf("REDIRECT")
+
         val requestDto =
             EcommerceSearchDeadLetterEventsRequestDto()
                 .source(DeadLetterSearchEventSourceDto.ECOMMERCE)
                 .timeRange(timeRange)
                 .excludedStatuses(excludedStatuses)
+                .excludedPaymentGateway(excludedPaymentGateway)
 
         return eCommerceHelpdeskApi.ecommerceSearchDeadLetterEvents(
             pageNumber,
@@ -98,7 +101,7 @@ class EcommerceHelpdeskServiceClient(private val eCommerceHelpdeskApi: ECommerce
         val pageSize = 10
 
         val request =
-            SearchTransactionRequestTransactionIdDto()
+            EcommerceSearchTransactionRequestDto()
                 .type("TRANSACTION_ID")
                 .transactionId(transactionId)
 
@@ -121,7 +124,7 @@ class EcommerceHelpdeskServiceClient(private val eCommerceHelpdeskApi: ECommerce
     fun searchNpgOperations(transactionId: String): Mono<SearchNpgOperationsResponseDto> {
         val request = SearchNpgOperationsRequestDto().idTransaction(transactionId)
 
-        return eCommerceHelpdeskApi.ecommerceSearchNpgOperations(request).doOnError {
+        return eCommerceHelpdeskApi.ecommerceSearchNpgOperationsPost(request).doOnError {
             logger.error(
                 "Error calling searchNpgOperations API for transactionId: $transactionId",
                 it,
