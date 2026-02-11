@@ -13,7 +13,6 @@ import reactor.core.publisher.Mono
 class EcommerceHelpdeskServiceClient(private val eCommerceHelpdeskApi: ECommerceApi) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
-    @Deprecated("Switch to getDeadletterTransactionsByDateRange")
     fun getDeadletterTransactionsByFilter(
         date: LocalDate,
         pageSize: Int,
