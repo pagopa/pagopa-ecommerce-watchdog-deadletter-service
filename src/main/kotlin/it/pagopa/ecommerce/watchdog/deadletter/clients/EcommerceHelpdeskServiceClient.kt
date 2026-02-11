@@ -58,7 +58,7 @@ class EcommerceHelpdeskServiceClient(private val eCommerceHelpdeskApi: ECommerce
     ): Mono<SearchDeadLetterEventResponseDto> {
 
         val startDate: OffsetDateTime = dateFrom.atStartOfDay().atOffset(ZoneOffset.UTC)
-        val endDate: OffsetDateTime = dateTo.atStartOfDay().atOffset(ZoneOffset.UTC)
+        val endDate: OffsetDateTime = dateTo.plusDays(1).atStartOfDay().atOffset(ZoneOffset.UTC)
 
         val timeRange = DeadLetterSearchDateTimeRangeDto().startDate(startDate).endDate(endDate)
 
