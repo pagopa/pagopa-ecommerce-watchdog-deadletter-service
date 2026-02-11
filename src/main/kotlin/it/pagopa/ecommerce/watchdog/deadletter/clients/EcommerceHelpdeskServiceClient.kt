@@ -74,11 +74,14 @@ class EcommerceHelpdeskServiceClient(private val eCommerceHelpdeskApi: ECommerce
                 )
                 .npgStatuses(listOf("CANCELED"))
 
+        val excludedPaymentGateway = listOf("REDIRECT")
+
         val requestDto =
             EcommerceSearchDeadLetterEventsRequestDto()
                 .source(DeadLetterSearchEventSourceDto.ECOMMERCE)
                 .timeRange(timeRange)
                 .excludedStatuses(excludedStatuses)
+                .excludedPaymentGateway(excludedPaymentGateway)
 
         return eCommerceHelpdeskApi.ecommerceSearchDeadLetterEvents(
             pageNumber,
