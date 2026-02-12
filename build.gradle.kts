@@ -165,6 +165,34 @@ tasks.register<org.openapitools.generator.gradle.plugin.tasks.GenerateTask>("wat
   )
 }
 
+tasks.register<org.openapitools.generator.gradle.plugin.tasks.GenerateTask>("watchdog-v2") {
+  generatorName.set("spring")
+  inputSpec.set("$rootDir/api-spec/v2/openapi.yaml")
+  outputDir.set(layout.buildDirectory.get().dir("generated").asFile.toString())
+  apiPackage.set("it.pagopa.generated.ecommerce.watchdog.deadletter.v2.api")
+  modelPackage.set("it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model")
+  generateApiDocumentation.set(false)
+  generateApiTests.set(false)
+  generateModelTests.set(false)
+  library.set("spring-boot")
+  modelNameSuffix.set("Dto")
+  configOptions.set(
+    mapOf(
+      "swaggerAnnotations" to "false",
+      "openApiNullable" to "true",
+      "interfaceOnly" to "true",
+      "hideGenerationTimestamp" to "true",
+      "skipDefaultInterface" to "true",
+      "useSwaggerUI" to "false",
+      "reactive" to "true",
+      "useSpringBoot3" to "true",
+      "oas3" to "true",
+      "generateSupportingFiles" to "true",
+      "enumPropertyNaming" to "MACRO_CASE",
+    )
+  )
+}
+
 tasks.register<org.openapitools.generator.gradle.plugin.tasks.GenerateTask>(
   "ecommerce-helpdesk-service"
 ) {
@@ -230,7 +258,7 @@ tasks.register<org.openapitools.generator.gradle.plugin.tasks.GenerateTask>(
 }
 
 tasks.withType<KotlinCompile> {
-  dependsOn("watchdog-v1", "ecommerce-helpdesk-service", "nodo-technical-support")
+  dependsOn("watchdog-v1", "ecommerce-helpdesk-service", "nodo-technical-support", "watchdog-v2")
   compilerOptions { jvmTarget.set(JvmTarget.JVM_21) }
 }
 

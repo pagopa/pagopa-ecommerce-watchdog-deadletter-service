@@ -1,4 +1,4 @@
-package it.pagopa.ecommerce.watchdog.deadletter.controllers
+package it.pagopa.ecommerce.watchdog.deadletter.controllers.v1
 
 import it.pagopa.ecommerce.watchdog.deadletter.services.AuthService
 import it.pagopa.ecommerce.watchdog.deadletter.services.DeadletterTransactionsService
