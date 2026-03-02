@@ -156,12 +156,12 @@ paths:
                 $ref: '#/components/schemas/ProblemJson'
         '500':
           description: Internal server error.
-  /deadletter-transaction/{transactionId}/notes:
+  /deadletter-transactions/{transactionId}/notes:
     post:
       tags:
         - deadletter-transaction-notes
       summary: Add a new note to a deadletter transaction
-      operationId: AddNoteToDeadletterTransaction
+      operationId: addNoteToDeadletterTransaction
       security:
         - bearerAuth: []
       parameters:
