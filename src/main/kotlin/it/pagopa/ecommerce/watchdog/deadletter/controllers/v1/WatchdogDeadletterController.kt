@@ -102,11 +102,11 @@ class WatchdogDeadletterController(
     }
 
     override fun updateNoteDeadletterTransaction(
-        transactionId: String?,
-        noteId: String?,
-        noteInputDto: @Valid Mono<NoteInputDto?>?,
-        exchange: ServerWebExchange?,
-    ): Mono<ResponseEntity<Void?>?>? {
+        transactionId: String,
+        noteId: String,
+        noteInputDto: @Valid Mono<NoteInputDto>,
+        exchange: ServerWebExchange,
+    ): Mono<ResponseEntity<Void>> {
         TODO("Not yet implemented")
     }
 }
