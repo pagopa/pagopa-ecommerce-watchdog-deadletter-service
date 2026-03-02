@@ -148,7 +148,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProblemJson'
-  /deadletter-transactions/{transactionId}/notes:
+  /deadletter-transaction/{transactionId}/notes:
     post:
       tags:
         - deadletter-transaction-notes
@@ -503,12 +503,9 @@ components:
           items:
             $ref: '#/components/schemas/Note'
     NotesResponse:
-      type: object
-      properties:
-        notes:
-          type: array
-          items:
-            $ref: '#/components/schemas/TransactionNotes'
+      type: array
+      items:
+        $ref: '#/components/schemas/TransactionNotes'
     DeadletterTransactionActionInput:
       type: object
       properties:
