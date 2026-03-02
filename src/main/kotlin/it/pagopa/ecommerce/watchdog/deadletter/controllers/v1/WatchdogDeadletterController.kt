@@ -6,6 +6,9 @@ import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.api.DeadletterTransa
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.DeadletterTransactionActionDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.DeadletterTransactionActionInputDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.ListDeadletterTransactions200ResponseDto
+import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.NoteInputDto
+import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.NotesRequestDto
+import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.TransactionNotesDto
 import jakarta.validation.Valid
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
@@ -50,6 +53,21 @@ class WatchdogDeadletterController(
             .thenReturn(ResponseEntity.created(URI("")).build())
     }
 
+    override fun deleteNoteDeadletterTransaction(
+        transactionId: String?,
+        noteId: String?,
+        exchange: ServerWebExchange?,
+    ): Mono<ResponseEntity<Void?>?>? {
+        TODO("Not yet implemented")
+    }
+
+    override fun getNotesByTransactionIdList(
+        notesRequestDto: @Valid Mono<NotesRequestDto?>?,
+        exchange: ServerWebExchange?,
+    ): Mono<ResponseEntity<Flux<TransactionNotesDto?>?>?>? {
+        TODO("Not yet implemented")
+    }
+
     override fun listActionsForDeadletterTransaction(
         deadletterTransactionId: String,
         exchange: ServerWebExchange?,
@@ -81,5 +99,14 @@ class WatchdogDeadletterController(
         return deadletterTransactionsService
             .getDeadletterTransactions(date, pageNumber, pageSize)
             .map { transactions -> ResponseEntity.ok(transactions) }
+    }
+
+    override fun updateNoteDeadletterTransaction(
+        transactionId: String?,
+        noteId: String?,
+        noteInputDto: @Valid Mono<NoteInputDto?>?,
+        exchange: ServerWebExchange?,
+    ): Mono<ResponseEntity<Void?>?>? {
+        TODO("Not yet implemented")
     }
 }
