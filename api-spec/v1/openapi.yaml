@@ -148,6 +148,167 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProblemJson'
+  /deadletter-transactions/{transactionId}/notes:
+    post:
+      tags:
+        - deadletter-transaction-notes
+      summary: Add a new note to a deadletter transaction
+      operationId: AddNoteToDeadletterTransaction
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: transactionId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Deadletter transaction unique ID
+      requestBody:
+        description: The text of the note
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NoteInput'
+      responses:
+        '201':
+          description: Note added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Note'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+        '401':
+          description: Unauthorized. Missing or invalid authentication token.
+        '404':
+          description: Deadletter transaction not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+        '422':
+          description: Unprocessable entity. Number of notes already equal to the limit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+  /deadletter-transactions/{transactionId}/notes/{noteId}:
+    put:
+      tags:
+        - deadletter-transaction-notes
+      summary: Modify an existing note connected to a deadletter transaction
+      operationId: updateNoteDeadletterTransaction
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: transactionId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Deadletter transaction unique ID
+        - name: noteId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Note unique ID
+      requestBody:
+        description: The text of the note
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NoteInput'
+      responses:
+        '204':
+          description: Note modified successfully
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+        '401':
+          description: Unauthorized. Missing or invalid authentication token.
+        '404':
+          description: Deadletter transaction or note not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+    delete:
+      tags:
+        - deadletter-transaction-notes
+      summary: Delete an existing note connected to a deadletter transaction
+      operationId: deleteNoteDeadletterTransaction
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: transactionId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Deadletter transaction unique ID
+        - name: noteId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Note unique ID
+      responses:
+        '204':
+          description: Note deleted successfully
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+        '401':
+          description: Unauthorized. Missing or invalid authentication token.
+        '404':
+          description: Deadletter transaction or note not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+  /deadletter-transactions/notes:
+    post:
+      tags:
+        - deadletter-transaction-notes
+      summary: Get all notes grouped by given transactionIds
+      operationId: getNotesByTransactionIdList
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: List of transactionIds
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotesRequest'
+      responses:
+        '200':
+          description: List of notes grouped by transactionIds
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotesResponse'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+        '401':
+          description: Unauthorized. Missing or invalid authentication token.
   /authenticate:
     post:
       tags:
@@ -295,6 +456,59 @@ components:
       required:
         - value
         - type
+    Note:
+      type: object
+      properties:
+        note:
+          type: string
+          maxLength: 300
+        noteId:
+          type: string
+        transactionId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        userId:
+          type: string
+      required:
+        - note
+        - noteId
+        - transactionId
+        - createdAt
+        - updatedAt
+    NoteInput:
+      type: object
+      properties:
+        note:
+          type: string
+          maxLength: 300
+    NotesRequest:
+      type: object
+      properties:
+        transactionIds:
+          type: array
+          items:
+            type: string
+    TransactionNotes:
+      type: object
+      properties:
+        transactionId:
+          type: string
+        notesList:
+          type: array
+          items:
+            $ref: '#/components/schemas/Note'
+    NotesResponse:
+      type: object
+      properties:
+        notes:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransactionNotes'
     DeadletterTransactionActionInput:
       type: object
       properties:
