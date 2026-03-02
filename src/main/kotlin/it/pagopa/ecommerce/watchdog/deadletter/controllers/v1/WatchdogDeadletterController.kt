@@ -54,17 +54,17 @@ class WatchdogDeadletterController(
     }
 
     override fun deleteNoteDeadletterTransaction(
-        transactionId: String?,
-        noteId: String?,
-        exchange: ServerWebExchange?,
-    ): Mono<ResponseEntity<Void?>?>? {
+        transactionId: String,
+        noteId: String,
+        exchange: ServerWebExchange,
+    ): Mono<ResponseEntity<Void>> {
         TODO("Not yet implemented")
     }
 
     override fun getNotesByTransactionIdList(
-        notesRequestDto: @Valid Mono<NotesRequestDto?>?,
-        exchange: ServerWebExchange?,
-    ): Mono<ResponseEntity<Flux<TransactionNotesDto?>?>?>? {
+        notesRequestDto: @Valid Mono<NotesRequestDto>,
+        exchange: ServerWebExchange,
+    ): Mono<ResponseEntity<Flux<TransactionNotesDto>>> {
         TODO("Not yet implemented")
     }
 
