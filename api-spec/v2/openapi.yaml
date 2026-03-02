@@ -80,6 +80,8 @@ paths:
                 $ref: '#/components/schemas/ProblemJson'
         '401':
           description: Unauthorized. Missing or invalid authentication token.
+        '500':
+          description: Internal server error.
 components:
   securitySchemes:
     bearerAuth:

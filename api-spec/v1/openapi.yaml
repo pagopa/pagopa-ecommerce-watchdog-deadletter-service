@@ -74,6 +74,8 @@ paths:
                 $ref: '#/components/schemas/ProblemJson'
         '401':
           description: Unauthorized. Missing or invalid authentication token.
+        '500':
+          description: Internal server error.
   /deadletter-transactions/{transactionId}/actions:
     get:
       tags:
@@ -112,6 +114,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProblemJson'
+        '500':
+          description: Internal server error.
     post:
       tags:
         - deadletter-transactions-actions
@@ -150,6 +154,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProblemJson'
+        '500':
+          description: Internal server error.
   /deadletter-transaction/{transactionId}/notes:
     post:
       tags:
@@ -199,6 +205,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProblemJson'
+        '500':
+          description: Internal server error.
   /deadletter-transactions/{transactionId}/notes/{noteId}:
     put:
       tags:
@@ -244,6 +252,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProblemJson'
+        '500':
+          description: Internal server error.
     delete:
       tags:
         - deadletter-transaction-notes
@@ -281,6 +291,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProblemJson'
+        '500':
+          description: Internal server error.
   /deadletter-transactions/notes:
     post:
       tags:
@@ -311,6 +323,8 @@ paths:
                 $ref: '#/components/schemas/ProblemJson'
         '401':
           description: Unauthorized. Missing or invalid authentication token.
+        '500':
+          description: Internal server error.
   /authenticate:
     post:
       tags:
@@ -343,6 +357,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProblemJson'
+        '500':
+          description: Internal server error.
   /actions:
     get:
       tags:
@@ -362,6 +378,8 @@ paths:
                   $ref: '#/components/schemas/ActionType'
         '401':
           description: Unauthorized. Missing or invalid authentication token.
+        '500':
+          description: Internal server error.
 components:
   securitySchemes:
     bearerAuth:
