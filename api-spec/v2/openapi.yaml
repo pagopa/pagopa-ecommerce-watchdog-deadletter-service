@@ -82,6 +82,10 @@ paths:
           description: Unauthorized. Missing or invalid authentication token.
         '500':
           description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
 components:
   securitySchemes:
     bearerAuth:
