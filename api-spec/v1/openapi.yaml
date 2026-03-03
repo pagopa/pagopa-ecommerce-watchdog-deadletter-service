@@ -12,6 +12,8 @@ tags:
     description: Manual actions or notes related to deadletter transactions
   - name: authentication
     description: User authentication
+  - name: deadletter-transaction-notes
+    description: Deadletter transaction notes management
 paths:
   /deadletter-transactions:
     get:
@@ -72,6 +74,12 @@ paths:
                 $ref: '#/components/schemas/ProblemJson'
         '401':
           description: Unauthorized. Missing or invalid authentication token.
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
   /deadletter-transactions/{transactionId}/actions:
     get:
       tags:
@@ -106,6 +114,12 @@ paths:
           description: Unauthorized. Missing or invalid authentication token.
         '404':
           description: Deadletter transaction not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+        '500':
+          description: Internal server error.
           content:
             application/json:
               schema:
@@ -148,6 +162,197 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProblemJson'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+  /deadletter-transactions/{transactionId}/notes:
+    post:
+      tags:
+        - deadletter-transaction-notes
+      summary: Add a new note to a deadletter transaction
+      operationId: addNoteToDeadletterTransaction
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: transactionId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Deadletter transaction unique ID
+      requestBody:
+        description: The text of the note
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NoteInput'
+      responses:
+        '201':
+          description: Note added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Note'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+        '401':
+          description: Unauthorized. Missing or invalid authentication token.
+        '404':
+          description: Deadletter transaction not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+        '422':
+          description: Unprocessable entity. Number of notes already equal to the limit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+  /deadletter-transactions/{transactionId}/notes/{noteId}:
+    put:
+      tags:
+        - deadletter-transaction-notes
+      summary: Modify an existing note connected to a deadletter transaction
+      operationId: updateNoteDeadletterTransaction
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: transactionId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Deadletter transaction unique ID
+        - name: noteId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Note unique ID
+      requestBody:
+        description: The text of the note
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NoteInput'
+      responses:
+        '204':
+          description: Note modified successfully
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+        '401':
+          description: Unauthorized. Missing or invalid authentication token.
+        '404':
+          description: Deadletter transaction or note not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+    delete:
+      tags:
+        - deadletter-transaction-notes
+      summary: Delete an existing note connected to a deadletter transaction
+      operationId: deleteNoteDeadletterTransaction
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: transactionId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Deadletter transaction unique ID
+        - name: noteId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Note unique ID
+      responses:
+        '204':
+          description: Note deleted successfully
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+        '401':
+          description: Unauthorized. Missing or invalid authentication token.
+        '404':
+          description: Deadletter transaction or note not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+  /deadletter-transactions/notes:
+    post:
+      tags:
+        - deadletter-transaction-notes
+      summary: Get all notes grouped by given transactionIds
+      operationId: getNotesByTransactionIdList
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: List of transactionIds
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotesRequest'
+      responses:
+        '200':
+          description: List of notes grouped by transactionIds
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotesResponse'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+        '401':
+          description: Unauthorized. Missing or invalid authentication token.
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
   /authenticate:
     post:
       tags:
@@ -180,6 +385,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProblemJson'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
   /actions:
     get:
       tags:
@@ -199,6 +410,12 @@ paths:
                   $ref: '#/components/schemas/ActionType'
         '401':
           description: Unauthorized. Missing or invalid authentication token.
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
 components:
   securitySchemes:
     bearerAuth:
@@ -295,6 +512,67 @@ components:
       required:
         - value
         - type
+    Note:
+      type: object
+      properties:
+        note:
+          type: string
+          minLength: 1
+          maxLength: 300
+        noteId:
+          type: string
+        transactionId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        userId:
+          type: string
+      required:
+        - note
+        - noteId
+        - transactionId
+        - createdAt
+        - updatedAt
+    NoteInput:
+      type: object
+      properties:
+        note:
+          type: string
+          minLength: 1
+          maxLength: 300
+      required:
+        - note
+    NotesRequest:
+      type: object
+      properties:
+        transactionIds:
+          type: array
+          minItems: 1
+          maxItems: 10
+          items:
+            type: string
+      required:
+        - transactionIds
+    TransactionNotes:
+      type: object
+      properties:
+        transactionId:
+          type: string
+        notesList:
+          type: array
+          items:
+            $ref: '#/components/schemas/Note'
+      required:
+        - transactionId
+        - notesList
+    NotesResponse:
+      type: array
+      items:
+        $ref: '#/components/schemas/TransactionNotes'
     DeadletterTransactionActionInput:
       type: object
       properties:

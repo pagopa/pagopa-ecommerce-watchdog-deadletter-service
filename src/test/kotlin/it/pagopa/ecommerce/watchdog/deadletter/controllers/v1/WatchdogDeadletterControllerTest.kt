@@ -275,7 +275,97 @@ class WatchdogDeadletterControllerTest {
     }
 
     @Test
-    fun `list actions for deadletter transaction should return '404 NOT FOUND' because the deadletterTransaction doesn't exist`() {
-        // TO DO
+    fun `list actions for deadletter transaction should return '404 NOT FOUND' because the deadletterTransaction doesn't exist`() {}
+
+    @Test
+    fun `add a new note to a transaction`() {
+        /*
+           Method not implemented yet, expected error
+        */
+        val deadletterTransactionId: String = "77777777"
+        val body =
+            """ 
+            {
+                "note":"test" 
+            }
+        """
+                .trimIndent()
+
+        webClient
+            .post()
+            .uri("/deadletter-transactions/$deadletterTransactionId/notes")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(body)
+            .exchange()
+            .expectStatus()
+            .is5xxServerError
+    }
+
+    @Test
+    fun `update an existing note`() {
+        /*
+           Method not implemented yet, expected error
+        */
+        val deadletterTransactionId: String = "77777777"
+        val noteId = "777777"
+        val body =
+            """ 
+            {
+                "note":"test" 
+            }
+        """
+                .trimIndent()
+
+        webClient
+            .put()
+            .uri("/deadletter-transactions/$deadletterTransactionId/notes/$noteId")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(body)
+            .exchange()
+            .expectStatus()
+            .is5xxServerError
+    }
+
+    @Test
+    fun `get all the notes of a given list of transactionId`() {
+        /*
+           Method not implemented yet, expected error
+        */
+
+        val body =
+            """ 
+            {
+                "transactionIds":[
+                    "123",
+                    "456"
+                ],
+            }
+        """
+                .trimIndent()
+
+        webClient
+            .post()
+            .uri("/deadletter-transactions/notes")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(body)
+            .exchange()
+            .expectStatus()
+            .is5xxServerError
+    }
+
+    @Test
+    fun `delete a note`() {
+        /*
+           Method not implemented yet, expected error
+        */
+        val deadletterTransactionId: String = "77777777"
+        val noteId = "777777"
+
+        webClient
+            .delete()
+            .uri("/deadletter-transactions/$deadletterTransactionId/notes/$noteId")
+            .exchange()
+            .expectStatus()
+            .is5xxServerError
     }
 }
