@@ -76,6 +76,10 @@ paths:
           description: Unauthorized. Missing or invalid authentication token.
         '500':
           description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
   /deadletter-transactions/{transactionId}/actions:
     get:
       tags:
@@ -116,6 +120,10 @@ paths:
                 $ref: '#/components/schemas/ProblemJson'
         '500':
           description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
     post:
       tags:
         - deadletter-transactions-actions
@@ -156,6 +164,10 @@ paths:
                 $ref: '#/components/schemas/ProblemJson'
         '500':
           description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
   /deadletter-transactions/{transactionId}/notes:
     post:
       tags:
@@ -207,6 +219,10 @@ paths:
                 $ref: '#/components/schemas/ProblemJson'
         '500':
           description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
   /deadletter-transactions/{transactionId}/notes/{noteId}:
     put:
       tags:
@@ -254,6 +270,10 @@ paths:
                 $ref: '#/components/schemas/ProblemJson'
         '500':
           description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
     delete:
       tags:
         - deadletter-transaction-notes
@@ -293,6 +313,10 @@ paths:
                 $ref: '#/components/schemas/ProblemJson'
         '500':
           description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
   /deadletter-transactions/notes:
     post:
       tags:
@@ -325,6 +349,10 @@ paths:
           description: Unauthorized. Missing or invalid authentication token.
         '500':
           description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
   /authenticate:
     post:
       tags:
@@ -359,6 +387,10 @@ paths:
                 $ref: '#/components/schemas/ProblemJson'
         '500':
           description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
   /actions:
     get:
       tags:
@@ -380,6 +412,10 @@ paths:
           description: Unauthorized. Missing or invalid authentication token.
         '500':
           description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
 components:
   securitySchemes:
     bearerAuth:
