@@ -468,6 +468,7 @@ class DeadletterTransactionsService(
                                 newNote.transactionId,
                                 newNote.createdAt.atOffset(ZoneOffset.UTC),
                                 newNote.updatedAt.atOffset(ZoneOffset.UTC),
+                                newNote.userId,
                             )
                         )
                     }
@@ -492,6 +493,7 @@ class DeadletterTransactionsService(
                                 note.transactionId,
                                 note.createdAt.atOffset(ZoneOffset.UTC),
                                 note.updatedAt.atOffset(ZoneOffset.UTC),
+                                note.userId,
                             )
                         }
                     // Order the list in cronological order based on creationDate
