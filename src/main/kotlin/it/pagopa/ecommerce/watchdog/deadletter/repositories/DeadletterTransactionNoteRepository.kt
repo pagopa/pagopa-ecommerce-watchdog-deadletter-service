@@ -10,7 +10,8 @@ import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 
 @Repository
-interface DeadletterTransactionNoteRepository : ReactiveCrudRepository<Note, String> {
+interface DeadletterTransactionNoteRepository :
+    ReactiveCrudRepository<Note, String>, DeadletterTransactionNoteRepositoryCustom {
 
     /*
        Count the number of the notes associate to a transactionId
