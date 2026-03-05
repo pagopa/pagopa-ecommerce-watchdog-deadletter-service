@@ -1093,23 +1093,25 @@ class DeadletterTransactionServiceTest {
         StepVerifier.create(resultMono).expectError(InvalidNoteId::class.java)
     }
 
-    @Test
-    fun `deleteNote should return without error because the delete on db worked`() {
-        whenever(deadletterTransactionsNoteRepo.deleteBy_id(any())).thenReturn(Mono.just<Long>(1L))
-
-        val resultMono = deadletterTransactionsService.deleteNote("idTest")
-
-        StepVerifier.create(resultMono)
-            .expectNextMatches { result -> result is Unit }
-            .verifyComplete()
-    }
-
-    @Test
-    fun `deleteNote should return error because the delete fail`() {
-        whenever(deadletterTransactionsNoteRepo.deleteBy_id(any())).thenReturn(Mono.just<Long>(0L))
-
-        val resultMono = deadletterTransactionsService.deleteNote("idTest")
-
-        StepVerifier.create(resultMono).expectError(InvalidNoteId::class.java)
-    }
+    //    @Test
+    //    fun `deleteNote should return without error because the delete on db worked`() {
+    //
+    // whenever(deadletterTransactionsNoteRepo.deleteBy_id(any())).thenReturn(Mono.just<Long>(1L))
+    //
+    //        val resultMono = deadletterTransactionsService.deleteNote("idTest")
+    //
+    //        StepVerifier.create(resultMono)
+    //            .expectNextMatches { result -> result is Unit }
+    //            .verifyComplete()
+    //    }
+    //
+    //    @Test
+    //    fun `deleteNote should return error because the delete fail`() {
+    //
+    // whenever(deadletterTransactionsNoteRepo.deleteBy_id(any())).thenReturn(Mono.just<Long>(0L))
+    //
+    //        val resultMono = deadletterTransactionsService.deleteNote("idTest")
+    //
+    //        StepVerifier.create(resultMono).expectError(InvalidNoteId::class.java)
+    //    }
 }

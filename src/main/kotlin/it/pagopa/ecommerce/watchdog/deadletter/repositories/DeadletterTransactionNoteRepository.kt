@@ -28,9 +28,4 @@ interface DeadletterTransactionNoteRepository : ReactiveCrudRepository<Note, Str
     @Query("{'_id': ?0 }")
     @Update("{ '\$set': { 'note': ?1, 'updatedAt': ?2 } }")
     fun updateNoteById(noteId: String, noteText: String, updateInstant: Instant): Mono<Long>
-
-    /*
-       Delete a note with the target id, return the numeber of notes deleted
-    */
-    fun deleteBy_id(id: String): Mono<Long>
 }

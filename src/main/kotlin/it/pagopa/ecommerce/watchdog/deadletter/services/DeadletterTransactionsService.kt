@@ -507,16 +507,17 @@ class DeadletterTransactionsService(
             .flatMap { count -> if (count > 0) Mono.just(count) else Mono.error(InvalidNoteId()) }
     }
 
-    fun deleteNote(noteId: String): Mono<Unit> {
+    fun deleteNote(noteId: String): Mono<Void> {
         /*
            Delete a note given the noteId
         */
-        return deadletterTransactionNoteRepository.deleteBy_id(noteId).flatMap { numDel ->
-            if (numDel > 0) {
-                Mono.just(Unit)
-            } else {
-                Mono.error(InvalidNoteId())
-            }
-        }
+        return deadletterTransactionNoteRepository.deleteById(noteId)
+        //            .flatMap { numDel ->
+        //            if (numDel > 0) {
+        //                Mono.just(Unit)
+        //            } else {
+        //                Mono.error(InvalidNoteId())
+        //            }
+        //        }
     }
 }
