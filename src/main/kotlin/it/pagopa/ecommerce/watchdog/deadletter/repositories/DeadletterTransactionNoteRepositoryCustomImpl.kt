@@ -13,7 +13,7 @@ class DeadletterTransactionNoteRepositoryCustomImpl(
        Implementation for the method of deleteByIdAndReturnCount for return the number of document deleted
     */
     override fun deleteByIdAndReturnCount(id: String): Mono<Long> {
-        val criteria = Criteria.where("_id").`is`("id")
+        val criteria = Criteria.where("_id").`is`(id)
         val query = Query(criteria)
         return mongoTemplate.remove(query, Note::class.java).map { it.deletedCount }
     }
