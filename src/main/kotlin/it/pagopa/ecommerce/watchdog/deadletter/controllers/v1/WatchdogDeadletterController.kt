@@ -87,12 +87,12 @@ class WatchdogDeadletterController(
         notesRequestDto: @Valid Mono<NotesRequestDto>,
         exchange: ServerWebExchange,
     ): Mono<ResponseEntity<Flux<TransactionNotesDto>>> {
-        return notesRequestDto.flatMap { notesRequestDto ->
+        return notesRequestDto.map { notesRequestDto ->
             val transactionNotesDto =
                 deadletterTransactionsService.getAllNotesByTransactionIdList(
                     notesRequestDto.transactionIds
                 )
-            Mono.just(ResponseEntity.ok(transactionNotesDto))
+            ResponseEntity.ok(transactionNotesDto)
         }
     }
 
@@ -139,6 +139,6 @@ class WatchdogDeadletterController(
             .flatMap { noteInputDto ->
                 deadletterTransactionsService.updateNote(noteId, noteInputDto.note)
             }
-            .flatMap { Mono.just(ResponseEntity.status(204).build()) }
+            .thenReturn(ResponseEntity.status(204).build())
     }
 }
