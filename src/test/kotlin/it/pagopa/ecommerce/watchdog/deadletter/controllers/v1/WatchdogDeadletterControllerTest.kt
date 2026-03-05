@@ -2,17 +2,15 @@ package it.pagopa.ecommerce.watchdog.deadletter.controllers.v1
 
 import it.pagopa.ecommerce.watchdog.deadletter.config.TestSecurityConfig
 import it.pagopa.ecommerce.watchdog.deadletter.documents.Action
+import it.pagopa.ecommerce.watchdog.deadletter.exception.InvalidNoteId
 import it.pagopa.ecommerce.watchdog.deadletter.exception.InvalidTransactionId
+import it.pagopa.ecommerce.watchdog.deadletter.exception.NotesLimitException
 import it.pagopa.ecommerce.watchdog.deadletter.services.AuthService
 import it.pagopa.ecommerce.watchdog.deadletter.services.DeadletterTransactionsService
-import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.ActionTypeDto
-import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.DeadletterTransactionActionInputDto
-import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.DeadletterTransactionDto
-import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.ListDeadletterTransactions200ResponseDto
-import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.PageInfoDto
+import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.*
 import java.time.Instant
 import java.time.LocalDate
-import java.util.ArrayList
+import java.time.OffsetDateTime
 import org.junit.jupiter.api.Test
 import org.mockito.BDDMockito.given
 import org.springframework.beans.factory.annotation.Autowired
@@ -279,93 +277,197 @@ class WatchdogDeadletterControllerTest {
 
     @Test
     fun `add a new note to a transaction`() {
-        /*
-           Method not implemented yet, expected error
-        */
-        val deadletterTransactionId: String = "77777777"
-        val body =
-            """ 
-            {
-                "note":"test" 
-            }
-        """
-                .trimIndent()
+
+        val noteInputDto = NoteInputDto("noteText")
+        val noteDto =
+            NoteDto(
+                "noteText",
+                "noteId",
+                "transactionId",
+                OffsetDateTime.now(),
+                OffsetDateTime.now(),
+                "userId",
+            )
+
+        given(authService.getAuthenticatedUserId()).willReturn(Mono.just("userId"))
+        given(
+                deadletterTransactionsService.addNoteToDeadLetterTransaction(
+                    "noteText",
+                    "userId",
+                    "transactionId",
+                )
+            )
+            .willReturn(Mono.just(noteDto))
+
+        val deadletterTransactionId = "transactionId"
 
         webClient
             .post()
             .uri("/deadletter-transactions/$deadletterTransactionId/notes")
             .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(body)
+            .bodyValue(noteInputDto)
             .exchange()
             .expectStatus()
-            .is5xxServerError
+            .isCreated
+            .expectBody(noteInputDto::class.java)
     }
 
     @Test
-    fun `update an existing note`() {
-        /*
-           Method not implemented yet, expected error
-        */
-        val deadletterTransactionId: String = "77777777"
-        val noteId = "777777"
-        val body =
-            """ 
-            {
-                "note":"test" 
-            }
-        """
-                .trimIndent()
+    fun `add a new note to a transaction should return a error 404 because the transaction doesnt exist`() {
+
+        val noteInputDto = NoteInputDto("noteText")
+
+        given(authService.getAuthenticatedUserId()).willReturn(Mono.just("userId"))
+        given(
+                deadletterTransactionsService.addNoteToDeadLetterTransaction(
+                    "noteText",
+                    "userId",
+                    "transactionId",
+                )
+            )
+            .willReturn(Mono.error(InvalidTransactionId()))
+
+        val deadletterTransactionId = "transactionId"
+
+        webClient
+            .post()
+            .uri("/deadletter-transactions/$deadletterTransactionId/notes")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(noteInputDto)
+            .exchange()
+            .expectStatus()
+            .isNotFound
+    }
+
+    @Test
+    fun `add a new note to a transaction should return a error 422 because there are too many notes`() {
+
+        val noteInputDto = NoteInputDto("noteText")
+
+        given(authService.getAuthenticatedUserId()).willReturn(Mono.just("userId"))
+        given(
+                deadletterTransactionsService.addNoteToDeadLetterTransaction(
+                    "noteText",
+                    "userId",
+                    "transactionId",
+                )
+            )
+            .willReturn(Mono.error(NotesLimitException()))
+
+        val deadletterTransactionId = "transactionId"
+
+        webClient
+            .post()
+            .uri("/deadletter-transactions/$deadletterTransactionId/notes")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(noteInputDto)
+            .exchange()
+            .expectStatus()
+            .isEqualTo(422)
+    }
+
+    @Test
+    fun `update an existing note will respond with 204 correct status`() {
+        val transactionId = "transactionId"
+        val noteId = "noteId"
+        val noteInputDto = NoteInputDto("noteText")
+
+        given(authService.getAuthenticatedUserId()).willReturn(Mono.just("userId"))
+        given(deadletterTransactionsService.updateNote(noteId, noteInputDto.note))
+            .willReturn(Mono.just(1L))
 
         webClient
             .put()
-            .uri("/deadletter-transactions/$deadletterTransactionId/notes/$noteId")
+            .uri("/deadletter-transactions/$transactionId/notes/$noteId")
             .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(body)
+            .bodyValue(noteInputDto)
             .exchange()
             .expectStatus()
-            .is5xxServerError
+            .isNoContent
+    }
+
+    @Test
+    fun `update an existing note will respond with 404 because the transaction or the note doent exist`() {
+        val transactionId = "transactionId"
+        val noteId = "noteId"
+        val noteInputDto = NoteInputDto("noteText")
+
+        given(authService.getAuthenticatedUserId()).willReturn(Mono.just("userId"))
+        given(deadletterTransactionsService.updateNote(noteId, noteInputDto.note))
+            .willReturn(Mono.error(InvalidNoteId()))
+
+        webClient
+            .put()
+            .uri("/deadletter-transactions/$transactionId/notes/$noteId")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(noteInputDto)
+            .exchange()
+            .expectStatus()
+            .isNotFound
     }
 
     @Test
     fun `get all the notes of a given list of transactionId`() {
-        /*
-           Method not implemented yet, expected error
-        */
+        val transactionIds = ArrayList<String>()
+        transactionIds.add("testId")
+        val notesRequestDto = NotesRequestDto(transactionIds)
 
-        val body =
-            """ 
-            {
-                "transactionIds":[
-                    "123",
-                    "456"
-                ],
-            }
-        """
-                .trimIndent()
+        val noteList = ArrayList<NoteDto>()
+        noteList.add(
+            NoteDto(
+                "noteText",
+                "noteId",
+                "transactionId",
+                OffsetDateTime.now(),
+                OffsetDateTime.now(),
+                "userId",
+            )
+        )
+        val transactionNotesDto = TransactionNotesDto("testId", noteList)
+
+        given(authService.getAuthenticatedUserId()).willReturn(Mono.just("userId"))
+        given(deadletterTransactionsService.getAllNotesByTransactionIdList(transactionIds))
+            .willReturn(Flux.just(transactionNotesDto))
 
         webClient
             .post()
             .uri("/deadletter-transactions/notes")
             .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(body)
+            .bodyValue(notesRequestDto)
             .exchange()
             .expectStatus()
-            .is5xxServerError
+            .isOk
+            .expectBody()
     }
 
     @Test
     fun `delete a note`() {
-        /*
-           Method not implemented yet, expected error
-        */
-        val deadletterTransactionId: String = "77777777"
-        val noteId = "777777"
+        val deadletterTransactionId = "transactionId"
+        val noteId = "noteId"
+        given(authService.getAuthenticatedUserId()).willReturn(Mono.just("userId"))
+        given(deadletterTransactionsService.deleteNote("noteId")).willReturn(Mono.just(Unit))
 
         webClient
             .delete()
             .uri("/deadletter-transactions/$deadletterTransactionId/notes/$noteId")
             .exchange()
             .expectStatus()
-            .is5xxServerError
+            .isNoContent
+    }
+
+    @Test
+    fun `delete a note will return error 404 because the note or the transaction doesnt exist`() {
+        val deadletterTransactionId = "transactionId"
+        val noteId = "noteId"
+        given(authService.getAuthenticatedUserId()).willReturn(Mono.just("userId"))
+        given(deadletterTransactionsService.deleteNote("noteId"))
+            .willReturn(Mono.error(InvalidNoteId()))
+
+        webClient
+            .delete()
+            .uri("/deadletter-transactions/$deadletterTransactionId/notes/$noteId")
+            .exchange()
+            .expectStatus()
+            .isNotFound
     }
 }
