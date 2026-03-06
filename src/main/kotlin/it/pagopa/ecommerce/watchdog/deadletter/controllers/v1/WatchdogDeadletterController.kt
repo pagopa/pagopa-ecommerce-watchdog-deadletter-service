@@ -127,7 +127,7 @@ class WatchdogDeadletterController(
         @RequestParam("date") date: LocalDate,
         exchange: ServerWebExchange,
     ): Mono<ResponseEntity<ListDeadletterTransactions200ResponseDto>> {
-        logger.info("Received listDeadletterTransactions request for note: [{}] ", date)
+        logger.info("Received listDeadletterTransactions request for [{}] ", date)
         return deadletterTransactionsService
             .getDeadletterTransactions(date, pageNumber, pageSize)
             .map { transactions -> ResponseEntity.ok(transactions) }
