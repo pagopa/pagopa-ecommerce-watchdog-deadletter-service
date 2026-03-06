@@ -507,13 +507,13 @@ class DeadletterTransactionsService(
             }
     }
 
-    fun updateNote(noteId: String, noteText: String): Mono<Long> {
+    fun updateNote(noteId: String, noteText: String, userId: String): Mono<Long> {
         /*
            Update the note only if the limit time is not expired
         */
         val limitUpdateInstant = Instant.now().minus(noteUpdateLimitTime, ChronoUnit.MINUTES)
         return deadletterTransactionNoteRepository
-            .updateNoteByIdIfRecent(noteId, noteText, Instant.now(), limitUpdateInstant)
+            .updateNoteByIdIfRecent(noteId, noteText, Instant.now(), limitUpdateInstant, userId)
             .flatMap { count ->
                 if (count > 0) {
                     logger.info("Note [{}] updated!", noteId)
@@ -524,13 +524,13 @@ class DeadletterTransactionsService(
             }
     }
 
-    fun deleteNote(noteId: String): Mono<Unit> {
+    fun deleteNote(noteId: String, userId: String): Mono<Unit> {
         /*
            Delete a note given the noteId if the limit time is not expired
         */
         val limitDeleteInstant = Instant.now().minus(noteDeleteLimitTime, ChronoUnit.MINUTES)
         return deadletterTransactionNoteRepository
-            .deleteByIdAndReturnCountIfRecent(noteId, limitDeleteInstant)
+            .deleteByIdAndReturnCountIfRecent(noteId, limitDeleteInstant, userId)
             .flatMap { numDel ->
                 if (numDel > 0) {
                     logger.info("Note [{}] deleted.", noteId)

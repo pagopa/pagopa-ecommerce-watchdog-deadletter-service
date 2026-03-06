@@ -26,12 +26,13 @@ interface DeadletterTransactionNoteRepository :
     /*
        Update the note text and the updatedAt field of the target note if the creationDate is greater than limitUpdateInstant, return the number of document updated
     */
-    @Query("{'_id': ?0, 'createdAt': { '\$gte': ?3 } }")
+    @Query("{'_id': ?0, 'createdAt': { '\$gte': ?3 }, 'userId': ?4 }")
     @Update("{ '\$set': { 'note': ?1, 'updatedAt': ?2 } }")
     fun updateNoteByIdIfRecent(
         noteId: String,
         noteText: String,
         updateInstant: Instant,
         limitUpdateInstant: Instant,
+        userId: String,
     ): Mono<Long>
 }

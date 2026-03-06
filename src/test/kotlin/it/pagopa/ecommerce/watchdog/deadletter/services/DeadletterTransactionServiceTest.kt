@@ -1077,10 +1077,18 @@ class DeadletterTransactionServiceTest {
 
     @Test
     fun `updateNote should return the count of the modified notes`() {
-        whenever(deadletterTransactionsNoteRepo.updateNoteByIdIfRecent(any(), any(), any(), any()))
+        whenever(
+                deadletterTransactionsNoteRepo.updateNoteByIdIfRecent(
+                    any(),
+                    any(),
+                    any(),
+                    any(),
+                    any(),
+                )
+            )
             .thenReturn(Mono.just<Long>(1L))
 
-        val resultMono = deadletterTransactionsService.updateNote("idTest", "test")
+        val resultMono = deadletterTransactionsService.updateNote("idTest", "test", "userId")
 
         StepVerifier.create(resultMono)
             .expectNextMatches { response -> response > 0 }
@@ -1089,10 +1097,18 @@ class DeadletterTransactionServiceTest {
 
     @Test
     fun `updateNote should return error because update fail`() {
-        whenever(deadletterTransactionsNoteRepo.updateNoteByIdIfRecent(any(), any(), any(), any()))
+        whenever(
+                deadletterTransactionsNoteRepo.updateNoteByIdIfRecent(
+                    any(),
+                    any(),
+                    any(),
+                    any(),
+                    any(),
+                )
+            )
             .thenReturn(Mono.just<Long>(0L))
 
-        val resultMono = deadletterTransactionsService.updateNote("idTest", "test")
+        val resultMono = deadletterTransactionsService.updateNote("idTest", "test", "userId")
 
         StepVerifier.create(resultMono).expectError(InvalidNoteId::class.java).verify()
     }
@@ -1100,10 +1116,12 @@ class DeadletterTransactionServiceTest {
     @Test
     fun `deleteNote should return without error because the delete on db worked`() {
 
-        whenever(deadletterTransactionsNoteRepo.deleteByIdAndReturnCountIfRecent(any(), any()))
+        whenever(
+                deadletterTransactionsNoteRepo.deleteByIdAndReturnCountIfRecent(any(), any(), any())
+            )
             .thenReturn(Mono.just<Long>(1L))
 
-        val resultMono = deadletterTransactionsService.deleteNote("idTest")
+        val resultMono = deadletterTransactionsService.deleteNote("idTest", "userId")
 
         StepVerifier.create(resultMono)
             .expectNextMatches { result -> result is Unit }
@@ -1113,10 +1131,12 @@ class DeadletterTransactionServiceTest {
     @Test
     fun `deleteNote should return error because the delete fail`() {
 
-        whenever(deadletterTransactionsNoteRepo.deleteByIdAndReturnCountIfRecent(any(), any()))
+        whenever(
+                deadletterTransactionsNoteRepo.deleteByIdAndReturnCountIfRecent(any(), any(), any())
+            )
             .thenReturn(Mono.just<Long>(0L))
 
-        val resultMono = deadletterTransactionsService.deleteNote("idTest")
+        val resultMono = deadletterTransactionsService.deleteNote("idTest", "userId")
 
         StepVerifier.create(resultMono).expectError(InvalidNoteId::class.java).verify()
     }

@@ -373,7 +373,7 @@ class WatchdogDeadletterControllerTest {
         val noteInputDto = NoteInputDto("noteText")
 
         given(authService.getAuthenticatedUserId()).willReturn(Mono.just("userId"))
-        given(deadletterTransactionsService.updateNote(noteId, noteInputDto.note))
+        given(deadletterTransactionsService.updateNote(noteId, noteInputDto.note, "userId"))
             .willReturn(Mono.just(1L))
 
         webClient
@@ -393,7 +393,7 @@ class WatchdogDeadletterControllerTest {
         val noteInputDto = NoteInputDto("noteText")
 
         given(authService.getAuthenticatedUserId()).willReturn(Mono.just("userId"))
-        given(deadletterTransactionsService.updateNote(noteId, noteInputDto.note))
+        given(deadletterTransactionsService.updateNote(noteId, noteInputDto.note, "userId"))
             .willReturn(Mono.error(InvalidNoteId()))
 
         webClient
@@ -445,7 +445,8 @@ class WatchdogDeadletterControllerTest {
         val deadletterTransactionId = "transactionId"
         val noteId = "noteId"
         given(authService.getAuthenticatedUserId()).willReturn(Mono.just("userId"))
-        given(deadletterTransactionsService.deleteNote("noteId")).willReturn(Mono.just(Unit))
+        given(deadletterTransactionsService.deleteNote("noteId", "userId"))
+            .willReturn(Mono.just(Unit))
 
         webClient
             .delete()
@@ -460,7 +461,7 @@ class WatchdogDeadletterControllerTest {
         val deadletterTransactionId = "transactionId"
         val noteId = "noteId"
         given(authService.getAuthenticatedUserId()).willReturn(Mono.just("userId"))
-        given(deadletterTransactionsService.deleteNote("noteId"))
+        given(deadletterTransactionsService.deleteNote("noteId", "userId"))
             .willReturn(Mono.error(InvalidNoteId()))
 
         webClient

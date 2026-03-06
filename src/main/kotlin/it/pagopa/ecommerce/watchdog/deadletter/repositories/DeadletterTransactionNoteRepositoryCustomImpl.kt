@@ -13,8 +13,18 @@ class DeadletterTransactionNoteRepositoryCustomImpl(
     /*
        Implementation for the method of deleteByIdAndReturnCount for return the number of document deleted
     */
-    override fun deleteByIdAndReturnCountIfRecent(id: String, limitTime: Instant): Mono<Long> {
-        val criteria = Criteria.where("_id").`is`(id).and("createdAt").gte(limitTime)
+    override fun deleteByIdAndReturnCountIfRecent(
+        id: String,
+        limitTime: Instant,
+        userId: String,
+    ): Mono<Long> {
+        val criteria =
+            Criteria.where("_id")
+                .`is`(id)
+                .and("userId")
+                .`is`(userId)
+                .and("createdAt")
+                .gte(limitTime)
         val query = Query(criteria)
         return mongoTemplate.remove(query, Note::class.java).map { it.deletedCount }
     }

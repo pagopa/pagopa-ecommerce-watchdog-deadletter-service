@@ -79,9 +79,11 @@ class WatchdogDeadletterController(
         exchange: ServerWebExchange,
     ): Mono<ResponseEntity<Void>> {
         logger.info("Received delete request for note: [{}] ", noteId)
-        return deadletterTransactionsService
-            .deleteNote(noteId)
-            .thenReturn(ResponseEntity.status(204).build())
+        return authService.getAuthenticatedUserId().flatMap { userId ->
+            deadletterTransactionsService
+                .deleteNote(noteId, userId)
+                .thenReturn(ResponseEntity.status(204).build())
+        }
     }
 
     override fun getNotesByTransactionIdList(
@@ -138,10 +140,12 @@ class WatchdogDeadletterController(
         exchange: ServerWebExchange,
     ): Mono<ResponseEntity<Void>> {
         logger.info("Received update request for note: [{}] ", noteId)
-        return noteInputDto
-            .flatMap { noteInputDto ->
-                deadletterTransactionsService.updateNote(noteId, noteInputDto.note)
-            }
-            .thenReturn(ResponseEntity.status(204).build())
+        return authService.getAuthenticatedUserId().flatMap { userId ->
+            noteInputDto
+                .flatMap { noteInputDto ->
+                    deadletterTransactionsService.updateNote(noteId, noteInputDto.note, userId)
+                }
+                .thenReturn(ResponseEntity.status(204).build())
+        }
     }
 }
