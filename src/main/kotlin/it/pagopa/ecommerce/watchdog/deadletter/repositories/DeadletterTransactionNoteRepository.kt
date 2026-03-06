@@ -28,5 +28,10 @@ interface DeadletterTransactionNoteRepository :
     */
     @Query("{'_id': ?0, 'createdAt': { '\$gte': ?3 } }")
     @Update("{ '\$set': { 'note': ?1, 'updatedAt': ?2 } }")
-    fun updateNoteByIdIfRecent(noteId: String, noteText: String, updateInstant: Instant, limitUpdateInstant: Instant): Mono<Long>
+    fun updateNoteByIdIfRecent(
+        noteId: String,
+        noteText: String,
+        updateInstant: Instant,
+        limitUpdateInstant: Instant,
+    ): Mono<Long>
 }

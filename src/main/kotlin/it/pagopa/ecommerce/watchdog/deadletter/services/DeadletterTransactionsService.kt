@@ -34,6 +34,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.time.format.DateTimeParseException
+import java.time.temporal.ChronoUnit
 import java.util.*
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -44,7 +45,6 @@ import reactor.core.publisher.Mono
 import reactor.kotlin.core.publisher.switchIfEmpty
 import reactor.kotlin.core.util.function.component1
 import reactor.kotlin.core.util.function.component2
-import java.time.temporal.ChronoUnit
 
 @Service
 class DeadletterTransactionsService(
@@ -55,7 +55,7 @@ class DeadletterTransactionsService(
     @Autowired val actionTypeConfig: ActionTypeConfig,
     @Value("\${note.numlimit}") private val noteNumLimitConfig: Long,
     @Value("\${note.update.limittime.minutes}") private val noteUpdateLimitTime: Long,
-    @Value("\${note.delete.limittime.minutes}") private val noteDeleteLimitTime: Long
+    @Value("\${note.delete.limittime.minutes}") private val noteDeleteLimitTime: Long,
 ) {
 
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -464,6 +464,7 @@ class DeadletterTransactionsService(
                 deadletterTransactionNoteRepository
                     .save(newNote)
                     .flatMap { newNote ->
+                        logger.info("Note [{}] added.", newNote.id)
                         Mono.just(
                             NoteDto(
                                 newNote.note,
@@ -508,12 +509,19 @@ class DeadletterTransactionsService(
 
     fun updateNote(noteId: String, noteText: String): Mono<Long> {
         /*
-            Update the note only if the limit time is not expired
-         */
+           Update the note only if the limit time is not expired
+        */
         val limitUpdateInstant = Instant.now().minus(noteUpdateLimitTime, ChronoUnit.MINUTES)
         return deadletterTransactionNoteRepository
             .updateNoteByIdIfRecent(noteId, noteText, Instant.now(), limitUpdateInstant)
-            .flatMap { count -> if (count > 0) Mono.just(count) else Mono.error(InvalidNoteId()) }
+            .flatMap { count ->
+                if (count > 0) {
+                    logger.info("Note [{}] updated!", noteId)
+                    Mono.just(count)
+                } else {
+                    Mono.error(InvalidNoteId())
+                }
+            }
     }
 
     fun deleteNote(noteId: String): Mono<Unit> {
@@ -521,13 +529,15 @@ class DeadletterTransactionsService(
            Delete a note given the noteId if the limit time is not expired
         */
         val limitDeleteInstant = Instant.now().minus(noteDeleteLimitTime, ChronoUnit.MINUTES)
-        return deadletterTransactionNoteRepository.deleteByIdAndReturnCountIfRecent(noteId, limitDeleteInstant).flatMap { numDel
-            ->
-            if (numDel > 0) {
-                Mono.just(Unit)
-            } else {
-                Mono.error(InvalidNoteId())
+        return deadletterTransactionNoteRepository
+            .deleteByIdAndReturnCountIfRecent(noteId, limitDeleteInstant)
+            .flatMap { numDel ->
+                if (numDel > 0) {
+                    logger.info("Note [{}] deleted.", noteId)
+                    Mono.just(Unit)
+                } else {
+                    Mono.error(InvalidNoteId())
+                }
             }
-        }
     }
 }

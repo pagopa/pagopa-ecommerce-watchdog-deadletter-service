@@ -78,6 +78,7 @@ class WatchdogDeadletterController(
         noteId: String,
         exchange: ServerWebExchange,
     ): Mono<ResponseEntity<Void>> {
+        logger.info("Received delete request for note: [{}] ", noteId)
         return deadletterTransactionsService
             .deleteNote(noteId)
             .thenReturn(ResponseEntity.status(204).build())
@@ -87,6 +88,7 @@ class WatchdogDeadletterController(
         notesRequestDto: @Valid Mono<NotesRequestDto>,
         exchange: ServerWebExchange,
     ): Mono<ResponseEntity<Flux<TransactionNotesDto>>> {
+        logger.info("Received getNotesByTransactionIdList request")
         return notesRequestDto.map { notesRequestDto ->
             val transactionNotesDto =
                 deadletterTransactionsService.getAllNotesByTransactionIdList(
@@ -123,7 +125,7 @@ class WatchdogDeadletterController(
         @RequestParam("date") date: LocalDate,
         exchange: ServerWebExchange,
     ): Mono<ResponseEntity<ListDeadletterTransactions200ResponseDto>> {
-        logger.info("Received listDeadletterTransactions request for [{}] ", date)
+        logger.info("Received listDeadletterTransactions request for note: [{}] ", date)
         return deadletterTransactionsService
             .getDeadletterTransactions(date, pageNumber, pageSize)
             .map { transactions -> ResponseEntity.ok(transactions) }
@@ -135,6 +137,7 @@ class WatchdogDeadletterController(
         noteInputDto: @Valid Mono<NoteInputDto>,
         exchange: ServerWebExchange,
     ): Mono<ResponseEntity<Void>> {
+        logger.info("Received update request for note: [{}] ", noteId)
         return noteInputDto
             .flatMap { noteInputDto ->
                 deadletterTransactionsService.updateNote(noteId, noteInputDto.note)
