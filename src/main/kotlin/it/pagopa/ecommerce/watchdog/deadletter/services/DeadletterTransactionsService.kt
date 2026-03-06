@@ -454,7 +454,7 @@ class DeadletterTransactionsService(
                 val newNote =
                     Note(
                         id = UUID.randomUUID().toString(),
-                        note = noteText,
+                        text = noteText,
                         transactionId = transactionId,
                         userId = userId,
                         createdAt = Instant.now(),
@@ -467,7 +467,7 @@ class DeadletterTransactionsService(
                         logger.info("Note [{}] added.", newNote.id)
                         Mono.just(
                             NoteDto(
-                                newNote.note,
+                                newNote.text,
                                 newNote.id,
                                 newNote.transactionId,
                                 newNote.createdAt.atOffset(ZoneOffset.UTC),
@@ -492,7 +492,7 @@ class DeadletterTransactionsService(
                     var noteDtoList =
                         notes.map { note ->
                             NoteDto(
-                                note.note,
+                                note.text,
                                 note.id,
                                 note.transactionId,
                                 note.createdAt.atOffset(ZoneOffset.UTC),
