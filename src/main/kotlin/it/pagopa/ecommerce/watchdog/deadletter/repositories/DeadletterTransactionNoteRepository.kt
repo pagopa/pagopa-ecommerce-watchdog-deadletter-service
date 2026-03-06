@@ -24,9 +24,9 @@ interface DeadletterTransactionNoteRepository :
     fun findAllByTransactionIdIn(transactionIds: List<String>): Flux<Note>
 
     /*
-       Update the note text and the updatedAt field of the target note, return the number of document updated
+       Update the note text and the updatedAt field of the target note if the creationDate is greater than limitUpdateInstant, return the number of document updated
     */
-    @Query("{'_id': ?0 }")
+    @Query("{'_id': ?0, 'createdAt': { '\$gte': ?3 } }")
     @Update("{ '\$set': { 'note': ?1, 'updatedAt': ?2 } }")
-    fun updateNoteById(noteId: String, noteText: String, updateInstant: Instant): Mono<Long>
+    fun updateNoteByIdIfRecent(noteId: String, noteText: String, updateInstant: Instant, limitUpdateInstant: Instant): Mono<Long>
 }

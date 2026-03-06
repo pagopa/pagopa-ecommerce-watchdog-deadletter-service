@@ -44,6 +44,7 @@ import reactor.core.publisher.Mono
 import reactor.kotlin.core.publisher.switchIfEmpty
 import reactor.kotlin.core.util.function.component1
 import reactor.kotlin.core.util.function.component2
+import java.time.temporal.ChronoUnit
 
 @Service
 class DeadletterTransactionsService(
@@ -53,6 +54,8 @@ class DeadletterTransactionsService(
     private val deadletterTransactionNoteRepository: DeadletterTransactionNoteRepository,
     @Autowired val actionTypeConfig: ActionTypeConfig,
     @Value("\${note.numlimit}") private val noteNumLimitConfig: Long,
+    @Value("\${note.update.limittime.minutes}") private val noteUpdateLimitTime: Long,
+    @Value("\${note.delete.limittime.minutes}") private val noteDeleteLimitTime: Long
 ) {
 
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -504,16 +507,21 @@ class DeadletterTransactionsService(
     }
 
     fun updateNote(noteId: String, noteText: String): Mono<Long> {
+        /*
+            Update the note only if the limit time is not expired
+         */
+        val limitUpdateInstant = Instant.now().minus(noteUpdateLimitTime, ChronoUnit.MINUTES)
         return deadletterTransactionNoteRepository
-            .updateNoteById(noteId, noteText, Instant.now())
+            .updateNoteByIdIfRecent(noteId, noteText, Instant.now(), limitUpdateInstant)
             .flatMap { count -> if (count > 0) Mono.just(count) else Mono.error(InvalidNoteId()) }
     }
 
     fun deleteNote(noteId: String): Mono<Unit> {
         /*
-           Delete a note given the noteId
+           Delete a note given the noteId if the limit time is not expired
         */
-        return deadletterTransactionNoteRepository.deleteByIdAndReturnCount(noteId).flatMap { numDel
+        val limitDeleteInstant = Instant.now().minus(noteDeleteLimitTime, ChronoUnit.MINUTES)
+        return deadletterTransactionNoteRepository.deleteByIdAndReturnCountIfRecent(noteId, limitDeleteInstant).flatMap { numDel
             ->
             if (numDel > 0) {
                 Mono.just(Unit)
