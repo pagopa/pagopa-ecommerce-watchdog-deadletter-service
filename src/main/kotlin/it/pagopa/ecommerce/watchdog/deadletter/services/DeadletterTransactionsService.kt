@@ -530,7 +530,7 @@ class DeadletterTransactionsService(
         */
         val limitDeleteInstant = Instant.now().minus(noteDeleteLimitTime, ChronoUnit.MINUTES)
         return deadletterTransactionNoteRepository
-            .deleteByIdAndReturnCountIfRecent(noteId, limitDeleteInstant, userId)
+            .deleteByIdAndUserIdAndCreatedAtAfter(noteId, userId,limitDeleteInstant,)
             .flatMap { numDel ->
                 if (numDel > 0) {
                     logger.info("Note [{}] deleted.", noteId)

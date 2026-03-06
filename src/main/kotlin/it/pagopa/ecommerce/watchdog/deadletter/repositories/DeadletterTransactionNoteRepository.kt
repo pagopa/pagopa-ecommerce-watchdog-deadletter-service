@@ -35,4 +35,9 @@ interface DeadletterTransactionNoteRepository :
         limitUpdateInstant: Instant,
         userId: String,
     ): Mono<Long>
+
+    /*
+        Delete the note if createdAt is greater or equal the limitTime and the user is the same, then return the count of note deleted
+     */
+    fun deleteByIdAndUserIdAndCreatedAtAfter(id: String, userId: String, limitTime: Instant): Mono<Long>
 }
