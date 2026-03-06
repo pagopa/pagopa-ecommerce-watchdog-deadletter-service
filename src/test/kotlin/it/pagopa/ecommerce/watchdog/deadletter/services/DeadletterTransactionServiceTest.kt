@@ -1117,7 +1117,11 @@ class DeadletterTransactionServiceTest {
     fun `deleteNote should return without error because the delete on db worked`() {
 
         whenever(
-                deadletterTransactionsNoteRepo.deleteByIdAndUserIdAndCreatedAtAfter(any(), any(), any())
+                deadletterTransactionsNoteRepo.deleteByIdAndUserIdAndCreatedAtAfter(
+                    any(),
+                    any(),
+                    any(),
+                )
             )
             .thenReturn(Mono.just<Long>(1L))
 
@@ -1132,7 +1136,11 @@ class DeadletterTransactionServiceTest {
     fun `deleteNote should return error because the delete fail`() {
 
         whenever(
-                deadletterTransactionsNoteRepo.deleteByIdAndUserIdAndCreatedAtAfter(any(), any(), any())
+                deadletterTransactionsNoteRepo.deleteByIdAndUserIdAndCreatedAtAfter(
+                    any(),
+                    any(),
+                    any(),
+                )
             )
             .thenReturn(Mono.just<Long>(0L))
 
