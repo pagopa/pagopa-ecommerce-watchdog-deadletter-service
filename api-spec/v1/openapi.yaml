@@ -537,6 +537,7 @@ components:
         - transactionId
         - createdAt
         - updatedAt
+        - userId
     NoteInput:
       type: object
       properties:
