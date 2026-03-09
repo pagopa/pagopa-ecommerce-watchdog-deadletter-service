@@ -59,7 +59,18 @@ class WatchdogDeadletterController(
         noteInputDto: @Valid Mono<NoteInputDto>,
         exchange: ServerWebExchange,
     ): Mono<ResponseEntity<NoteDto>> {
-        TODO("Not yet implemented")
+        /*
+           Can't be null the content of NoteInputDto
+        */
+        return noteInputDto.flatMap { noteInputDto ->
+            authService.getAuthenticatedUserId().flatMap { userId ->
+                deadletterTransactionsService
+                    .addNoteToDeadLetterTransaction(noteInputDto.note, userId, transactionId)
+                    .flatMap { noteInputDto ->
+                        Mono.just(ResponseEntity.status(201).body(noteInputDto))
+                    }
+            }
+        }
     }
 
     override fun deleteNoteDeadletterTransaction(
@@ -67,14 +78,26 @@ class WatchdogDeadletterController(
         noteId: String,
         exchange: ServerWebExchange,
     ): Mono<ResponseEntity<Void>> {
-        TODO("Not yet implemented")
+        logger.info("Received delete request for note: [{}] ", noteId)
+        return authService.getAuthenticatedUserId().flatMap { userId ->
+            deadletterTransactionsService
+                .deleteNote(noteId, userId)
+                .thenReturn(ResponseEntity.status(204).build())
+        }
     }
 
     override fun getNotesByTransactionIdList(
         notesRequestDto: @Valid Mono<NotesRequestDto>,
         exchange: ServerWebExchange,
     ): Mono<ResponseEntity<Flux<TransactionNotesDto>>> {
-        TODO("Not yet implemented")
+        logger.info("Received getNotesByTransactionIdList request")
+        return notesRequestDto.map { notesRequestDto ->
+            val transactionNotesDto =
+                deadletterTransactionsService.getAllNotesByTransactionIdList(
+                    notesRequestDto.transactionIds
+                )
+            ResponseEntity.ok(transactionNotesDto)
+        }
     }
 
     override fun listActionsForDeadletterTransaction(
@@ -116,6 +139,13 @@ class WatchdogDeadletterController(
         noteInputDto: @Valid Mono<NoteInputDto>,
         exchange: ServerWebExchange,
     ): Mono<ResponseEntity<Void>> {
-        TODO("Not yet implemented")
+        logger.info("Received update request for note: [{}] ", noteId)
+        return authService.getAuthenticatedUserId().flatMap { userId ->
+            noteInputDto
+                .flatMap { noteInputDto ->
+                    deadletterTransactionsService.updateNote(noteId, noteInputDto.note, userId)
+                }
+                .thenReturn(ResponseEntity.status(204).build())
+        }
     }
 }

@@ -4,9 +4,13 @@ import it.pagopa.ecommerce.watchdog.deadletter.clients.EcommerceHelpdeskServiceC
 import it.pagopa.ecommerce.watchdog.deadletter.clients.NodoTechnicalSupportClient
 import it.pagopa.ecommerce.watchdog.deadletter.config.ActionTypeConfig
 import it.pagopa.ecommerce.watchdog.deadletter.documents.Action
+import it.pagopa.ecommerce.watchdog.deadletter.documents.Note
 import it.pagopa.ecommerce.watchdog.deadletter.exception.InvalidActionValue
+import it.pagopa.ecommerce.watchdog.deadletter.exception.InvalidNoteId
 import it.pagopa.ecommerce.watchdog.deadletter.exception.InvalidTransactionId
+import it.pagopa.ecommerce.watchdog.deadletter.exception.NotesLimitException
 import it.pagopa.ecommerce.watchdog.deadletter.repositories.DeadletterTransactionActionRepository
+import it.pagopa.ecommerce.watchdog.deadletter.repositories.DeadletterTransactionNoteRepository
 import it.pagopa.ecommerce.watchdog.deadletter.utils.ObfuscationUtils.obfuscateEmail
 import it.pagopa.generated.ecommerce.helpdesk.model.DeadLetterEventDto as DeadLetterEventDtoV2
 import it.pagopa.generated.ecommerce.helpdesk.model.DeadLetterEventDto
@@ -18,7 +22,9 @@ import it.pagopa.generated.ecommerce.helpdesk.model.UserInfoDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.ActionTypeDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.DeadletterTransactionDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.ListDeadletterTransactions200ResponseDto as ListDeadletterTransactions200ResponseDtoV1
+import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.NoteDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.PageInfoDto
+import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.TransactionNotesDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.DeadletterTransactionDto as DeadletterTransactionDtoV2
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.ListDeadletterTransactions200ResponseDto as ListDeadletterTransactions200ResponseDtoV2
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.PageInfoDto as PageInfoDtoV2
@@ -26,10 +32,13 @@ import it.pagopa.generated.nodo.support.model.TransactionResponseDto as Transact
 import it.pagopa.generated.nodo.support.model.TransactionResponseDto
 import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneOffset
 import java.time.format.DateTimeParseException
+import java.time.temporal.ChronoUnit
 import java.util.*
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
@@ -42,7 +51,11 @@ class DeadletterTransactionsService(
     private val ecommerceHelpdeskServiceV1: EcommerceHelpdeskServiceClient,
     private val nodoTechnicalSupportClient: NodoTechnicalSupportClient,
     private val deadletterTransactionActionRepository: DeadletterTransactionActionRepository,
+    private val deadletterTransactionNoteRepository: DeadletterTransactionNoteRepository,
     @Autowired val actionTypeConfig: ActionTypeConfig,
+    @Value("\${note.numlimit}") private val noteNumLimitConfig: Long,
+    @Value("\${note.update.limittime.minutes}") private val noteUpdateLimitTime: Long,
+    @Value("\${note.delete.limittime.minutes}") private val noteDeleteLimitTime: Long,
 ) {
 
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -400,7 +413,7 @@ class DeadletterTransactionsService(
         if (actionTypeDto != null) {
             return ecommerceHelpdeskServiceV1
                 .searchTransactions(transactionId)
-                .flatMap { value ->
+                .flatMap { _ ->
                     val newAction =
                         Action(
                             id = UUID.randomUUID().toString(),
@@ -422,5 +435,109 @@ class DeadletterTransactionsService(
             userId,
         )
         return deadletterTransactionActionRepository.findByTransactionId(transactionId)
+    }
+
+    fun addNoteToDeadLetterTransaction(
+        noteText: String,
+        userId: String,
+        transactionId: String,
+    ): Mono<NoteDto> {
+        /*
+           Check the number of notes associate to the transactionId, if it less than the limit, the note can be save
+        */
+        return deadletterTransactionNoteRepository.countByTransactionId(transactionId).flatMap {
+            noteNumb ->
+            if (noteNumb < noteNumLimitConfig) {
+                /*
+                   Create a new note and save it on the db
+                */
+                val newNote =
+                    Note(
+                        id = UUID.randomUUID().toString(),
+                        text = noteText,
+                        transactionId = transactionId,
+                        userId = userId,
+                        createdAt = Instant.now(),
+                        updatedAt = Instant.now(),
+                    )
+
+                deadletterTransactionNoteRepository
+                    .save(newNote)
+                    .flatMap { newNote ->
+                        logger.info("Note [{}] added.", newNote.id)
+                        Mono.just(
+                            NoteDto(
+                                newNote.text,
+                                newNote.id,
+                                newNote.transactionId,
+                                newNote.createdAt.atOffset(ZoneOffset.UTC),
+                                newNote.updatedAt.atOffset(ZoneOffset.UTC),
+                                newNote.userId,
+                            )
+                        )
+                    }
+                    .switchIfEmpty(Mono.error(InvalidTransactionId()))
+            } else {
+                Mono.error(NotesLimitException())
+            }
+        }
+    }
+
+    fun getAllNotesByTransactionIdList(transactionIdList: List<String>): Flux<TransactionNotesDto> {
+        return deadletterTransactionNoteRepository
+            .findAllByTransactionIdIn(transactionIdList)
+            .groupBy { it.transactionId }
+            .flatMap { groupedFlux ->
+                groupedFlux.collectList().map { notes ->
+                    var noteDtoList =
+                        notes.map { note ->
+                            NoteDto(
+                                note.text,
+                                note.id,
+                                note.transactionId,
+                                note.createdAt.atOffset(ZoneOffset.UTC),
+                                note.updatedAt.atOffset(ZoneOffset.UTC),
+                                note.userId,
+                            )
+                        }
+                    // Order the list in chronological order based on creationDate
+                    noteDtoList = noteDtoList.sortedBy { it.createdAt }
+                    TransactionNotesDto(groupedFlux.key(), noteDtoList)
+                }
+            }
+    }
+
+    fun updateNote(noteId: String, noteText: String, userId: String): Mono<Long> {
+        /*
+           Update the note only if the limit time is not expired
+        */
+        val limitUpdateInstant = Instant.now().minus(noteUpdateLimitTime, ChronoUnit.MINUTES)
+        return deadletterTransactionNoteRepository
+            .updateNoteByIdIfRecent(noteId, noteText, Instant.now(), limitUpdateInstant, userId)
+            .flatMap { count ->
+                if (count > 0) {
+                    logger.info("Note [{}] updated!", noteId)
+                    Mono.just(count)
+                } else {
+                    Mono.error(InvalidNoteId())
+                }
+            }
+    }
+
+    fun deleteNote(noteId: String, userId: String): Mono<Unit> {
+        /*
+           Delete a note given the noteId if the limit time is not expired
+        */
+        val limitDeleteInstant = Instant.now().minus(noteDeleteLimitTime, ChronoUnit.MINUTES)
+        return deadletterTransactionNoteRepository
+            .deleteByIdAndUserIdAndCreatedAtAfter(noteId, userId, limitDeleteInstant)
+            .flatMap { numDel ->
+                if (numDel > 0) {
+                    logger.info("Note [{}] deleted.", noteId)
+                    Mono.just(Unit)
+                } else {
+                    Mono.error(InvalidNoteId())
+                }
+            }
     }
 }
