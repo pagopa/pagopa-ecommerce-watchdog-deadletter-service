@@ -500,7 +500,7 @@ class DeadletterTransactionsService(
                                 note.userId,
                             )
                         }
-                    // Order the list in cronological order based on creationDate
+                    // Order the list in chronological order based on creationDate
                     noteDtoList = noteDtoList.sortedBy { it.createdAt }
                     TransactionNotesDto(groupedFlux.key(), noteDtoList)
                 }
