@@ -330,6 +330,11 @@ class DeadletterTransactionsService(
         val ecommerceDetailsGatewayAuthorizationStatus =
             ecommerceDetails?.transactionInfo?.gatewayAuthorizationStatus
 
+        logger.info(
+            "ecommerceDetailsGatewayAuthorizationStatus [{}] , ",
+            ecommerceDetailsGatewayAuthorizationStatus,
+        )
+
         val npgDetailsOperationResult =
             npgDetails
                 ?.operations
@@ -337,8 +342,12 @@ class DeadletterTransactionsService(
                 ?.operationResult
                 ?.toString()
 
+        logger.info("npgDetailsOperationResult [{}] , ", npgDetailsOperationResult)
+
         val gatewayAuthorizationStatus =
             ecommerceDetailsGatewayAuthorizationStatus ?: npgDetailsOperationResult
+
+        logger.info("gatewayAuthorizationStatus [{}] , ", gatewayAuthorizationStatus)
 
         val paymentToken = info?.paymentTokens?.firstOrNull() ?: "N/A"
 
