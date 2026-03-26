@@ -455,6 +455,12 @@ components:
         correlationId: "30846e8f-efa1-47ad-abad-08cfb30e5c09"
         gatewayAuthorizationStatus: "DECLINED"
         gatewayErrorCode: "121"
+    DeadLetterExcludedPaymentGateway:
+      type: array
+      items:
+        type: string
+      description: List of payment gateway to exclude
+      example: [ "NPG" ]
     DeadLetterTransactionInfo:
       type: object
       description: Dead letter transaction info
@@ -717,6 +723,8 @@ components:
                 $ref: '#/components/schemas/DeadLetterSearchDateTimeRange'
               excludedStatuses:
                 $ref: '#/components/schemas/DeadLetterExcludedStatuses'
+              excludedPaymentGateway:
+                $ref: '#/components/schemas/DeadLetterExcludedPaymentGateway'
             required:
               - source
           examples:

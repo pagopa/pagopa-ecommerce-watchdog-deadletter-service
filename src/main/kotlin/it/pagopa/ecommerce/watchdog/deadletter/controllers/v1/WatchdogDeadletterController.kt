@@ -1,4 +1,4 @@
-package it.pagopa.ecommerce.watchdog.deadletter.controllers
+package it.pagopa.ecommerce.watchdog.deadletter.controllers.v1
 
 import it.pagopa.ecommerce.watchdog.deadletter.services.AuthService
 import it.pagopa.ecommerce.watchdog.deadletter.services.DeadletterTransactionsService
@@ -6,6 +6,10 @@ import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.api.DeadletterTransa
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.DeadletterTransactionActionDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.DeadletterTransactionActionInputDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.ListDeadletterTransactions200ResponseDto
+import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.NoteDto
+import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.NoteInputDto
+import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.NotesRequestDto
+import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.TransactionNotesDto
 import jakarta.validation.Valid
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
@@ -50,6 +54,52 @@ class WatchdogDeadletterController(
             .thenReturn(ResponseEntity.created(URI("")).build())
     }
 
+    override fun addNoteToDeadletterTransaction(
+        transactionId: String,
+        noteInputDto: @Valid Mono<NoteInputDto>,
+        exchange: ServerWebExchange,
+    ): Mono<ResponseEntity<NoteDto>> {
+        /*
+           Can't be null the content of NoteInputDto
+        */
+        return noteInputDto.flatMap { noteInputDto ->
+            authService.getAuthenticatedUserId().flatMap { userId ->
+                deadletterTransactionsService
+                    .addNoteToDeadLetterTransaction(noteInputDto.note, userId, transactionId)
+                    .flatMap { noteInputDto ->
+                        Mono.just(ResponseEntity.status(201).body(noteInputDto))
+                    }
+            }
+        }
+    }
+
+    override fun deleteNoteDeadletterTransaction(
+        transactionId: String,
+        noteId: String,
+        exchange: ServerWebExchange,
+    ): Mono<ResponseEntity<Void>> {
+        logger.info("Received delete request for note: [{}] ", noteId)
+        return authService.getAuthenticatedUserId().flatMap { userId ->
+            deadletterTransactionsService
+                .deleteNote(noteId, userId)
+                .thenReturn(ResponseEntity.status(204).build())
+        }
+    }
+
+    override fun getNotesByTransactionIdList(
+        notesRequestDto: @Valid Mono<NotesRequestDto>,
+        exchange: ServerWebExchange,
+    ): Mono<ResponseEntity<Flux<TransactionNotesDto>>> {
+        logger.info("Received getNotesByTransactionIdList request")
+        return notesRequestDto.map { notesRequestDto ->
+            val transactionNotesDto =
+                deadletterTransactionsService.getAllNotesByTransactionIdList(
+                    notesRequestDto.transactionIds
+                )
+            ResponseEntity.ok(transactionNotesDto)
+        }
+    }
+
     override fun listActionsForDeadletterTransaction(
         deadletterTransactionId: String,
         exchange: ServerWebExchange?,
@@ -81,5 +131,21 @@ class WatchdogDeadletterController(
         return deadletterTransactionsService
             .getDeadletterTransactions(date, pageNumber, pageSize)
             .map { transactions -> ResponseEntity.ok(transactions) }
+    }
+
+    override fun updateNoteDeadletterTransaction(
+        transactionId: String,
+        noteId: String,
+        noteInputDto: @Valid Mono<NoteInputDto>,
+        exchange: ServerWebExchange,
+    ): Mono<ResponseEntity<Void>> {
+        logger.info("Received update request for note: [{}] ", noteId)
+        return authService.getAuthenticatedUserId().flatMap { userId ->
+            noteInputDto
+                .flatMap { noteInputDto ->
+                    deadletterTransactionsService.updateNote(noteId, noteInputDto.note, userId)
+                }
+                .thenReturn(ResponseEntity.status(204).build())
+        }
     }
 }

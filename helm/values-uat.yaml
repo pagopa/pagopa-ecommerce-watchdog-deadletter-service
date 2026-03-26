@@ -4,7 +4,7 @@ microservice-chart:
   fullnameOverride: "pagopa-ecommerce-watchdog-deadletter-service"
   image:
     repository: pagopaucommonacr.azurecr.io/pagopaecommercewatchdogdeadletterservice
-    tag: "1.24.0"
+    tag: "1.28.0"
     pullPolicy: Always
   livenessProbe:
     handlerType: httpGet
@@ -102,6 +102,9 @@ microservice-chart:
     AUTH_AZURE_KV_ENDPOINT: "https://pagopa-u-ecommerce-kv.vault.azure.net/"
     AUTH_AZURE_MAX_RETRY: "3"
     AUTH_AZURE_RETRY_DELAY_MILLIS: "500"
+    NOTE_NUM_LIMIT: "10"
+    NOTE_UPDATE_LIMIT_TIME_MINUTES: "60"
+    NOTE_DELETE_LIMIT_TIME_MINUTES: "60"
   envSecret:
     MONGO_PASSWORD: mongo-ecommerce-password
     OTEL_EXPORTER_OTLP_HEADERS: elastic-otel-token-header

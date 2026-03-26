@@ -53,7 +53,8 @@ These are all environment variables needed by the application:
 | AUTH_AZURE_KV_ENDPOINT                                  | Azure KeyVault endpoint                                                                                                                                    | string  |         |
 | AUTH_AZURE_MAX_RETRY                                    | Maximum number of retries for Azure operations                                                                                                             | integer |         |
 | AUTH_AZURE_RETRY_DELAY_MILLIS                           | Delay between retries in milliseconds for Azure operations                                                                                                 | integer |         |
-
+| NOTE_UPDATE_LIMIT_TIME_MINUTES                          | Number of minutes until a note can be updated after it is created                                                                                          | integer |         |
+| NOTE_DELETE_LIMIT_TIME_MINUTES                          | Number of minutes until a note can be deleted after it is created                                                                                          | integer |         |
 \* For Mongo connection string options
 see [docs](https://www.mongodb.com/docs/drivers/java/sync/v4.3/fundamentals/connection/connection-options/#connection-options)
 
