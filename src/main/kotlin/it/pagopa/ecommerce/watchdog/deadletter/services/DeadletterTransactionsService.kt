@@ -364,8 +364,19 @@ class DeadletterTransactionsService(
     ): DeadletterTransactionDtoV2 {
         val info = deadLetterEvent.transactionInfo
         val ecommerceStatus = ecommerceDetails?.transactionInfo?.eventStatus.toString()
+
+        val ecommerceDetailsGatewayAuthorizationStatus =
+            ecommerceDetails?.transactionInfo?.gatewayAuthorizationStatus
+
+        val npgDetailsOperationResult =
+            npgDetails
+                ?.operations
+                ?.maxByOrNull { it.operationTime.orEmpty() }
+                ?.operationResult
+                ?.toString()
+
         val gatewayAuthorizationStatus =
-            ecommerceDetails?.transactionInfo?.gatewayAuthorizationStatus.toString()
+            ecommerceDetailsGatewayAuthorizationStatus ?: npgDetailsOperationResult
 
         val paymentToken = info?.paymentTokens?.firstOrNull() ?: "N/A"
 
