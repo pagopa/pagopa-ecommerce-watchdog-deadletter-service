@@ -34,7 +34,7 @@ import it.pagopa.generated.ecommerce.helpdesk.model.UserInfoDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.PageInfoDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.ProblemJsonDto
 import it.pagopa.generated.nodo.support.ApiClient as NodoTechnicalSupportApiClient
-import it.pagopa.generated.nodo.support.api.WorkerResourceApi
+import it.pagopa.generated.nodo.support.api.PositionPaymentSnapshotResourceApi
 import it.pagopa.generated.nodo.support.model.BasePaymentInfoDto
 import it.pagopa.generated.nodo.support.model.ErrorCodeDto
 import it.pagopa.generated.nodo.support.model.InfoResponseDto
@@ -170,10 +170,10 @@ class WebClientsConfig {
         @Value("\${nodo-technical-support.server.uri}") serverUri: String,
         @Value("\${nodo-technical-support.apiKey}") apiKey: String,
         nodoTechnicalSupportWebClient: WebClient,
-    ): WorkerResourceApi {
+    ): PositionPaymentSnapshotResourceApi {
         val apiClient = NodoTechnicalSupportApiClient(nodoTechnicalSupportWebClient)
         apiClient.setBasePath(serverUri)
         apiClient.setApiKey(apiKey)
-        return WorkerResourceApi(apiClient)
+        return PositionPaymentSnapshotResourceApi(apiClient)
     }
 }
