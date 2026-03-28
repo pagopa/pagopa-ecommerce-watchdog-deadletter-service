@@ -38,6 +38,7 @@ import it.pagopa.generated.nodo.support.api.PositionPaymentSnapshotResourceApi
 import it.pagopa.generated.nodo.support.model.BasePaymentInfoDto
 import it.pagopa.generated.nodo.support.model.ErrorCodeDto
 import it.pagopa.generated.nodo.support.model.InfoResponseDto
+import it.pagopa.generated.nodo.support.model.PositionPaymentSnapshotDtoDto
 import it.pagopa.generated.nodo.support.model.TransactionResponseDto
 import java.util.concurrent.TimeUnit
 import org.springframework.aot.hint.annotation.RegisterReflectionForBinding
@@ -141,6 +142,7 @@ class WebClientsConfig {
         InfoResponseDto::class,
         ProblemJsonDto::class,
         TransactionResponseDto::class,
+        PositionPaymentSnapshotDtoDto::class
     )
     fun nodoTechnicalSupportWebClient(
         @Value("\${nodo-technical-support.server.uri}") serverUri: String,
