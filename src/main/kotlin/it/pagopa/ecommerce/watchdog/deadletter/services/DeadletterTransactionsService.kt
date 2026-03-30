@@ -400,6 +400,8 @@ class DeadletterTransactionsService(
         val gatewayAuthorizationStatus =
             ecommerceDetailsGatewayAuthorizationStatus ?: npgDetailsOperationResult
 
+        val nodoStatus = nodoDetails?.status
+
         val paymentToken = info?.paymentTokens?.firstOrNull() ?: "N/A"
 
         // TO DO: review obfuscatedEmail to avoid side effect
@@ -418,6 +420,7 @@ class DeadletterTransactionsService(
             pspId = info?.pspId ?: "N/A"
             eCommerceStatus(ecommerceStatus)
             gatewayAuthorizationStatus(gatewayAuthorizationStatus)
+            nodoStatus(nodoStatus)
             paymentEndToEndId = info?.details?.paymentEndToEndId
             operationId = info?.details?.operationId
             deadletterTransactionDetails = deadLetterEvent
