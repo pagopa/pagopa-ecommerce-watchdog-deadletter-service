@@ -1,8 +1,7 @@
 package it.pagopa.ecommerce.watchdog.deadletter.clients
 
-import it.pagopa.generated.nodo.support.api.WorkerResourceApi
-import it.pagopa.generated.nodo.support.model.TransactionResponseDto
-import java.time.LocalDate
+import it.pagopa.generated.nodo.support.api.PositionPaymentSnapshotResourceApi
+import it.pagopa.generated.nodo.support.model.PositionPaymentSnapshotDtoDto
 import java.util.function.Consumer
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -10,35 +9,25 @@ import org.springframework.stereotype.Component
 import reactor.core.publisher.Mono
 
 @Component
-class NodoTechnicalSupportClient(private val nodoTechnicalSupportApi: WorkerResourceApi) {
+class NodoTechnicalSupportClient(
+    private val nodoTechnicalSupportApi: PositionPaymentSnapshotResourceApi
+) {
     private val logger: Logger = LoggerFactory.getLogger(javaClass)
 
     /**
-     * Calls the search API with a noticeNumber and organizationFiscalCode as search filter.
+     * Calls the search API with a paymentToken as search filter.
      *
-     * @param noticeNumber the notice number to search for
-     * @param fiscalCode the organization fiscal code to search for
-     * @return A Mono emitting the TransactionResponseDto or an error
+     * @param paymentToken the paymentToken to search for
+     * @return A Mono emitting the PositionPaymentSnapshotDtoDto or an error
      */
-    fun searchNodoGivenNoticeNumberAndFiscalCode(
-        noticeNumber: String?,
-        fiscalCode: String?,
-        dateFrom: LocalDate,
-        dateTo: LocalDate,
-    ): Mono<TransactionResponseDto?> {
+    fun paymentTokenPaymentTokenGet(paymentToken: String): Mono<PositionPaymentSnapshotDtoDto?> {
         return nodoTechnicalSupportApi
-            .organizationsOrganizationFiscalCodeNoticeNumberNoticeNumberGet(
-                noticeNumber,
-                fiscalCode,
-                dateFrom,
-                dateTo,
-            )
+            .paymentTokenPaymentTokenGet(paymentToken, "")
             .doOnError(
                 Consumer { throwable: Throwable? ->
                     logger.error(
-                        "Error calling searchNodoGivenNoticeNumberAndFiscalCode API for noticeNumber: [{}], fiscalCode: [{}]",
-                        noticeNumber,
-                        fiscalCode,
+                        "Error calling paymentTokenPaymentTokenGet API for paymentToken: [{}]",
+                        paymentToken,
                         throwable,
                     )
                 }

@@ -28,8 +28,7 @@ import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.TransactionNot
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.DeadletterTransactionDto as DeadletterTransactionDtoV2
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.ListDeadletterTransactions200ResponseDto as ListDeadletterTransactions200ResponseDtoV2
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.PageInfoDto as PageInfoDtoV2
-import it.pagopa.generated.nodo.support.model.TransactionResponseDto as TransactionResponseDtoV2
-import it.pagopa.generated.nodo.support.model.TransactionResponseDto
+import it.pagopa.generated.nodo.support.model.PositionPaymentSnapshotDtoDto
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -45,6 +44,7 @@ import reactor.core.publisher.Mono
 import reactor.kotlin.core.publisher.switchIfEmpty
 import reactor.kotlin.core.util.function.component1
 import reactor.kotlin.core.util.function.component2
+import reactor.kotlin.core.util.function.component3
 
 @Service
 class DeadletterTransactionsService(
@@ -125,7 +125,8 @@ class DeadletterTransactionsService(
                                 //     ecommerceDetails.paymentInfo.details?.firstOrNull()?.rptId
                                 // val creationDate = ecommerceDetails.transactionInfo.creationDate
                                 // TODO Disable Nodo helpdesk waiting new api PIDM-1117
-                                val nodoDetailsMono: Mono<TransactionResponseDto> = Mono.empty()
+                                val nodoDetailsMono: Mono<PositionPaymentSnapshotDtoDto> =
+                                    Mono.empty()
                                 /*
                                 val nodoDetailsMono: Mono<TransactionResponseDto?> =
                                     if (rptId != null && creationDate != null) {
@@ -239,8 +240,11 @@ class DeadletterTransactionsService(
                     .flatMap { deadLetterEvent ->
                         val transactionId = deadLetterEvent.transactionInfo?.transactionId
                         val paymentGateway = deadLetterEvent.transactionInfo?.paymentGateway
+                        val firstPaymentToken =
+                            deadLetterEvent.transactionInfo?.paymentTokens?.firstOrNull()
 
                         if (transactionId != null) {
+
                             val ecommerceDetailsMono: Mono<Optional<TransactionResultDto>> =
                                 ecommerceHelpdeskServiceV1
                                     .searchTransactions(transactionId)
@@ -273,13 +277,31 @@ class DeadletterTransactionsService(
                                     Mono.just(Optional.empty())
                                 }
 
-                            ecommerceDetailsMono.zipWith(npgDetailsMono).map {
-                                (ecommerceOpt, npgOpt) ->
+                            val nodoDetailsMono: Mono<Optional<PositionPaymentSnapshotDtoDto>> =
+                                if (firstPaymentToken != null) {
+                                    nodoTechnicalSupportClient
+                                        .paymentTokenPaymentTokenGet(firstPaymentToken)
+                                        .map { Optional.ofNullable(it) }
+                                        .onErrorResume { e ->
+                                            logger.error(
+                                                "Error retrieving Nodo details by paymentToken [{}]: [{}]",
+                                                firstPaymentToken,
+                                                e.message,
+                                            )
+                                            Mono.just(Optional.empty())
+                                        }
+                                        .defaultIfEmpty(Optional.empty())
+                                } else {
+                                    Mono.just(Optional.empty())
+                                }
+
+                            Mono.zip(ecommerceDetailsMono, npgDetailsMono, nodoDetailsMono).map {
+                                (ecommerceOpt, npgOpt, nodoOpt) ->
                                 buildDeadletterTransactionDtoV2(
                                     deadLetterEvent,
                                     ecommerceOpt.orElse(null),
                                     npgOpt.orElse(null),
-                                    null,
+                                    nodoOpt.orElse(null),
                                 )
                             }
                         } else {
@@ -322,7 +344,7 @@ class DeadletterTransactionsService(
         deadLetterEvent: DeadLetterEventDto,
         ecommerceDetails: TransactionResultDto?,
         npgDetails: SearchNpgOperationsResponseDto?,
-        nodoDetails: TransactionResponseDto?,
+        nodoDetails: PositionPaymentSnapshotDtoDto?,
     ): DeadletterTransactionDto {
         val info = deadLetterEvent.transactionInfo
         val ecommerceStatus = ecommerceDetails?.transactionInfo?.eventStatus.toString()
@@ -360,7 +382,7 @@ class DeadletterTransactionsService(
         deadLetterEvent: DeadLetterEventDtoV2,
         ecommerceDetails: TransactionResultDtoV2?,
         npgDetails: SearchNpgOperationsResponseDtoV2?,
-        nodoDetails: TransactionResponseDtoV2?,
+        nodoDetails: PositionPaymentSnapshotDtoDto?,
     ): DeadletterTransactionDtoV2 {
         val info = deadLetterEvent.transactionInfo
         val ecommerceStatus = ecommerceDetails?.transactionInfo?.eventStatus.toString()
@@ -377,6 +399,8 @@ class DeadletterTransactionsService(
 
         val gatewayAuthorizationStatus =
             ecommerceDetailsGatewayAuthorizationStatus ?: npgDetailsOperationResult
+
+        val nodoStatus = nodoDetails?.status
 
         val paymentToken = info?.paymentTokens?.firstOrNull() ?: "N/A"
 
@@ -396,6 +420,7 @@ class DeadletterTransactionsService(
             pspId = info?.pspId ?: "N/A"
             eCommerceStatus(ecommerceStatus)
             gatewayAuthorizationStatus(gatewayAuthorizationStatus)
+            nodoStatus(nodoStatus)
             paymentEndToEndId = info?.details?.paymentEndToEndId
             operationId = info?.details?.operationId
             deadletterTransactionDetails = deadLetterEvent

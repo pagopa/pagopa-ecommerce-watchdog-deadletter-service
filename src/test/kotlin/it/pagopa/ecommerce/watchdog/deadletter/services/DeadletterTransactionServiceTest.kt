@@ -25,7 +25,7 @@ import it.pagopa.generated.ecommerce.helpdesk.model.TransactionStatusDto
 import it.pagopa.generated.ecommerce.helpdesk.model.UserInfoDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.ActionTypeDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.ListDeadletterTransactions200ResponseDto
-import it.pagopa.generated.nodo.support.model.TransactionResponseDto
+import it.pagopa.generated.nodo.support.model.PositionPaymentSnapshotDtoDto
 import java.time.Instant
 import java.time.LocalDate
 import java.time.OffsetDateTime
@@ -113,18 +113,6 @@ class DeadletterTransactionServiceTest {
         whenever(ecommerceHelpdeskServiceV1.searchNpgOperations(any()))
             .thenReturn(Mono.just(SearchNpgOperationsResponseDto()))
 
-        /*
-        whenever(
-                nodoTechnicalSupportClient.searchNodoGivenNoticeNumberAndFiscalCode(
-                    any(),
-                    any(),
-                    any(),
-                    any(),
-                )
-            )
-            .thenReturn(Mono.just(TransactionResponseDto()))
-        */
-
         StepVerifier.create(
                 deadletterTransactionsService.getDeadletterTransactions(date, pageNumber, pageSize)
             )
@@ -141,8 +129,6 @@ class DeadletterTransactionServiceTest {
             .getDeadletterTransactionsByFilter(date, pageSize, pageNumber)
         verify(ecommerceHelpdeskServiceV1).searchTransactions("testTransactionId")
         verify(ecommerceHelpdeskServiceV1).searchNpgOperations("testTransactionId")
-        // verify(nodoTechnicalSupportClient)
-        //    .searchNodoGivenNoticeNumberAndFiscalCode(any(), any(), any(), any())
     }
 
     @Test
@@ -222,15 +208,8 @@ class DeadletterTransactionServiceTest {
         whenever(ecommerceHelpdeskServiceV1.searchNpgOperations(any()))
             .thenReturn(Mono.just(SearchNpgOperationsResponseDto()))
 
-        whenever(
-                nodoTechnicalSupportClient.searchNodoGivenNoticeNumberAndFiscalCode(
-                    any(),
-                    any(),
-                    any(),
-                    any(),
-                )
-            )
-            .thenReturn(Mono.just(TransactionResponseDto()))
+        whenever(nodoTechnicalSupportClient.paymentTokenPaymentTokenGet(any()))
+            .thenReturn(Mono.just(PositionPaymentSnapshotDtoDto()))
 
         StepVerifier.create(
                 deadletterTransactionsService.getDeadletterTransactions(date, pageNumber, pageSize)
@@ -302,15 +281,8 @@ class DeadletterTransactionServiceTest {
         whenever(ecommerceHelpdeskServiceV1.searchNpgOperations(any()))
             .thenReturn(Mono.just(SearchNpgOperationsResponseDto()))
 
-        whenever(
-                nodoTechnicalSupportClient.searchNodoGivenNoticeNumberAndFiscalCode(
-                    any(),
-                    any(),
-                    any(),
-                    any(),
-                )
-            )
-            .thenReturn(Mono.just(TransactionResponseDto()))
+        whenever(nodoTechnicalSupportClient.paymentTokenPaymentTokenGet(any()))
+            .thenReturn(Mono.just(PositionPaymentSnapshotDtoDto()))
 
         StepVerifier.create(
                 deadletterTransactionsService.getDeadletterTransactions(date, pageNumber, pageSize)
@@ -380,15 +352,8 @@ class DeadletterTransactionServiceTest {
         whenever(ecommerceHelpdeskServiceV1.searchNpgOperations(any()))
             .thenReturn(Mono.error(expectedError))
 
-        whenever(
-                nodoTechnicalSupportClient.searchNodoGivenNoticeNumberAndFiscalCode(
-                    any(),
-                    any(),
-                    any(),
-                    any(),
-                )
-            )
-            .thenReturn(Mono.just(TransactionResponseDto()))
+        whenever(nodoTechnicalSupportClient.paymentTokenPaymentTokenGet(any()))
+            .thenReturn(Mono.just(PositionPaymentSnapshotDtoDto()))
 
         StepVerifier.create(
                 deadletterTransactionsService.getDeadletterTransactions(date, pageNumber, pageSize)
@@ -460,15 +425,8 @@ class DeadletterTransactionServiceTest {
         whenever(ecommerceHelpdeskServiceV1.searchNpgOperations(any()))
             .thenReturn(Mono.just(SearchNpgOperationsResponseDto()))
 
-        whenever(
-                nodoTechnicalSupportClient.searchNodoGivenNoticeNumberAndFiscalCode(
-                    any(),
-                    any(),
-                    any(),
-                    any(),
-                )
-            )
-            .thenReturn(Mono.just(TransactionResponseDto()))
+        whenever(nodoTechnicalSupportClient.paymentTokenPaymentTokenGet(any()))
+            .thenReturn(Mono.just(PositionPaymentSnapshotDtoDto()))
 
         StepVerifier.create(
                 deadletterTransactionsService.getDeadletterTransactions(date, pageNumber, pageSize)
@@ -546,14 +504,7 @@ class DeadletterTransactionServiceTest {
         whenever(ecommerceHelpdeskServiceV1.searchNpgOperations(any()))
             .thenReturn(Mono.just(SearchNpgOperationsResponseDto()))
 
-        whenever(
-                nodoTechnicalSupportClient.searchNodoGivenNoticeNumberAndFiscalCode(
-                    any(),
-                    any(),
-                    any(),
-                    any(),
-                )
-            )
+        whenever(nodoTechnicalSupportClient.paymentTokenPaymentTokenGet(any()))
             .thenReturn(Mono.error(expectedError))
 
         StepVerifier.create(
@@ -692,16 +643,6 @@ class DeadletterTransactionServiceTest {
         whenever(ecommerceHelpdeskServiceV1.searchNpgOperations(any()))
             .thenReturn(Mono.just(SearchNpgOperationsResponseDto()))
 
-        whenever(
-                nodoTechnicalSupportClient.searchNodoGivenNoticeNumberAndFiscalCode(
-                    any(),
-                    any(),
-                    any(),
-                    any(),
-                )
-            )
-            .thenReturn(Mono.just(TransactionResponseDto()))
-
         StepVerifier.create(
                 deadletterTransactionsService.getDeadletterTransactions(date, pageNumber, pageSize)
             )
@@ -718,8 +659,6 @@ class DeadletterTransactionServiceTest {
             .getDeadletterTransactionsByFilter(date, pageSize, pageNumber)
         verify(ecommerceHelpdeskServiceV1).searchTransactions("testTransactionId")
         verify(ecommerceHelpdeskServiceV1).searchNpgOperations("testTransactionId")
-        // verify(nodoTechnicalSupportClient)
-        //     .searchNodoGivenNoticeNumberAndFiscalCode(any(), any(), any(), any())
     }
 
     @Test
@@ -1147,5 +1086,278 @@ class DeadletterTransactionServiceTest {
         val resultMono = deadletterTransactionsService.deleteNote("idTest", "userId")
 
         StepVerifier.create(resultMono).expectError(InvalidNoteId::class.java).verify()
+    }
+
+    @Test
+    fun `getDeadletterTransactionsByDateRange should populate nodoDetails when paymentToken is present`() {
+        val fromDate = LocalDate.parse("2025-01-01")
+        val toDate = LocalDate.parse("2025-01-02")
+        val pageNumber = 0
+        val pageSize = 10
+        val paymentToken = "paymentToken123"
+
+        val nodoResponse = PositionPaymentSnapshotDtoDto().apply { status = "PAID" }
+
+        val deadLetterEvent =
+            DeadLetterEventDto().apply {
+                transactionInfo =
+                    DeadLetterTransactionInfoDto().apply {
+                        transactionId = "transactionIdV2"
+                        paymentGateway = "NPG"
+                        paymentTokens = listOf(paymentToken)
+                    }
+            }
+
+        val searchResponse =
+            SearchDeadLetterEventResponseDto().apply {
+                deadLetterEvents = listOf(deadLetterEvent)
+                page =
+                    PageInfoDto().apply {
+                        current = 0
+                        total = 1
+                        results = 1
+                    }
+            }
+
+        val transactionResult =
+            TransactionResultDto().apply {
+                transactionInfo =
+                    TransactionInfoDto().apply { eventStatus = TransactionStatusDto.CLOSED }
+            }
+
+        val searchTransactionResponse =
+            SearchTransactionResponseDto().apply { transactions = mutableListOf(transactionResult) }
+
+        whenever(
+                ecommerceHelpdeskServiceV1.getDeadletterTransactionsByDateRange(
+                    any(),
+                    any(),
+                    any(),
+                    any(),
+                )
+            )
+            .thenReturn(Mono.just(searchResponse))
+
+        whenever(ecommerceHelpdeskServiceV1.searchTransactions("transactionIdV2"))
+            .thenReturn(Mono.just(searchTransactionResponse))
+
+        whenever(ecommerceHelpdeskServiceV1.searchNpgOperations("transactionIdV2"))
+            .thenReturn(Mono.just(SearchNpgOperationsResponseDto()))
+
+        whenever(nodoTechnicalSupportClient.paymentTokenPaymentTokenGet(paymentToken))
+            .thenReturn(Mono.just(nodoResponse))
+
+        StepVerifier.create(
+                deadletterTransactionsService.getDeadletterTransactionsByDateRange(
+                    fromDate,
+                    toDate,
+                    pageNumber,
+                    pageSize,
+                )
+            )
+            .expectNextMatches { response ->
+                response.deadletterTransactions.size == 1 &&
+                    response.deadletterTransactions[0].nodoDetails != null &&
+                    response.deadletterTransactions[0].nodoStatus == "PAID"
+            }
+            .verifyComplete()
+
+        verify(nodoTechnicalSupportClient).paymentTokenPaymentTokenGet(paymentToken)
+    }
+
+    @Test
+    fun `getDeadletterTransactionsByDateRange should have null nodoDetails when paymentToken is absent`() {
+        val fromDate = LocalDate.parse("2025-01-01")
+        val toDate = LocalDate.parse("2025-01-02")
+
+        val deadLetterEvent =
+            DeadLetterEventDto().apply {
+                transactionInfo =
+                    DeadLetterTransactionInfoDto().apply {
+                        transactionId = "transactionIdV2"
+                        paymentGateway = "NPG"
+                        paymentTokens = emptyList() // nessun paymentToken
+                    }
+            }
+
+        val searchResponse =
+            SearchDeadLetterEventResponseDto().apply {
+                deadLetterEvents = listOf(deadLetterEvent)
+                page =
+                    PageInfoDto().apply {
+                        current = 0
+                        total = 1
+                        results = 1
+                    }
+            }
+
+        whenever(
+                ecommerceHelpdeskServiceV1.getDeadletterTransactionsByDateRange(
+                    any(),
+                    any(),
+                    any(),
+                    any(),
+                )
+            )
+            .thenReturn(Mono.just(searchResponse))
+
+        whenever(ecommerceHelpdeskServiceV1.searchTransactions("transactionIdV2"))
+            .thenReturn(Mono.just(SearchTransactionResponseDto()))
+
+        whenever(ecommerceHelpdeskServiceV1.searchNpgOperations("transactionIdV2"))
+            .thenReturn(Mono.just(SearchNpgOperationsResponseDto()))
+
+        StepVerifier.create(
+                deadletterTransactionsService.getDeadletterTransactionsByDateRange(
+                    fromDate,
+                    toDate,
+                    0,
+                    10,
+                )
+            )
+            .expectNextMatches { response ->
+                response.deadletterTransactions.size == 1 &&
+                    response.deadletterTransactions[0].nodoDetails == null &&
+                    response.deadletterTransactions[0].nodoStatus == null
+            }
+            .verifyComplete()
+
+        verify(nodoTechnicalSupportClient, never()).paymentTokenPaymentTokenGet(any())
+    }
+
+    @Test
+    fun `getDeadletterTransactionsByDateRange should have null nodoDetails on nodo client error`() {
+        val fromDate = LocalDate.parse("2025-01-01")
+        val toDate = LocalDate.parse("2025-01-02")
+        val paymentToken = "paymentToken123"
+
+        val deadLetterEvent =
+            DeadLetterEventDto().apply {
+                transactionInfo =
+                    DeadLetterTransactionInfoDto().apply {
+                        transactionId = "transactionIdV2"
+                        paymentGateway = "NPG"
+                        paymentTokens = listOf(paymentToken)
+                    }
+            }
+
+        val searchResponse =
+            SearchDeadLetterEventResponseDto().apply {
+                deadLetterEvents = listOf(deadLetterEvent)
+                page =
+                    PageInfoDto().apply {
+                        current = 0
+                        total = 1
+                        results = 1
+                    }
+            }
+
+        whenever(
+                ecommerceHelpdeskServiceV1.getDeadletterTransactionsByDateRange(
+                    any(),
+                    any(),
+                    any(),
+                    any(),
+                )
+            )
+            .thenReturn(Mono.just(searchResponse))
+
+        whenever(ecommerceHelpdeskServiceV1.searchTransactions("transactionIdV2"))
+            .thenReturn(Mono.just(SearchTransactionResponseDto()))
+
+        whenever(ecommerceHelpdeskServiceV1.searchNpgOperations("transactionIdV2"))
+            .thenReturn(Mono.just(SearchNpgOperationsResponseDto()))
+
+        whenever(nodoTechnicalSupportClient.paymentTokenPaymentTokenGet(paymentToken))
+            .thenReturn(Mono.error(RuntimeException("Nodo unavailable")))
+
+        StepVerifier.create(
+                deadletterTransactionsService.getDeadletterTransactionsByDateRange(
+                    fromDate,
+                    toDate,
+                    0,
+                    10,
+                )
+            )
+            .expectNextMatches { response ->
+                response.deadletterTransactions.size == 1 &&
+                    response.deadletterTransactions[0].nodoDetails == null &&
+                    response.deadletterTransactions[0].nodoStatus == null
+            }
+            .verifyComplete()
+
+        verify(nodoTechnicalSupportClient).paymentTokenPaymentTokenGet(paymentToken)
+    }
+
+    @Test
+    fun `getDeadletterTransactionsByDateRange should prefer ecommerce gatewayAuthorizationStatus over npg operationResult`() {
+        val fromDate = LocalDate.parse("2025-01-01")
+        val toDate = LocalDate.parse("2025-01-02")
+        val paymentToken = "paymentToken123"
+
+        val deadLetterEvent =
+            DeadLetterEventDto().apply {
+                transactionInfo =
+                    DeadLetterTransactionInfoDto().apply {
+                        transactionId = "transactionIdV2"
+                        paymentGateway = "NPG"
+                        paymentTokens = listOf(paymentToken)
+                    }
+            }
+
+        val searchResponse =
+            SearchDeadLetterEventResponseDto().apply {
+                deadLetterEvents = listOf(deadLetterEvent)
+                page =
+                    PageInfoDto().apply {
+                        current = 0
+                        total = 1
+                        results = 1
+                    }
+            }
+
+        val transactionResult =
+            TransactionResultDto().apply {
+                transactionInfo =
+                    TransactionInfoDto().apply {
+                        eventStatus = TransactionStatusDto.CLOSED
+                        gatewayAuthorizationStatus = "EXECUTED" // valore da ecommerce
+                    }
+            }
+
+        val searchTransactionResponse =
+            SearchTransactionResponseDto().apply { transactions = mutableListOf(transactionResult) }
+
+        whenever(
+                ecommerceHelpdeskServiceV1.getDeadletterTransactionsByDateRange(
+                    any(),
+                    any(),
+                    any(),
+                    any(),
+                )
+            )
+            .thenReturn(Mono.just(searchResponse))
+
+        whenever(ecommerceHelpdeskServiceV1.searchTransactions("transactionIdV2"))
+            .thenReturn(Mono.just(searchTransactionResponse))
+
+        whenever(ecommerceHelpdeskServiceV1.searchNpgOperations("transactionIdV2"))
+            .thenReturn(Mono.just(SearchNpgOperationsResponseDto()))
+
+        whenever(nodoTechnicalSupportClient.paymentTokenPaymentTokenGet(paymentToken))
+            .thenReturn(Mono.just(PositionPaymentSnapshotDtoDto()))
+
+        StepVerifier.create(
+                deadletterTransactionsService.getDeadletterTransactionsByDateRange(
+                    fromDate,
+                    toDate,
+                    0,
+                    10,
+                )
+            )
+            .expectNextMatches { response ->
+                response.deadletterTransactions[0].gatewayAuthorizationStatus == "EXECUTED"
+            }
+            .verifyComplete()
     }
 }
