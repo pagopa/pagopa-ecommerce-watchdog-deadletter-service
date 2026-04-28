@@ -95,7 +95,7 @@ class WatchdogDeadletterV2ControllerTest {
         val fromDate: LocalDate = LocalDate.parse("2025-08-19")
         val toDate: LocalDate = LocalDate.parse("2025-08-20")
         var pageNumber: Int = 1
-        var pageSize: Int = 600
+        var pageSize: Int = 1001
 
         webClient
             .get()
