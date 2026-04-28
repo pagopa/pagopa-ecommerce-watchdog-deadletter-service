@@ -1,7 +1,7 @@
 apiVersion: v2
 type: application
-version: 0.28.1
-appVersion: 1.29.1
+version: 0.28.2
+appVersion: 1.29.2
 name: pagopa-ecommerce-watchdog-deadletter-service
 description: Microservice designed to support deadletter monitoring for the eCommerce transactions process.
 dependencies:
