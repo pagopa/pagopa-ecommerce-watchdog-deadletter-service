@@ -398,7 +398,7 @@ class DeadletterTransactionsService(
                 ?.toString()
 
         val gatewayAuthorizationStatus =
-            ecommerceDetailsGatewayAuthorizationStatus ?: npgDetailsOperationResult
+            npgDetailsOperationResult ?: ecommerceDetailsGatewayAuthorizationStatus
 
         val nodoStatus = nodoDetails?.status
 
