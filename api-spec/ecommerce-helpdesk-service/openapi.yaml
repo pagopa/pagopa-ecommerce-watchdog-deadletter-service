@@ -387,57 +387,61 @@ components:
           items:
             $ref: "#/components/schemas/PaymentDetailInfo"
     TransactionInfo:
-      type: "object"
-      description: "Transaction info"
+      type: object
+      description: Transaction info
       properties:
         creationDate:
-          type: "string"
-          format: "date-time"
-          description: "transaction creation date"
+          type: string
+          format: date-time
+          description: transaction creation date
         status:
-          type: "string"
+          type: string
         statusDetails:
-          type: "string"
+          type: string
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventInfo'
         eventStatus:
           $ref: "https://raw.githubusercontent.com/pagopa/pagopa-ecommerce-transactions-service/main/api-spec/v1/transactions-api.yaml#/components/schemas/TransactionStatus"
         amount:
-          $ref: "#/components/schemas/AmountEuroCents"
+          $ref: '#/components/schemas/AmountEuroCents'
         fee:
-          $ref: "#/components/schemas/AmountEuroCents"
+          $ref: '#/components/schemas/AmountEuroCents'
         grandTotal:
-          $ref: "#/components/schemas/AmountEuroCents"
+          $ref: '#/components/schemas/AmountEuroCents'
         rrn:
-          type: "string"
+          type: string
         authorizationCode:
-          type: "string"
+          type: string
         authorizationOperationId:
-          type: "string"
-          description: "Operation id for authorization. Present only if the payment gateway is NPG"
+          type: string
+          description: Operation id for authorization. Present only if the payment gateway is NPG
         refundOperationId:
-          type: "string"
-          description: "Operation id for the refund. Present only if the payment gateway is NPG"
+          type: string
+          description: Operation id for the refund. Present only if the payment gateway is NPG
         paymentMethodName:
-          type: "string"
+          type: string
         brand:
-          type: "string"
+          type: string
         authorizationRequestId:
-          type: "string"
-          description: "Authorization request id"
+          type: string
+          description: Authorization request id
         paymentGateway:
-          type: "string"
-          description: "Payment gateway used to perform transaction"
+          type: string
+          description: Payment gateway used to perform transaction
         correlationId:
-          type: "string"
-          format: "uuid"
-          description: "correlation id for a transaction executed with NPG"
+          type: string
+          format: uuid
+          description: correlation id for a transaction executed with NPG
         gatewayAuthorizationStatus:
-          type: "string"
-          description: "payment gateway authorization status"
+          type: string
+          description: payment gateway authorization status
         gatewayErrorCode:
-          type: "string"
-          description: "payment gateway authorization error code"
+          type: string
+          description: payment gateway authorization error code
       example:
-        creationDate: "2023-08-02T14:42:54.047"
+        creationDate: "2023-08-02T14:42:54.047Z"
         status: "status"
         statusDetails: "status detail"
         eventStatus: "NOTIFIED_OK"
@@ -455,6 +459,18 @@ components:
         correlationId: "30846e8f-efa1-47ad-abad-08cfb30e5c09"
         gatewayAuthorizationStatus: "DECLINED"
         gatewayErrorCode: "121"
+    EventInfo:
+      type: object
+      description: Event info
+      properties:
+        creationDate:
+          type: string
+          format: date-time
+        eventCode:
+          type: string
+      example:
+        creationDate: "2023-08-07T15:32:56.592Z"
+        eventCode: "TRANSACTION_ACTIVATED_EVENT"
     DeadLetterExcludedPaymentGateway:
       type: array
       items:
@@ -520,25 +536,25 @@ components:
         - data
         - timestamp
     TransactionResult:
-      type: "object"
-      description: "TransactionResponse"
+      type: object
+      description: TransactionResponse
       properties:
         userInfo:
-          $ref: "#/components/schemas/UserInfo"
+          $ref: '#/components/schemas/UserInfo'
         transactionInfo:
-          $ref: "#/components/schemas/TransactionInfo"
+          $ref: '#/components/schemas/TransactionInfo'
         paymentInfo:
-          $ref: "#/components/schemas/PaymentInfo"
+          $ref: '#/components/schemas/PaymentInfo'
         pspInfo:
-          $ref: "#/components/schemas/PspInfo"
+          $ref: '#/components/schemas/PspInfo'
         product:
-          $ref: "#/components/schemas/Product"
+          $ref: '#/components/schemas/Product'
       required:
-        - "userInfo"
-        - "transactionInfo"
-        - "paymentInfo"
-        - "pspInfo"
-        - "product"
+        - userInfo
+        - transactionInfo
+        - paymentInfo
+        - pspInfo
+        - product
     SearchDeadLetterEventResponse:
       type: object
       description: Dead letter event response
