@@ -387,59 +387,59 @@ components:
           items:
             $ref: "#/components/schemas/PaymentDetailInfo"
     TransactionInfo:
-      type: object
-      description: Transaction info
+      type: "object"
+      description: "Transaction info"
       properties:
         creationDate:
-          type: string
-          format: date-time
-          description: transaction creation date
+          type: "string"
+          format: "date-time"
+          description: "transaction creation date"
         status:
-          type: string
+          type: "string"
         statusDetails:
-          type: string
+          type: "string"
         events:
-          type: array
+          type: "array"
           items:
             $ref: '#/components/schemas/EventInfo'
         eventStatus:
           $ref: "https://raw.githubusercontent.com/pagopa/pagopa-ecommerce-transactions-service/main/api-spec/v1/transactions-api.yaml#/components/schemas/TransactionStatus"
         amount:
-          $ref: '#/components/schemas/AmountEuroCents'
+          $ref: "#/components/schemas/AmountEuroCents"
         fee:
-          $ref: '#/components/schemas/AmountEuroCents'
+          $ref: "#/components/schemas/AmountEuroCents"
         grandTotal:
-          $ref: '#/components/schemas/AmountEuroCents'
+          $ref: "#/components/schemas/AmountEuroCents"
         rrn:
-          type: string
+          type: "string"
         authorizationCode:
-          type: string
+          type: "string"
         authorizationOperationId:
-          type: string
-          description: Operation id for authorization. Present only if the payment gateway is NPG
+          type: "string"
+          description: "Operation id for authorization. Present only if the payment gateway is NPG"
         refundOperationId:
-          type: string
-          description: Operation id for the refund. Present only if the payment gateway is NPG
+          type: "string"
+          description: "Operation id for the refund. Present only if the payment gateway is NPG"
         paymentMethodName:
-          type: string
+          type: "string"
         brand:
-          type: string
+          type: "string"
         authorizationRequestId:
-          type: string
-          description: Authorization request id
+          type: "string"
+          description: "Authorization request id"
         paymentGateway:
           type: string
-          description: Payment gateway used to perform transaction
+          description: "Payment gateway used to perform transaction"
         correlationId:
-          type: string
-          format: uuid
-          description: correlation id for a transaction executed with NPG
+          type: "string"
+          format: "uuid"
+          description: "correlation id for a transaction executed with NPG"
         gatewayAuthorizationStatus:
-          type: string
-          description: payment gateway authorization status
+          type: "string"
+          description: "payment gateway authorization status"
         gatewayErrorCode:
-          type: string
-          description: payment gateway authorization error code
+          type: "string"
+          description: "payment gateway authorization error code"
       example:
         creationDate: "2023-08-02T14:42:54.047Z"
         status: "status"
