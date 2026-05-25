@@ -536,25 +536,25 @@ components:
         - data
         - timestamp
     TransactionResult:
-      type: object
-      description: TransactionResponse
+      type: "object"
+      description: "TransactionResponse"
       properties:
         userInfo:
-          $ref: '#/components/schemas/UserInfo'
+          $ref: "#/components/schemas/UserInfo"
         transactionInfo:
-          $ref: '#/components/schemas/TransactionInfo'
+          $ref: "#/components/schemas/TransactionInfo"
         paymentInfo:
-          $ref: '#/components/schemas/PaymentInfo'
+          $ref: "#/components/schemas/PaymentInfo"
         pspInfo:
-          $ref: '#/components/schemas/PspInfo'
+          $ref: "#/components/schemas/PspInfo"
         product:
-          $ref: '#/components/schemas/Product'
+          $ref: "#/components/schemas/Product"
       required:
-        - userInfo
-        - transactionInfo
-        - paymentInfo
-        - pspInfo
-        - product
+        - "userInfo"
+        - "transactionInfo"
+        - "paymentInfo"
+        - "pspInfo"
+        - "product"
     SearchDeadLetterEventResponse:
       type: object
       description: Dead letter event response

@@ -390,8 +390,6 @@ class DeadletterTransactionsService(
         val ecommerceDetailsGatewayAuthorizationStatus =
             ecommerceDetails?.transactionInfo?.gatewayAuthorizationStatus
 
-        val events = ecommerceDetails?.transactionInfo?.events
-
         val npgDetailsOperationResult =
             npgDetails
                 ?.operations
