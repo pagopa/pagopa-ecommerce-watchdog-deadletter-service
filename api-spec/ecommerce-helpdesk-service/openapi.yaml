@@ -398,6 +398,10 @@ components:
           type: "string"
         statusDetails:
           type: "string"
+        events:
+          type: "array"
+          items:
+            $ref: '#/components/schemas/EventInfo'
         eventStatus:
           $ref: "https://raw.githubusercontent.com/pagopa/pagopa-ecommerce-transactions-service/main/api-spec/v1/transactions-api.yaml#/components/schemas/TransactionStatus"
         amount:
@@ -424,7 +428,7 @@ components:
           type: "string"
           description: "Authorization request id"
         paymentGateway:
-          type: "string"
+          type: string
           description: "Payment gateway used to perform transaction"
         correlationId:
           type: "string"
@@ -437,7 +441,7 @@ components:
           type: "string"
           description: "payment gateway authorization error code"
       example:
-        creationDate: "2023-08-02T14:42:54.047"
+        creationDate: "2023-08-02T14:42:54.047Z"
         status: "status"
         statusDetails: "status detail"
         eventStatus: "NOTIFIED_OK"
@@ -455,6 +459,18 @@ components:
         correlationId: "30846e8f-efa1-47ad-abad-08cfb30e5c09"
         gatewayAuthorizationStatus: "DECLINED"
         gatewayErrorCode: "121"
+    EventInfo:
+      type: object
+      description: Event info
+      properties:
+        creationDate:
+          type: string
+          format: date-time
+        eventCode:
+          type: string
+      example:
+        creationDate: "2023-08-07T15:32:56.592Z"
+        eventCode: "TRANSACTION_ACTIVATED_EVENT"
     DeadLetterExcludedPaymentGateway:
       type: array
       items:
