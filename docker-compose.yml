@@ -10,6 +10,9 @@ services:
       - "8080:8080"
     networks:
       - pagopa-ecommerce-watchdog-deadletter-service-net
+    depends_on:
+      mongo:
+        condition: service_healthy
   pagopa-ecommerce-helpdesk-service-mock:
     container_name: pagopa-ecommerce-helpdesk-service-mock
     volumes:
@@ -47,7 +50,8 @@ services:
     networks:
       - pagopa-ecommerce-watchdog-deadletter-service-net
     depends_on:
-      - mongo
+      mongo:
+        condition: service_healthy
   mongo:
     image: mongo:7-jammy@sha256:5f8b6108f61e066b910c1e85ebd43fdfcbde94b78031601e7f09f5faf3f5d555
     container_name: mongo_db
@@ -59,9 +63,11 @@ services:
       - pagopa-ecommerce-watchdog-deadletter-service-net
     volumes:
       - mongodata:/data/db
+      - ./docker/config/mongo/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
     healthcheck:
-      test: echo "db.stats().ok" | mongo --quiet
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017 --quiet
       interval: 10s
+      start_period: 20s
 
 volumes:
   mongodata:

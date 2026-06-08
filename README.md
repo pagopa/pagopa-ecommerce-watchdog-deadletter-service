@@ -109,8 +109,7 @@ order to test the service.
 Also exist a gradle command to compile and run it directly:
 
 ```shell
-export $(grep -v '^#' .env.example | xargs)
-gradle :nativeRun
+( export $(grep -v '^#' .env.example | xargs) && gradle :nativeRun )
 ```
 
 If you want to run the project locally with Spring Boot, you should initialize the mocks using the following commands (you need yarn installed on the WSL):
@@ -138,7 +137,7 @@ You can find more info at the following link: https://docs.docker.com/desktop/ws
 After setting up Docker, you can use the command:
 
 ```shell
-docker-compose up
+docker compose up
 ```
 
 The docker-compose up command will build the image and start the containers.
