@@ -1,0 +1,15 @@
+[{
+  "_id": "test",
+  "password": "$2a$16$O0IiSKSJ9/00mOBxyEb6bOezH1ptyFkY8ZqOL/lxwGAbxMAcGzQsC",
+  "name": "Name",
+  "surname": "Surname",
+  "email": "test@test.it"
+},
+{
+  "_id": "test2",
+  "password": "$2a$16$O0IiSKSJ9/00mOBxyEb6bOezH1ptyFkY8ZqOL/lxwGAbxMAcGzQsC",
+  "name": "Name2",
+  "surname": "Surname2",
+  "email": "test2@test.it"
+}
+]
