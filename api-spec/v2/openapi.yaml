@@ -86,6 +86,59 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProblemJson'
+  /v2/deadletter-transactions/actions:
+    post:
+      description: >
+        [GET with body payload](https://opensource.zalando.com/restful-api-guidelines/#get-with-body)
+        - no resources created: Returns all actions matching the transactionIds passed as request input payload.
+      tags:
+        - deadletter-transactions-actions
+      summary: List actions for a list of deadletter transaction
+      operationId: listActionsForDeadletterTransaction
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: TransactionIds actions to retrieve
+        required: true
+        content:
+          application/json:
+            schema:
+              description: List of transactionIds
+              type: array
+              minItems: 1
+              items:
+                type: string
+      responses:
+        '200':
+          description: List of actions taken on the list of deadletter transactions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/DeadletterTransactionAction'
+        '400':
+          description: Invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+        '401':
+          description: Unauthorized. Missing or invalid authentication token.
+        '404':
+          description: Deadletter transaction not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
 components:
   securitySchemes:
     bearerAuth:
@@ -151,6 +204,39 @@ components:
         - pspId
         - eCommerceStatus
         - deadletterTransactionDetails
+    DeadletterTransactionAction:
+      type: object
+      properties:
+        id:
+          type: string
+        transactionId:
+          type: string
+        userId:
+          type: string
+        action:
+          $ref: '#/components/schemas/ActionType'
+        timestamp:
+          type: string
+          format: date-time
+      required:
+        - id
+        - transactionId
+        - userId
+        - action
+        - timestamp
+    ActionType:
+      type: object
+      properties:
+        value:
+          type: string
+        type:
+          type: string
+          enum:
+            - "FINAL"
+            - "NOT_FINAL"
+      required:
+        - value
+        - type
     ProblemJson:
       type: object
       properties:

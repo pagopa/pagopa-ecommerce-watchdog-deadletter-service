@@ -3,11 +3,13 @@ package it.pagopa.ecommerce.watchdog.deadletter.controllers.v2
 import it.pagopa.ecommerce.watchdog.deadletter.services.AuthService
 import it.pagopa.ecommerce.watchdog.deadletter.services.DeadletterTransactionsService
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.api.V2Api
+import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.DeadletterTransactionActionDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.ListDeadletterTransactions200ResponseDto
 import jakarta.validation.Valid
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.NotNull
+import jakarta.validation.constraints.Size
 import java.time.LocalDate
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -16,6 +18,7 @@ import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.server.ServerWebExchange
+import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 
 @RestController("WatchdogDeadletterV2Controller")
@@ -26,6 +29,13 @@ class WatchdogDeadletterV2Controller(
 ) : V2Api {
 
     private val logger = LoggerFactory.getLogger(this.javaClass)
+
+    override fun listActionsForDeadletterTransaction(
+        requestBody: @Valid @Size(min = 1) Flux<String?>?,
+        exchange: ServerWebExchange?,
+    ): Mono<ResponseEntity<Flux<List<DeadletterTransactionActionDto?>?>?>?>? {
+        TODO("Not yet implemented")
+    }
 
     override fun listDeadletterTransactions(
         @RequestParam("fromDate") @NotNull @Valid fromDate: LocalDate,
