@@ -1,0 +1,221 @@
+[{
+  "_id": "e4b10cca-34e4-484e-a9c9-4bfead5281c4",
+  "transactionId": "6facf4f67b564425af942716a5924b98",
+  "userId": "test",
+  "action": {
+    "value": "Presa in carico",
+    "type": "NOT_FINAL"
+  },
+  "timestamp": {
+    "$date": "2025-10-31T11:28:33.258Z"
+  },
+  "_class": "it.pagopa.ecommerce.watchdog.deadletter.documents.Action"
+},
+{
+  "_id": "030c9bda-351a-490a-abe1-7aeb21063352",
+  "transactionId": "6facf4f67b564425af942716a5924b98",
+  "userId": "test",
+  "action": {
+    "value": "Stornata",
+    "type": "FINAL"
+  },
+  "timestamp": {
+    "$date": "2025-10-31T13:39:39.469Z"
+  },
+  "_class": "it.pagopa.ecommerce.watchdog.deadletter.documents.Action"
+},
+{
+  "_id": "976f2852-edd0-400a-94df-dab55be7ba91",
+  "transactionId": "1d9ec11dff77442aa32be3d86e536472",
+  "userId": "test",
+  "action": {
+    "value": "Nessuna azione richiesta",
+    "type": "FINAL"
+  },
+  "timestamp": {
+    "$date": "2025-11-05T11:05:34.602Z"
+  },
+  "_class": "it.pagopa.ecommerce.watchdog.deadletter.documents.Action"
+},
+{
+  "_id": "5cae9e85-7017-4bff-95a8-4fe418863a96",
+  "transactionId": "2f058fb2ec6349649212ba1923bd2916",
+  "userId": "test",
+  "action": {
+    "value": "Nessuna azione richiesta",
+    "type": "FINAL"
+  },
+  "timestamp": {
+    "$date": "2025-11-10T12:03:40.984Z"
+  },
+  "_class": "it.pagopa.ecommerce.watchdog.deadletter.documents.Action"
+},
+{
+  "_id": "2e762319-494b-4981-baeb-da9e14d6c4df",
+  "transactionId": "b30452bae0b34b58bc26183ebda4a075",
+  "userId": "test",
+  "action": {
+    "value": "Presa in carico",
+    "type": "NOT_FINAL"
+  },
+  "timestamp": {
+    "$date": "2026-01-16T09:25:26.640Z"
+  },
+  "_class": "it.pagopa.ecommerce.watchdog.deadletter.documents.Action"
+},
+{
+  "_id": "3daacd26-2434-4abd-960a-3e2541b711f0",
+  "transactionId": "1190d9b9ae82415aa73dc594d154ee42",
+  "userId": "test",
+  "action": {
+    "value": "Presa in carico",
+    "type": "NOT_FINAL"
+  },
+  "timestamp": {
+    "$date": "2026-02-10T06:05:20.298Z"
+  },
+  "_class": "it.pagopa.ecommerce.watchdog.deadletter.documents.Action"
+},
+{
+  "_id": "7e8a30f7-cbb6-405c-8feb-18a2ba8f0022",
+  "transactionId": "8cbc27e7dc3e454fb8c4e52083b07ee6",
+  "userId": "test",
+  "action": {
+    "value": "Presa in carico",
+    "type": "NOT_FINAL"
+  },
+  "timestamp": {
+    "$date": "2026-02-10T10:33:09.862Z"
+  },
+  "_class": "it.pagopa.ecommerce.watchdog.deadletter.documents.Action"
+},
+{
+  "_id": "653c6e07-b376-45ed-a11b-0faa8fbf5641",
+  "transactionId": "60d877ecc2d14a80a3d54beb5f1f1f20",
+  "userId": "test",
+  "action": {
+    "value": "Stornata",
+    "type": "FINAL"
+  },
+  "timestamp": {
+    "$date": "2026-02-10T10:33:18.782Z"
+  },
+  "_class": "it.pagopa.ecommerce.watchdog.deadletter.documents.Action"
+},
+{
+  "_id": "179da728-c6b4-42a5-ab6e-50c46a8cab64",
+  "transactionId": "b45d587eed20434aa0ef952783f3da85",
+  "userId": "test",
+  "action": {
+    "value": "In attesa PSP",
+    "type": "NOT_FINAL"
+  },
+  "timestamp": {
+    "$date": "2026-04-21T08:11:56.593Z"
+  },
+  "_class": "it.pagopa.ecommerce.watchdog.deadletter.documents.Action"
+},
+{
+  "_id": "11d80a02-3778-43c2-8293-40d8dfde56e8",
+  "transactionId": "b9e393dd9af84315854b290b8ab95da9",
+  "userId": "test",
+  "action": {
+    "value": "In attesa PSP",
+    "type": "NOT_FINAL"
+  },
+  "timestamp": {
+    "$date": "2026-04-21T08:12:06.332Z"
+  },
+  "_class": "it.pagopa.ecommerce.watchdog.deadletter.documents.Action"
+},
+{
+  "_id": "90fc75fb-e178-49a0-92da-7b2fd8d84818",
+  "transactionId": "9628b1b0fb914699be9bb75b3b2206f1",
+  "userId": "test",
+  "action": {
+    "value": "Da stornare",
+    "type": "NOT_FINAL"
+  },
+  "timestamp": {
+    "$date": "2026-04-21T08:15:43.116Z"
+  },
+  "_class": "it.pagopa.ecommerce.watchdog.deadletter.documents.Action"
+},
+{
+  "_id": "669bed73-e94c-43a0-bcae-bacddfcb6437",
+  "transactionId": "2a16709937ce4667bb0f0fa4ddd8c58e",
+  "userId": "test",
+  "action": {
+    "value": "Da stornare",
+    "type": "NOT_FINAL"
+  },
+  "timestamp": {
+    "$date": "2026-04-21T09:20:35.150Z"
+  },
+  "_class": "it.pagopa.ecommerce.watchdog.deadletter.documents.Action"
+},
+{
+  "_id": "61d313aa-bd42-4269-a3f4-d1c199174b48",
+  "transactionId": "b45d587eed20434aa0ef952783f3da85",
+  "userId": "test",
+  "action": {
+    "value": "Nessuna azione richiesta",
+    "type": "FINAL"
+  },
+  "timestamp": {
+    "$date": "2026-04-21T09:29:28.906Z"
+  },
+  "_class": "it.pagopa.ecommerce.watchdog.deadletter.documents.Action"
+},
+{
+  "_id": "7dd793fc-ba39-47b8-9edd-e4e5605ed868",
+  "transactionId": "40a4a689b3264e4680da2707b83f9f26",
+  "userId": "test",
+  "action": {
+    "value": "Da stornare",
+    "type": "NOT_FINAL"
+  },
+  "timestamp": {
+    "$date": "2026-05-17T06:56:08.631Z"
+  },
+  "_class": "it.pagopa.ecommerce.watchdog.deadletter.documents.Action"
+},
+{
+  "_id": "1c09fbdc-d654-441f-9691-fa48bd4c8c2b",
+  "transactionId": "c6815e70abd4462ebfd9e4da61426367",
+  "userId": "test",
+  "action": {
+    "value": "Nessuna azione richiesta",
+    "type": "FINAL"
+  },
+  "timestamp": {
+    "$date": "2026-05-23T07:11:25.824Z"
+  },
+  "_class": "it.pagopa.ecommerce.watchdog.deadletter.documents.Action"
+},
+{
+  "_id": "44398b7e-42cd-425a-a468-0e46c4b240c2",
+  "transactionId": "efd8098f66e246be914e115f7bcc1867",
+  "userId": "test",
+  "action": {
+    "value": "Da stornare",
+    "type": "NOT_FINAL"
+  },
+  "timestamp": {
+    "$date": "2026-06-09T07:28:32.363Z"
+  },
+  "_class": "it.pagopa.ecommerce.watchdog.deadletter.documents.Action"
+},
+{
+  "_id": "a566e98f-82a8-4a15-a148-1e807eb3063e",
+  "transactionId": "efd8098f66e246be914e115f7bcc1867",
+  "userId": "test",
+  "action": {
+    "value": "Stornata",
+    "type": "FINAL"
+  },
+  "timestamp": {
+    "$date": "2026-06-09T07:30:08.622Z"
+  },
+  "_class": "it.pagopa.ecommerce.watchdog.deadletter.documents.Action"
+}]

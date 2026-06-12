@@ -1,0 +1,235 @@
+[{
+  "_id": "428d1c6e-9e33-446f-8e7b-b77c00214391",
+  "transactionId": "10000000000000000000000000000000",
+  "userId": "test",
+  "createdAt": {
+    "$date": "2026-03-05T14:56:17.782Z"
+  },
+  "updatedAt": {
+    "$date": "2026-03-05T14:56:17.782Z"
+  },
+  "_class": "it.pagopa.ecommerce.watchdog.deadletter.documents.Note",
+  "text": "1"
+},
+{
+  "_id": "d33567d9-078e-45de-ab7d-da669fa51871",
+  "transactionId": "10000000000000000000000000000000",
+  "userId": "test",
+  "createdAt": {
+    "$date": "2026-03-05T14:56:25.145Z"
+  },
+  "updatedAt": {
+    "$date": "2026-03-05T14:56:25.145Z"
+  },
+  "_class": "it.pagopa.ecommerce.watchdog.deadletter.documents.Note",
+  "text": "2"
+},
+{
+  "_id": "d8e36029-3e71-4e79-bb7d-9bf2d8b6ae0b",
+  "transactionId": "10000000000000000000000000000000",
+  "userId": "test",
+  "createdAt": {
+    "$date": "2026-03-05T14:56:42.078Z"
+  },
+  "updatedAt": {
+    "$date": "2026-03-05T14:56:42.078Z"
+  },
+  "_class": "it.pagopa.ecommerce.watchdog.deadletter.documents.Note",
+  "text": "3"
+},
+{
+  "_id": "da60d035-db5f-44a5-8633-62d45af4c3d6",
+  "transactionId": "10000000000000000000000000000000",
+  "userId": "test",
+  "createdAt": {
+    "$date": "2026-03-05T14:56:49.035Z"
+  },
+  "updatedAt": {
+    "$date": "2026-03-05T14:56:49.035Z"
+  },
+  "_class": "it.pagopa.ecommerce.watchdog.deadletter.documents.Note",
+  "text": "4"
+},
+{
+  "_id": "a2bf58a4-8857-434a-9c9c-89c94718252f",
+  "transactionId": "10000000000000000000000000000000",
+  "userId": "test",
+  "createdAt": {
+    "$date": "2026-03-05T14:56:52.062Z"
+  },
+  "updatedAt": {
+    "$date": "2026-03-05T14:56:52.062Z"
+  },
+  "_class": "it.pagopa.ecommerce.watchdog.deadletter.documents.Note",
+  "text": "5"
+},
+{
+  "_id": "50767b5c-9b33-4275-bbc8-bfe0cf9b0308",
+  "transactionId": "10000000000000000000000000000000",
+  "userId": "test",
+  "createdAt": {
+    "$date": "2026-03-05T14:56:53.587Z"
+  },
+  "updatedAt": {
+    "$date": "2026-03-05T14:56:53.587Z"
+  },
+  "_class": "it.pagopa.ecommerce.watchdog.deadletter.documents.Note",
+  "text": "6"
+},
+{
+  "_id": "21e82d8c-9a87-469e-b240-953bc38403fd",
+  "transactionId": "10000000000000000000000000000000",
+  "userId": "test",
+  "createdAt": {
+    "$date": "2026-03-05T14:56:55.411Z"
+  },
+  "updatedAt": {
+    "$date": "2026-03-05T14:56:55.411Z"
+  },
+  "_class": "it.pagopa.ecommerce.watchdog.deadletter.documents.Note",
+  "text": "7"
+},
+{
+  "_id": "59990ae5-54c2-43e8-8788-f6872c2344f8",
+  "transactionId": "80000000000000000000000000000000",
+  "userId": "test2",
+  "createdAt": {
+    "$date": "2026-03-06T13:21:15.309Z"
+  },
+  "updatedAt": {
+    "$date": "2026-03-06T13:21:22.895Z"
+  },
+  "_class": "it.pagopa.ecommerce.watchdog.deadletter.documents.Note",
+  "text": "test update"
+},
+{
+  "_id": "7d5ef37e-cdf5-4f89-ac94-123007a86b57",
+  "text": "8",
+  "transactionId": "10000000000000000000000000000000",
+  "userId": "test",
+  "createdAt": {
+    "$date": "2026-03-09T14:35:23.950Z"
+  },
+  "updatedAt": {
+    "$date": "2026-03-09T14:35:23.950Z"
+  },
+  "_class": "it.pagopa.ecommerce.watchdog.deadletter.documents.Note"
+},
+{
+  "_id": "3c426aae-413f-41b8-a8ef-03fe6f9e4c06",
+  "text": "test2\n",
+  "transactionId": "04aff9c877524996ab67d93960c26c79",
+  "userId": "test2",
+  "createdAt": {
+    "$date": "2026-03-09T16:46:07.519Z"
+  },
+  "updatedAt": {
+    "$date": "2026-03-09T17:01:25.826Z"
+  },
+  "_class": "it.pagopa.ecommerce.watchdog.deadletter.documents.Note",
+  "note": "test2\n"
+},
+{
+  "_id": "a867f61e-3593-4b4e-8a65-ec95bbfe5f75",
+  "text": "Transazione comunicata al PSP",
+  "transactionId": "b45d587eed20434aa0ef952783f3da85",
+  "userId": "test",
+  "createdAt": {
+    "$date": "2026-04-21T08:11:51.090Z"
+  },
+  "updatedAt": {
+    "$date": "2026-04-21T08:11:51.090Z"
+  },
+  "_class": "it.pagopa.ecommerce.watchdog.deadletter.documents.Note"
+},
+{
+  "_id": "ce4c3e53-d452-421b-8509-a3b0fd3f0986",
+  "text": "Transazione in attesa di storno per stato Executed su NPG ",
+  "transactionId": "9628b1b0fb914699be9bb75b3b2206f1",
+  "userId": "test",
+  "createdAt": {
+    "$date": "2026-04-21T08:16:35.012Z"
+  },
+  "updatedAt": {
+    "$date": "2026-04-21T08:16:35.012Z"
+  },
+  "_class": "it.pagopa.ecommerce.watchdog.deadletter.documents.Note"
+},
+{
+  "_id": "ef61dbc6-1881-4896-a6c2-e154f993af2b",
+  "text": "test",
+  "transactionId": "e4cb86c79947465c9a2eef0eafd540ea",
+  "userId": "test",
+  "createdAt": {
+    "$date": "2026-04-21T08:17:40.634Z"
+  },
+  "updatedAt": {
+    "$date": "2026-04-21T08:17:40.634Z"
+  },
+  "_class": "it.pagopa.ecommerce.watchdog.deadletter.documents.Note"
+},
+{
+  "_id": "57fde861-9625-4137-a3f7-d02d3e549030",
+  "text": "test2",
+  "transactionId": "523713bba5824217820bca58c8f39ce3",
+  "userId": "test",
+  "createdAt": {
+    "$date": "2026-04-21T08:17:54.593Z"
+  },
+  "updatedAt": {
+    "$date": "2026-04-21T08:17:54.593Z"
+  },
+  "_class": "it.pagopa.ecommerce.watchdog.deadletter.documents.Note"
+},
+{
+  "_id": "bc15ae90-0626-4d0a-a7ac-60de1eee4004",
+  "text": "In attesa",
+  "transactionId": "b45d587eed20434aa0ef952783f3da85",
+  "userId": "test",
+  "createdAt": {
+    "$date": "2026-04-21T09:17:34.073Z"
+  },
+  "updatedAt": {
+    "$date": "2026-04-21T09:17:34.073Z"
+  },
+  "_class": "it.pagopa.ecommerce.watchdog.deadletter.documents.Note"
+},
+{
+  "_id": "4aacd2f6-9e03-4765-b502-a12f26f95a9b",
+  "text": "\"doppio transactionID (c943f5abb57e469dbb24e2ae72b7b363) legato allo stesso paymentToken (46deae2691354bfb8512c1a02e65bb28)\nprocedere con lo storno su eCommerce della transazione con id (2a16709937ce4667bb0f0fa4ddd8c58e) solo se stato NPG = EXECUTED\"",
+  "transactionId": "2a16709937ce4667bb0f0fa4ddd8c58e",
+  "userId": "test",
+  "createdAt": {
+    "$date": "2026-04-21T09:20:29.417Z"
+  },
+  "updatedAt": {
+    "$date": "2026-04-21T09:20:29.417Z"
+  },
+  "_class": "it.pagopa.ecommerce.watchdog.deadletter.documents.Note"
+},
+{
+  "_id": "f500367d-e9db-4915-a25e-ff6b5884df2e",
+  "text": "SMO aperto al PSP xxx",
+  "transactionId": "b45d587eed20434aa0ef952783f3da85",
+  "userId": "test",
+  "createdAt": {
+    "$date": "2026-04-21T09:29:44.957Z"
+  },
+  "updatedAt": {
+    "$date": "2026-04-21T09:29:44.957Z"
+  },
+  "_class": "it.pagopa.ecommerce.watchdog.deadletter.documents.Note"
+},
+{
+  "_id": "4971269e-b2bb-41b5-8aee-61e56795555b",
+  "text": "Test nota 1",
+  "transactionId": "b7fbb6fa0c5743e9ad5196a3addfff28",
+  "userId": "test",
+  "createdAt": {
+    "$date": "2026-06-09T09:05:42.275Z"
+  },
+  "updatedAt": {
+    "$date": "2026-06-09T09:05:42.275Z"
+  },
+  "_class": "it.pagopa.ecommerce.watchdog.deadletter.documents.Note"
+}]
