@@ -64,6 +64,9 @@ services:
     volumes:
       - mongodata:/data/db
       - ./docker/config/mongo/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+      - ./docker/config/mongo/d-actions.json:/docker-entrypoint-initdb.d/d-actions.json:ro
+      - ./docker/config/mongo/d-notes.json:/docker-entrypoint-initdb.d/d-notes.json:ro
+      - ./docker/config/mongo/d-operators.json:/docker-entrypoint-initdb.d/d-operators.json:ro
     healthcheck:
       test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017 --quiet
       interval: 10s
