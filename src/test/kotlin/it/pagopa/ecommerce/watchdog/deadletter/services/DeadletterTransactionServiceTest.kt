@@ -4,6 +4,7 @@ import it.pagopa.ecommerce.watchdog.deadletter.clients.EcommerceHelpdeskServiceC
 import it.pagopa.ecommerce.watchdog.deadletter.clients.NodoTechnicalSupportClient
 import it.pagopa.ecommerce.watchdog.deadletter.config.ActionTypeConfig
 import it.pagopa.ecommerce.watchdog.deadletter.documents.Action
+import it.pagopa.ecommerce.watchdog.deadletter.documents.ActionType
 import it.pagopa.ecommerce.watchdog.deadletter.documents.Note
 import it.pagopa.ecommerce.watchdog.deadletter.exception.InvalidActionValue
 import it.pagopa.ecommerce.watchdog.deadletter.exception.InvalidNoteId
@@ -665,9 +666,9 @@ class DeadletterTransactionServiceTest {
     fun `addActionToDeadletterTransaction should save a deadletterTransactionAction`() {
         val transactionId = "testId"
         val userId = "userIdTest"
-        val actionValueType = ActionTypeDto("test", ActionTypeDto.TypeEnum.NOT_FINAL)
+        val actionValueType = ActionType("test", ActionType.Type.NOT_FINAL)
         val actionValue = "test"
-        val actionTypes = listOf<ActionTypeDto>(actionValueType)
+        val actionTypes = listOf(actionValueType)
         actionConfig.types = actionTypes
 
         val action =
@@ -711,8 +712,8 @@ class DeadletterTransactionServiceTest {
         val userId = "userIdTest"
         val actionValueType = ActionTypeDto("test", ActionTypeDto.TypeEnum.NOT_FINAL)
         val actionValue = "wrong-value"
-        val actionTypes = listOf<ActionTypeDto>(actionValueType)
-        actionConfig.types = actionTypes
+        val actionTypes = listOf(actionValueType)
+        actionConfig.types = actionTypes.map { ActionType.fromDto(it) }
 
         val resultMono =
             deadletterTransactionsService.addActionToDeadletterTransaction(
@@ -731,7 +732,7 @@ class DeadletterTransactionServiceTest {
         val actionValueType = ActionTypeDto("test", ActionTypeDto.TypeEnum.NOT_FINAL)
         val actionValue = "test"
         val actionTypes = listOf<ActionTypeDto>(actionValueType)
-        actionConfig.types = actionTypes
+        actionConfig.types = actionTypes.map { ActionType.fromDto(it) }
 
         whenever(ecommerceHelpdeskServiceV1.searchTransactions(any())).thenReturn(Mono.empty())
 
@@ -749,7 +750,7 @@ class DeadletterTransactionServiceTest {
     fun `listActionsForDeadletterTransaction should return all the action associated with a certain transactionId`() {
         val transactionId = "testId"
         val userId = "userIdTest"
-        val actionValueType = ActionTypeDto("test", ActionTypeDto.TypeEnum.NOT_FINAL)
+        val actionValueType = ActionType("test", ActionType.Type.NOT_FINAL)
 
         val action: Action =
             Action(

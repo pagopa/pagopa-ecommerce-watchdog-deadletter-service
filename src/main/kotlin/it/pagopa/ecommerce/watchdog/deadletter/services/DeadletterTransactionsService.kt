@@ -4,6 +4,7 @@ import it.pagopa.ecommerce.watchdog.deadletter.clients.EcommerceHelpdeskServiceC
 import it.pagopa.ecommerce.watchdog.deadletter.clients.NodoTechnicalSupportClient
 import it.pagopa.ecommerce.watchdog.deadletter.config.ActionTypeConfig
 import it.pagopa.ecommerce.watchdog.deadletter.documents.Action
+import it.pagopa.ecommerce.watchdog.deadletter.documents.ActionType
 import it.pagopa.ecommerce.watchdog.deadletter.documents.Note
 import it.pagopa.ecommerce.watchdog.deadletter.exception.InvalidActionValue
 import it.pagopa.ecommerce.watchdog.deadletter.exception.InvalidNoteId
@@ -19,12 +20,8 @@ import it.pagopa.generated.ecommerce.helpdesk.model.SearchNpgOperationsResponseD
 import it.pagopa.generated.ecommerce.helpdesk.model.TransactionResultDto as TransactionResultDtoV2
 import it.pagopa.generated.ecommerce.helpdesk.model.TransactionResultDto
 import it.pagopa.generated.ecommerce.helpdesk.model.UserInfoDto
-import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.ActionTypeDto
-import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.DeadletterTransactionDto
+import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.*
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.ListDeadletterTransactions200ResponseDto as ListDeadletterTransactions200ResponseDtoV1
-import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.NoteDto
-import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.PageInfoDto
-import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.TransactionNotesDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.DeadletterTransactionDto as DeadletterTransactionDtoV2
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.ListDeadletterTransactions200ResponseDto as ListDeadletterTransactions200ResponseDtoV2
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.PageInfoDto as PageInfoDtoV2
@@ -445,23 +442,23 @@ class DeadletterTransactionsService(
         actionValue: String,
     ): Mono<Action> {
 
-        val actionTypeDto: ActionTypeDto? = actionTypeConfig.types.find { actionValue in it.value }
-        if (actionTypeDto != null) {
-            return ecommerceHelpdeskServiceV1
+        val actionType: ActionType? = actionTypeConfig.types.find { actionValue in it.value }
+        return if (actionType == null) Mono.error(InvalidActionValue())
+        else
+            ecommerceHelpdeskServiceV1
                 .searchTransactions(transactionId)
-                .flatMap { _ ->
-                    val newAction =
+                .flatMap {
+                    deadletterTransactionActionRepository.save(
                         Action(
                             id = UUID.randomUUID().toString(),
                             transactionId = transactionId,
                             userId = userId,
-                            action = actionTypeDto,
+                            action = actionType,
                             timestamp = Instant.now(),
                         )
-                    deadletterTransactionActionRepository.save(newAction)
+                    )
                 }
                 .switchIfEmpty(Mono.error(InvalidTransactionId()))
-        } else return Mono.error(InvalidActionValue())
     }
 
     fun listActionsForDeadletterTransaction(transactionId: String, userId: String): Flux<Action> {

@@ -1,7 +1,6 @@
 package it.pagopa.ecommerce.watchdog.deadletter.config
 
-import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.ActionTypeDto
-import java.util.ArrayList
+import it.pagopa.ecommerce.watchdog.deadletter.documents.ActionType
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.context.annotation.Configuration
 
@@ -9,5 +8,5 @@ import org.springframework.context.annotation.Configuration
 @ConfigurationProperties(prefix = "actiontype")
 class ActionTypeConfig {
 
-    var types: List<ActionTypeDto> = ArrayList()
+    var types: List<ActionType> = ArrayList()
 }

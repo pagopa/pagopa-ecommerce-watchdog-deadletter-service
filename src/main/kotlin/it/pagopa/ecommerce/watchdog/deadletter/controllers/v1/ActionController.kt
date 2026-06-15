@@ -21,6 +21,8 @@ class ActionController(@Autowired val actionService: ActionService) : ActionsApi
     override fun listActions(
         exchange: ServerWebExchange?
     ): Mono<ResponseEntity<Flux<ActionTypeDto>?>> {
-        return Mono.just(ResponseEntity.ok(actionService.getActionType()))
+        return Mono.just(
+            ResponseEntity.ok(actionService.getActionType().map { it.toDto<ActionTypeDto>() })
+        )
     }
 }

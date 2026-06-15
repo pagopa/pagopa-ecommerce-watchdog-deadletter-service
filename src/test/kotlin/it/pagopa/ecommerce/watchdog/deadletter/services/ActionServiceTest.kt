@@ -1,6 +1,6 @@
 package it.pagopa.ecommerce.watchdog.deadletter.services
 
-import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.ActionTypeDto
+import it.pagopa.ecommerce.watchdog.deadletter.documents.ActionType
 import kotlin.test.assertEquals
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -15,14 +15,10 @@ class ActionServiceTest {
     @Autowired private lateinit var actionService: ActionService
 
     @Test
-    fun `getActionType should return the Flux of ActionTypeDto with the ActionType available`() {
+    fun `getActionType should return the Flux of ActionType with the ActionType available`() {
         StepVerifier.create(actionService.getActionType())
             .assertNext { action ->
-                assertEquals(
-                    action.type,
-                    ActionTypeDto.TypeEnum.FINAL,
-                    "The action type is not the same",
-                )
+                assertEquals(action.type, ActionType.Type.FINAL, "The action type is not the same")
                 assertEquals(
                     action.value,
                     "Nessuna azione richiesta",
