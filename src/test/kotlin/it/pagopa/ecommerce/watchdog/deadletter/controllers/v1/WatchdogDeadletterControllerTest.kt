@@ -2,6 +2,7 @@ package it.pagopa.ecommerce.watchdog.deadletter.controllers.v1
 
 import it.pagopa.ecommerce.watchdog.deadletter.config.TestSecurityConfig
 import it.pagopa.ecommerce.watchdog.deadletter.documents.Action
+import it.pagopa.ecommerce.watchdog.deadletter.documents.ActionType
 import it.pagopa.ecommerce.watchdog.deadletter.exception.InvalidNoteId
 import it.pagopa.ecommerce.watchdog.deadletter.exception.InvalidTransactionId
 import it.pagopa.ecommerce.watchdog.deadletter.exception.NotesLimitException
@@ -41,7 +42,7 @@ class WatchdogDeadletterControllerTest {
         val deadletterTransactionActionInputDto =
             DeadletterTransactionActionInputDto("testActionValue")
 
-        val action = ActionTypeDto("testActionValue", ActionTypeDto.TypeEnum.NOT_FINAL)
+        val action = ActionType("testActionValue", ActionType.Type.NOT_FINAL)
 
         given(
                 deadletterTransactionsService.addActionToDeadletterTransaction(
@@ -249,7 +250,7 @@ class WatchdogDeadletterControllerTest {
     fun `list actions for deadletter transaction should return '200 OKAY' and return the list of action in the body`() {
         val deadletterTransactionId: String = "00000000"
         val userId: String = "test-user"
-        val actionType = ActionTypeDto("testActionValue", ActionTypeDto.TypeEnum.NOT_FINAL)
+        val actionType = ActionType("testActionValue", ActionType.Type.NOT_FINAL)
         val action: Action =
             Action("test-id", deadletterTransactionId, userId, actionType, Instant.now())
 

@@ -3,6 +3,7 @@ package it.pagopa.ecommerce.watchdog.deadletter.controllers.v1
 import it.pagopa.ecommerce.watchdog.deadletter.services.AuthService
 import it.pagopa.ecommerce.watchdog.deadletter.services.DeadletterTransactionsService
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.api.DeadletterTransactionsApi
+import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.ActionTypeDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.DeadletterTransactionActionDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.DeadletterTransactionActionInputDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.ListDeadletterTransactions200ResponseDto
@@ -113,7 +114,7 @@ class WatchdogDeadletterController(
                             it.id,
                             it.transactionId,
                             it.userId,
-                            it.action,
+                            it.action.toDto<ActionTypeDto>(),
                             it.timestamp.atOffset(ZoneOffset.UTC),
                         )
                     }

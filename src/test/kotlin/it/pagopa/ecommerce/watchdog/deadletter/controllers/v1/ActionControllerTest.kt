@@ -1,6 +1,7 @@
 package it.pagopa.ecommerce.watchdog.deadletter.controllers.v1
 
 import it.pagopa.ecommerce.watchdog.deadletter.config.TestSecurityConfig
+import it.pagopa.ecommerce.watchdog.deadletter.documents.ActionType
 import it.pagopa.ecommerce.watchdog.deadletter.services.ActionService
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.ActionTypeDto
 import kotlin.test.assertEquals
@@ -28,8 +29,8 @@ class ActionControllerTest {
 
     @Test
     fun `listActions should return 200 OKAY with the list of the action available`() {
-        val actionTypesList: ArrayList<ActionTypeDto> = ArrayList()
-        actionTypesList.add(ActionTypeDto("test1", ActionTypeDto.TypeEnum.NOT_FINAL))
+        val actionTypesList: ArrayList<ActionType> = ArrayList()
+        actionTypesList.add(ActionType("test1", ActionType.Type.NOT_FINAL))
 
         // For catch the generic type during the Test
         val listType = object : ParameterizedTypeReference<List<ActionTypeDto>>() {}
