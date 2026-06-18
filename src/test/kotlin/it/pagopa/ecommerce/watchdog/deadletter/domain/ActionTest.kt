@@ -6,11 +6,7 @@ import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.ActionTypeDto 
 import kotlin.test.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.test.context.TestPropertySource
 
-@SpringBootTest
-@TestPropertySource(locations = ["classpath:application.test.properties"])
 class ActionTest {
 
     @Test

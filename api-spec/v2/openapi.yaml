@@ -103,11 +103,7 @@ paths:
         content:
           application/json:
             schema:
-              description: List of transactionIds
-              type: array
-              minItems: 1
-              items:
-                type: string
+                $ref: '#/components/schemas/DeadletterTransactionActionsRequest'
       responses:
         '200':
           description: List of actions taken on the list of deadletter transactions
@@ -224,6 +220,16 @@ components:
         - userId
         - action
         - timestamp
+    DeadletterTransactionActionsRequest:
+      type: object
+      properties:
+        transactionIds:
+          type: array
+          minItems: 1
+          items:
+            type: string
+      required:
+        - transactionIds
     ActionType:
       type: object
       properties:

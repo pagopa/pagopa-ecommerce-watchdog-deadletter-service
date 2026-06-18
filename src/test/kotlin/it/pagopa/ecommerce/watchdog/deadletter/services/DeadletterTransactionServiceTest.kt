@@ -24,12 +24,16 @@ import it.pagopa.generated.ecommerce.helpdesk.model.TransactionInfoDto
 import it.pagopa.generated.ecommerce.helpdesk.model.TransactionResultDto
 import it.pagopa.generated.ecommerce.helpdesk.model.TransactionStatusDto
 import it.pagopa.generated.ecommerce.helpdesk.model.UserInfoDto
-import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.ActionTypeDto
+import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.ActionTypeDto as DtoV1
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.ListDeadletterTransactions200ResponseDto
+import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.ActionTypeDto as DtoV2
+import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.DeadletterTransactionActionDto
+import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.DeadletterTransactionActionsRequestDto
 import it.pagopa.generated.nodo.support.model.PositionPaymentSnapshotDtoDto
 import java.time.Instant
 import java.time.LocalDate
 import java.time.OffsetDateTime
+import java.time.ZoneOffset
 import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -710,7 +714,7 @@ class DeadletterTransactionServiceTest {
     fun `addActionToDeadletterTransaction should return an InvalidActionValue`() {
         val transactionId = "testId"
         val userId = "userIdTest"
-        val actionValueType = ActionTypeDto("test", ActionTypeDto.TypeEnum.NOT_FINAL)
+        val actionValueType = DtoV1("test", DtoV1.TypeEnum.NOT_FINAL)
         val actionValue = "wrong-value"
         val actionTypes = listOf(actionValueType)
         actionConfig.types = actionTypes.map { ActionType.fromDto(it) }
@@ -729,9 +733,9 @@ class DeadletterTransactionServiceTest {
     fun `addActionToDeadletterTransaction should return an InvalidTransactionId`() {
         val transactionId = "testId"
         val userId = "userIdTest"
-        val actionValueType = ActionTypeDto("test", ActionTypeDto.TypeEnum.NOT_FINAL)
+        val actionValueType = DtoV1("test", DtoV1.TypeEnum.NOT_FINAL)
         val actionValue = "test"
-        val actionTypes = listOf<ActionTypeDto>(actionValueType)
+        val actionTypes = listOf<DtoV1>(actionValueType)
         actionConfig.types = actionTypes.map { ActionType.fromDto(it) }
 
         whenever(ecommerceHelpdeskServiceV1.searchTransactions(any())).thenReturn(Mono.empty())
@@ -775,6 +779,49 @@ class DeadletterTransactionServiceTest {
 
         val transactionIdValuePassed = actionCaptor.firstValue
         assertEquals(transactionIdValuePassed, transactionId)
+    }
+
+    @Test
+    fun `listActionsForDeadletterTransactions should return all the action associated with a list of transactionIds`() {
+        val transactionId = "testId"
+        val userId = "userIdTest"
+        val actionValueType = ActionType("test", ActionType.Type.NOT_FINAL)
+
+        val action =
+            Action(
+                UUID.randomUUID().toString(),
+                transactionId,
+                userId,
+                actionValueType,
+                Instant.now(),
+            )
+
+        whenever(deadletterTransactionActionRepository.findAllByTransactionIdIn(any()))
+            .thenReturn(Flux.just(action))
+
+        val resultFlux =
+            deadletterTransactionsService.listActionsForDeadletterTransactions(
+                DeadletterTransactionActionsRequestDto(listOf(transactionId))
+            )
+
+        val result =
+            DeadletterTransactionActionDto(
+                action.id,
+                action.transactionId,
+                action.userId,
+                action.action.toDto<DtoV2>(),
+                action.timestamp.atOffset(ZoneOffset.UTC),
+            )
+
+        StepVerifier.create(resultFlux).expectNext(listOf(result)).expectComplete().verify()
+
+        // Verify the object pass to the repository and his parameters
+        val actionCaptor = argumentCaptor<List<String>>()
+        verify(deadletterTransactionActionRepository)
+            .findAllByTransactionIdIn(actionCaptor.capture())
+
+        val transactionIdValuePassed = actionCaptor.firstValue
+        assertEquals(transactionIdValuePassed, listOf(transactionId))
     }
 
     @Test
