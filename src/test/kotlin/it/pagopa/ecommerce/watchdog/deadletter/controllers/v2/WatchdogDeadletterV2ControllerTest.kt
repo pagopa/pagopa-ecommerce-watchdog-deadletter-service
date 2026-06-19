@@ -3,6 +3,8 @@ package it.pagopa.ecommerce.watchdog.deadletter.controllers.v2
 import it.pagopa.ecommerce.watchdog.deadletter.config.TestSecurityConfig
 import it.pagopa.ecommerce.watchdog.deadletter.services.AuthService
 import it.pagopa.ecommerce.watchdog.deadletter.services.DeadletterTransactionsService
+import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.DeadletterTransactionActionDto
+import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.DeadletterTransactionActionsRequestDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.DeadletterTransactionDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.ListDeadletterTransactions200ResponseDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.PageInfoDto
@@ -13,9 +15,11 @@ import org.mockito.BDDMockito.given
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest
 import org.springframework.context.annotation.Import
+import org.springframework.http.MediaType
 import org.springframework.test.context.TestPropertySource
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.reactive.server.WebTestClient
+import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 
 @WebFluxTest(WatchdogDeadletterV2Controller::class)
@@ -129,6 +133,59 @@ class WatchdogDeadletterV2ControllerTest {
                     .queryParam("pageNumber", pageNumber)
                     .build()
             }
+            .exchange()
+            .expectStatus()
+            .isBadRequest
+    }
+
+    @Test
+    fun `list deadletter transactions actions should return '200 OKAY' with the list of deadletter transaction ids`() {
+        val body =
+            DeadletterTransactionActionsRequestDto(
+                buildList {
+                    add("firstId")
+                    add("secondId")
+                    add("thirdId")
+                }
+            )
+
+        given(deadletterTransactionsService.listActionsForDeadletterTransactions(body))
+            .willReturn(Flux.just(listOf<DeadletterTransactionActionDto>()))
+
+        webClient
+            .post()
+            .uri("/v2/deadletter-transactions/actions")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(body)
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody()
+    }
+
+    @Test
+    fun `list deadletter transactions actions should return '400 BAD REQUEST' empty list of deadletter transaction ids`() {
+        val body = DeadletterTransactionActionsRequestDto(listOf<String>())
+
+        webClient
+            .post()
+            .uri("/v2/deadletter-transactions/actions")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(body)
+            .exchange()
+            .expectStatus()
+            .isBadRequest
+    }
+
+    @Test
+    fun `list deadletter transactions actions should return '400 BAD REQUEST' malformed body`() {
+        val body = "{}"
+
+        webClient
+            .post()
+            .uri("/v2/deadletter-transactions/actions")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(body)
             .exchange()
             .expectStatus()
             .isBadRequest

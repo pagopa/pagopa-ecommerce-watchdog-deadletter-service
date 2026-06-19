@@ -22,6 +22,9 @@ import it.pagopa.generated.ecommerce.helpdesk.model.TransactionResultDto
 import it.pagopa.generated.ecommerce.helpdesk.model.UserInfoDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.*
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.ListDeadletterTransactions200ResponseDto as ListDeadletterTransactions200ResponseDtoV1
+import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.ActionTypeDto
+import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.DeadletterTransactionActionDto
+import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.DeadletterTransactionActionsRequestDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.DeadletterTransactionDto as DeadletterTransactionDtoV2
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.ListDeadletterTransactions200ResponseDto as ListDeadletterTransactions200ResponseDtoV2
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.PageInfoDto as PageInfoDtoV2
@@ -536,6 +539,29 @@ class DeadletterTransactionsService(
                     // Order the list in chronological order based on creationDate
                     noteDtoList = noteDtoList.sortedBy { it.createdAt }
                     TransactionNotesDto(groupedFlux.key(), noteDtoList)
+                }
+            }
+    }
+
+    fun listActionsForDeadletterTransactions(
+        deadletterTransactionActionsRequestDto: DeadletterTransactionActionsRequestDto
+    ): Flux<List<DeadletterTransactionActionDto>> {
+        return deadletterTransactionActionRepository
+            .findAllByTransactionIdIn(deadletterTransactionActionsRequestDto.transactionIds)
+            .groupBy { it.transactionId }
+            .flatMap { groupedFlux ->
+                groupedFlux.collectList().map { actions ->
+                    actions
+                        .map {
+                            DeadletterTransactionActionDto(
+                                it.id,
+                                it.transactionId,
+                                it.userId,
+                                it.action.toDto<ActionTypeDto>(),
+                                it.timestamp.atOffset(ZoneOffset.UTC),
+                            )
+                        }
+                        .sortedBy { it.timestamp }
                 }
             }
     }

@@ -4,12 +4,12 @@ import it.pagopa.ecommerce.watchdog.deadletter.services.AuthService
 import it.pagopa.ecommerce.watchdog.deadletter.services.DeadletterTransactionsService
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.api.V2Api
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.DeadletterTransactionActionDto
+import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.DeadletterTransactionActionsRequestDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.ListDeadletterTransactions200ResponseDto
 import jakarta.validation.Valid
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.NotNull
-import jakarta.validation.constraints.Size
 import java.time.LocalDate
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -31,10 +31,15 @@ class WatchdogDeadletterV2Controller(
     private val logger = LoggerFactory.getLogger(this.javaClass)
 
     override fun listActionsForDeadletterTransaction(
-        requestBody: @Valid @Size(min = 1) Flux<String?>?,
-        exchange: ServerWebExchange?,
-    ): Mono<ResponseEntity<Flux<List<DeadletterTransactionActionDto?>?>?>?>? {
-        TODO("Not yet implemented")
+        deadletterTransactionActionsRequestDto: @Valid Mono<DeadletterTransactionActionsRequestDto>,
+        exchange: ServerWebExchange,
+    ): Mono<ResponseEntity<Flux<List<DeadletterTransactionActionDto>>>> {
+        logger.info("Received actions request for multiple transaction ids")
+        return deadletterTransactionActionsRequestDto.map {
+            ResponseEntity.ok(
+                deadletterTransactionsService.listActionsForDeadletterTransactions(it)
+            )
+        }
     }
 
     override fun listDeadletterTransactions(

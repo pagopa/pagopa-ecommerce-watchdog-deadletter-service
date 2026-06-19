@@ -9,4 +9,6 @@ import reactor.core.publisher.Flux
 interface DeadletterTransactionActionRepository : ReactiveCrudRepository<Action, String> {
 
     fun findByTransactionId(transactionId: String): Flux<Action>
+
+    fun findAllByTransactionIdIn(transactionIds: List<String>): Flux<Action>
 }
