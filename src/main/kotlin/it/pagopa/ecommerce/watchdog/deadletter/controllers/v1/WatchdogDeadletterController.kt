@@ -60,7 +60,16 @@ class WatchdogDeadletterController(
         deadletterTransactionsActionInputDto: @Valid Mono<DeadletterTransactionsActionInputDto>,
         exchange: ServerWebExchange,
     ): Mono<ResponseEntity<Void>> {
-        TODO("Not yet implemented")
+        return deadletterTransactionsActionInputDto
+            .flatMap { actionDto ->
+                authService.getAuthenticatedUserId().flatMap { userId ->
+                    deadletterTransactionsService.addActionToDeadletterTransactions(
+                        actionDto,
+                        userId,
+                    )
+                }
+            }
+            .thenReturn(ResponseEntity.status(201).build())
     }
 
     override fun addNoteToDeadletterTransaction(

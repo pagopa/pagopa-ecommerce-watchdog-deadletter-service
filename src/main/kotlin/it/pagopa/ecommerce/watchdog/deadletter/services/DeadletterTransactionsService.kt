@@ -464,6 +464,36 @@ class DeadletterTransactionsService(
                 .switchIfEmpty(Mono.error(InvalidTransactionId()))
     }
 
+    fun addActionToDeadletterTransactions(
+        input: DeadletterTransactionsActionInputDto,
+        userId: String,
+    ): Mono<List<Action>> {
+
+        val actionType: ActionType? = actionTypeConfig.types.find { input.value == it.value }
+        return if (actionType == null) Mono.error(InvalidActionValue())
+        else
+            Flux.fromIterable(input.transactionIds)
+                .flatMap { tId ->
+                    ecommerceHelpdeskServiceV1
+                        .searchTransactions(tId)
+                        .switchIfEmpty(Mono.error(InvalidTransactionId()))
+                        .thenReturn(tId)
+                }
+                .map { tId ->
+                    deadletterTransactionActionRepository.save(
+                        Action(
+                            id = UUID.randomUUID().toString(),
+                            transactionId = tId,
+                            userId = userId,
+                            action = actionType,
+                            timestamp = Instant.now(),
+                        )
+                    )
+                }
+                .flatMap { it }
+                .collectList()
+    }
+
     fun listActionsForDeadletterTransaction(transactionId: String, userId: String): Flux<Action> {
         logger.info(
             "Retrieving actions for deadletter transaction with ID: [{}] requested by user: [{}]",

@@ -25,6 +25,7 @@ import it.pagopa.generated.ecommerce.helpdesk.model.TransactionResultDto
 import it.pagopa.generated.ecommerce.helpdesk.model.TransactionStatusDto
 import it.pagopa.generated.ecommerce.helpdesk.model.UserInfoDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.ActionTypeDto as DtoV1
+import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.DeadletterTransactionsActionInputDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.ListDeadletterTransactions200ResponseDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.ActionTypeDto as DtoV2
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.DeadletterTransactionActionDto
@@ -35,6 +36,7 @@ import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
 import java.util.UUID
+import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import org.junit.jupiter.api.Test
@@ -748,6 +750,87 @@ class DeadletterTransactionServiceTest {
             )
         verify(ecommerceHelpdeskServiceV1).searchTransactions(transactionId)
         StepVerifier.create(resultMono).expectError(InvalidTransactionId::class.java).verify()
+    }
+
+    @Test
+    fun `addActionToDeadletterTransactions should save multiple deadletterTransactionAction`() {
+        val transactionIds = listOf("testId1", "testId2", "testId3")
+        val userId = "userIdTest"
+        val actionValueType = ActionType("test", ActionType.Type.NOT_FINAL)
+        val actionValue = "test"
+        val actionTypes = listOf(actionValueType)
+        actionConfig.types = actionTypes
+
+        val actions =
+            transactionIds.map {
+                Action(UUID.randomUUID().toString(), it, userId, actionValueType, Instant.now())
+            }
+
+        val input = DeadletterTransactionsActionInputDto(actionValue).transactionIds(transactionIds)
+
+        whenever(ecommerceHelpdeskServiceV1.searchTransactions(any()))
+            .thenReturn(Mono.just(SearchTransactionResponseDto()))
+
+        whenever(deadletterTransactionActionRepository.save(any())).thenAnswer {
+            Mono.just(it.getArgument<Action>(0))
+        }
+
+        val resultMono =
+            deadletterTransactionsService.addActionToDeadletterTransactions(input, userId)
+
+        StepVerifier.create(resultMono).expectNextMatches { it.size == 3 }.expectComplete().verify()
+
+        // Verify the object pass to the repository and his parameters
+        val actionCaptor = argumentCaptor<Action>()
+        verify(deadletterTransactionActionRepository, times(3)).save(actionCaptor.capture())
+
+        actions.forEach {
+            verify(ecommerceHelpdeskServiceV1).searchTransactions(it.transactionId)
+
+            val newDeadLetterActionCapture = actionCaptor.firstValue
+
+            assertNotNull(newDeadLetterActionCapture.id)
+            assertNotNull(newDeadLetterActionCapture.timestamp)
+            assertContains(transactionIds, newDeadLetterActionCapture.transactionId)
+            assertEquals(newDeadLetterActionCapture.userId, it.userId)
+            assertEquals(newDeadLetterActionCapture.action.value, it.action.value)
+        }
+    }
+
+    @Test
+    fun `addActionToDeadletterTransactions should return an InvalidActionValue`() {
+        val transactionIds = listOf("testId1", "testId2")
+        val userId = "userIdTest"
+        val actionValueType = DtoV1("test", DtoV1.TypeEnum.NOT_FINAL)
+        val actionValue = "wrong-value"
+        val actionTypes = listOf(actionValueType)
+        actionConfig.types = actionTypes.map { ActionType.fromDto(it) }
+
+        val input = DeadletterTransactionsActionInputDto(actionValue).transactionIds(transactionIds)
+
+        val resultMono =
+            deadletterTransactionsService.addActionToDeadletterTransactions(input, userId)
+
+        StepVerifier.create(resultMono).expectError(InvalidActionValue::class.java).verify()
+    }
+
+    @Test
+    fun `addActionToDeadletterTransactions should return an InvalidTransactionId`() {
+        val transactionIds = listOf("testId1", "testId2")
+        val userId = "userIdTest"
+        val actionValueType = DtoV1("test", DtoV1.TypeEnum.NOT_FINAL)
+        val actionValue = "test"
+        val actionTypes = listOf(actionValueType)
+        actionConfig.types = actionTypes.map { ActionType.fromDto(it) }
+
+        whenever(ecommerceHelpdeskServiceV1.searchTransactions(any())).thenReturn(Mono.empty())
+
+        val input = DeadletterTransactionsActionInputDto(actionValue).transactionIds(transactionIds)
+        val resultMono =
+            deadletterTransactionsService.addActionToDeadletterTransactions(input, userId)
+
+        StepVerifier.create(resultMono).expectError(InvalidTransactionId::class.java).verify()
+        verify(deadletterTransactionActionRepository, never()).save(any())
     }
 
     @Test

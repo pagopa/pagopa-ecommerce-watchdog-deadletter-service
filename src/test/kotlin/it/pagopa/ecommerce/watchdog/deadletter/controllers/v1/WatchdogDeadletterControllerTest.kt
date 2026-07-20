@@ -137,6 +137,73 @@ class WatchdogDeadletterControllerTest {
     }
 
     @Test
+    fun `add action to deadletter transactions return '201 Created'`() {
+
+        val deadletterTransactionIds = listOf("00000000", "00000001")
+        val userId = "test-user"
+        val action = ActionType("Nessuna azione richiesta", ActionType.Type.FINAL)
+        val input =
+            DeadletterTransactionsActionInputDto(action.value)
+                .transactionIds(deadletterTransactionIds)
+
+        given(deadletterTransactionsService.addActionToDeadletterTransactions(input, userId))
+            .willReturn(
+                Mono.just(
+                    listOf(
+                        Action(
+                            "test-id",
+                            deadletterTransactionIds[0],
+                            userId,
+                            action,
+                            Instant.now(),
+                        ),
+                        Action(
+                            "test-id",
+                            deadletterTransactionIds[1],
+                            userId,
+                            action,
+                            Instant.now(),
+                        ),
+                    )
+                )
+            )
+
+        given(authService.getAuthenticatedUserId()).willReturn(Mono.just(userId))
+
+        webClient
+            .post()
+            .uri("/deadletter-transactions/actions/bulk")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(input)
+            .exchange()
+            .expectStatus()
+            .isCreated
+    }
+
+    @Test
+    fun `add action to deadletter transactions return '404 NOT FOUND' when a single transaction doesn't exist`() {
+
+        val deadletterTransactionIds = listOf("00000000", "00000001")
+        val userId = "test-user"
+        val input =
+            DeadletterTransactionsActionInputDto("Nessuna azione richiesta")
+                .transactionIds(deadletterTransactionIds)
+
+        given(authService.getAuthenticatedUserId()).willReturn(Mono.just(userId))
+        given(deadletterTransactionsService.addActionToDeadletterTransactions(input, userId))
+            .willReturn(Mono.error(InvalidTransactionId()))
+
+        webClient
+            .post()
+            .uri("/deadletter-transactions/actions/bulk")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(input)
+            .exchange()
+            .expectStatus()
+            .isNotFound
+    }
+
+    @Test
     fun `list deadletter transaction should return '200 OKAY' with the list of deadletter transactions with pagination`() {
         val date: LocalDate = LocalDate.parse("2025-08-19")
         val pageNumber: Int = 0
