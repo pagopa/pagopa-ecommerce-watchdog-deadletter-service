@@ -168,6 +168,44 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProblemJson'
+  /deadletter-transactions/actions/bulk:
+    post:
+      tags:
+        - deadletter-transactions-actions
+      summary: Add a new action to multiple deadletter transactions
+      operationId: addActionToDeadletterTransactions
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: Action to be added
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeadletterTransactionsActionInput'
+      responses:
+        '201':
+          description: Action added successfully
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+        '401':
+          description: Unauthorized. Missing or invalid authentication token.
+        '404':
+          description: Deadletter transaction not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
   /deadletter-transactions/{transactionId}/notes:
     post:
       tags:
@@ -577,6 +615,17 @@ components:
     DeadletterTransactionActionInput:
       type: object
       properties:
+        value:
+          type: string
+      required:
+        - value
+    DeadletterTransactionsActionInput:
+      type: object
+      properties:
+        transactionIds:
+          type: array
+          items:
+            type: string
         value:
           type: string
       required:
