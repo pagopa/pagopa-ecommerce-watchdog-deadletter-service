@@ -766,7 +766,7 @@ class DeadletterTransactionServiceTest {
                 Action(UUID.randomUUID().toString(), it, userId, actionValueType, Instant.now())
             }
 
-        val input = DeadletterTransactionsActionInputDto(actionValue).transactionIds(transactionIds)
+        val input = DeadletterTransactionsActionInputDto(transactionIds, actionValue)
 
         whenever(ecommerceHelpdeskServiceV1.searchTransactions(any()))
             .thenReturn(Mono.just(SearchTransactionResponseDto()))
@@ -806,7 +806,7 @@ class DeadletterTransactionServiceTest {
         val actionTypes = listOf(actionValueType)
         actionConfig.types = actionTypes.map { ActionType.fromDto(it) }
 
-        val input = DeadletterTransactionsActionInputDto(actionValue).transactionIds(transactionIds)
+        val input = DeadletterTransactionsActionInputDto(transactionIds, actionValue)
 
         val resultMono =
             deadletterTransactionsService.addActionToDeadletterTransactions(input, userId)
@@ -825,7 +825,7 @@ class DeadletterTransactionServiceTest {
 
         whenever(ecommerceHelpdeskServiceV1.searchTransactions(any())).thenReturn(Mono.empty())
 
-        val input = DeadletterTransactionsActionInputDto(actionValue).transactionIds(transactionIds)
+        val input = DeadletterTransactionsActionInputDto(transactionIds, actionValue)
         val resultMono =
             deadletterTransactionsService.addActionToDeadletterTransactions(input, userId)
 

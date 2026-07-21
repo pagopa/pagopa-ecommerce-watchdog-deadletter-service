@@ -142,9 +142,7 @@ class WatchdogDeadletterControllerTest {
         val deadletterTransactionIds = listOf("00000000", "00000001")
         val userId = "test-user"
         val action = ActionType("Nessuna azione richiesta", ActionType.Type.FINAL)
-        val input =
-            DeadletterTransactionsActionInputDto(action.value)
-                .transactionIds(deadletterTransactionIds)
+        val input = DeadletterTransactionsActionInputDto(deadletterTransactionIds, action.value)
 
         given(deadletterTransactionsService.addActionToDeadletterTransactions(input, userId))
             .willReturn(
@@ -186,8 +184,10 @@ class WatchdogDeadletterControllerTest {
         val deadletterTransactionIds = listOf("00000000", "00000001")
         val userId = "test-user"
         val input =
-            DeadletterTransactionsActionInputDto("Nessuna azione richiesta")
-                .transactionIds(deadletterTransactionIds)
+            DeadletterTransactionsActionInputDto(
+                deadletterTransactionIds,
+                "Nessuna azione richiesta",
+            )
 
         given(authService.getAuthenticatedUserId()).willReturn(Mono.just(userId))
         given(deadletterTransactionsService.addActionToDeadletterTransactions(input, userId))
