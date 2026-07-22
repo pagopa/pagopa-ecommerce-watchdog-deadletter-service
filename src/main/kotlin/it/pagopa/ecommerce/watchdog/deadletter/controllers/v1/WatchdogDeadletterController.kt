@@ -10,6 +10,7 @@ import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.DeadletterTran
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.ListDeadletterTransactions200ResponseDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.NoteDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.NoteInputDto
+import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.NotesInputDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.NotesRequestDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.TransactionNotesDto
 import jakarta.validation.Valid
@@ -89,6 +90,13 @@ class WatchdogDeadletterController(
                     }
             }
         }
+    }
+
+    override fun addNoteToDeadletterTransactions(
+        noteInputDto: @Valid Mono<NotesInputDto>,
+        exchange: ServerWebExchange,
+    ): Mono<ResponseEntity<Void>> {
+        TODO("Not yet implemented")
     }
 
     override fun deleteNoteDeadletterTransaction(
