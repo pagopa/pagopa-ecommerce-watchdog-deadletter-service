@@ -93,10 +93,20 @@ class WatchdogDeadletterController(
     }
 
     override fun addNoteToDeadletterTransactions(
-        noteInputDto: @Valid Mono<NotesInputDto>,
+        notesInputDto: @Valid Mono<NotesInputDto>,
         exchange: ServerWebExchange,
-    ): Mono<ResponseEntity<Void>> {
-        TODO("Not yet implemented")
+    ): Mono<ResponseEntity<Flux<NoteDto>>> {
+        return notesInputDto
+            .flatMap { dto ->
+                authService.getAuthenticatedUserId().map { userId ->
+                    deadletterTransactionsService.addNoteToDeadLetterTransactions(
+                        dto.note,
+                        userId,
+                        dto.transactionIds,
+                    )
+                }
+            }
+            .flatMap { Mono.just(ResponseEntity.status(201).body(it)) }
     }
 
     override fun deleteNoteDeadletterTransaction(

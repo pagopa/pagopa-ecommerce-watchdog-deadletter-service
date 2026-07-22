@@ -1081,6 +1081,46 @@ class DeadletterTransactionServiceTest {
     }
 
     @Test
+    fun `addNoteToDeadLetterTransactions should return the Notes saved without error`() {
+
+        whenever(deadletterTransactionsNoteRepo.countByTransactionId(any<String>()))
+            .thenReturn(Mono.just(0L))
+        whenever(deadletterTransactionsNoteRepo.save(any())).thenAnswer {
+            Mono.just(it.getArgument<Note>(0))
+        }
+
+        val result =
+            deadletterTransactionsService.addNoteToDeadLetterTransactions(
+                "test",
+                "usertestId",
+                listOf("transactionId1", "transactionId2"),
+            )
+
+        StepVerifier.create(result)
+            .thenConsumeWhile {
+                it.note == "test" &&
+                    listOf("transactionId1", "transactionId2").contains(it.transactionId)
+            }
+            .verifyComplete()
+    }
+
+    @Test
+    fun `addNoteToDeadLetterTransactions should return NotesLimitException because there are too many notes already`() {
+
+        whenever(deadletterTransactionsNoteRepo.countByTransactionId(any<String>()))
+            .thenReturn(Mono.just(noteNumLimit + 1))
+
+        val resultMono =
+            deadletterTransactionsService.addNoteToDeadLetterTransactions(
+                "test",
+                "usertestId",
+                listOf("transactionId1", "transactionId2"),
+            )
+
+        StepVerifier.create(resultMono).expectError(NotesLimitException::class.java).verify()
+    }
+
+    @Test
     fun `getAllNotesByTransactionIdList should return the TransactionNotesDto without error`() {
         val now = Instant.now()
         val note = Note("testId", "test", "transactionId", "usertestId", now, now)
