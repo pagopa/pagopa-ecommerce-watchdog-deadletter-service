@@ -434,6 +434,98 @@ class WatchdogDeadletterControllerTest {
             .isEqualTo(422)
     }
 
+    fun `add a new note to multiple transactions`() {
+
+        val notesInputDto = NotesInputDto(listOf("transactionId1", "transactionId2"), "noteText")
+        val notesDto =
+            Flux.just(
+                NoteDto(
+                    "noteText",
+                    "noteId",
+                    "transactionId1",
+                    OffsetDateTime.now(),
+                    OffsetDateTime.now(),
+                    "userId",
+                ),
+                NoteDto(
+                    "noteText",
+                    "noteId",
+                    "transactionId2",
+                    OffsetDateTime.now(),
+                    OffsetDateTime.now(),
+                    "userId",
+                ),
+            )
+
+        given(authService.getAuthenticatedUserId()).willReturn(Mono.just("userId"))
+        given(
+                deadletterTransactionsService.addNoteToDeadLetterTransactions(
+                    "noteText",
+                    "userId",
+                    listOf("transactionId1", "transactionId1"),
+                )
+            )
+            .willReturn(notesDto)
+
+        webClient
+            .post()
+            .uri("/deadletter-transactions/notes/bulk")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(notesInputDto)
+            .exchange()
+            .expectStatus()
+            .isCreated
+    }
+
+    fun `add a new note to multiple transaction should return a error 404 because the transaction doesnt exist`() {
+
+        val notesInputDto = NotesInputDto(listOf("transactionId1", "transactionId2"), "noteText")
+
+        given(authService.getAuthenticatedUserId()).willReturn(Mono.just("userId"))
+        given(
+                deadletterTransactionsService.addNoteToDeadLetterTransactions(
+                    "noteText",
+                    "userId",
+                    listOf("transactionId1", "transactionId2"),
+                )
+            )
+            .willReturn(Flux.error(InvalidTransactionId()))
+
+        webClient
+            .post()
+            .uri("/deadletter-transactions/notes/bulk")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(notesInputDto)
+            .exchange()
+            .expectStatus()
+            .isNotFound
+    }
+
+    @Test
+    fun `add a new note to multiple transactions should return a error 422 because there are too many notes`() {
+
+        val notesInputDto = NotesInputDto(listOf("transactionId1", "transactionId2"), "noteText")
+
+        given(authService.getAuthenticatedUserId()).willReturn(Mono.just("userId"))
+        given(
+                deadletterTransactionsService.addNoteToDeadLetterTransactions(
+                    "noteText",
+                    "userId",
+                    listOf("transactionId1", "transactionId2"),
+                )
+            )
+            .willReturn(Flux.error(NotesLimitException()))
+
+        webClient
+            .post()
+            .uri("/deadletter-transactions/notes/bulk")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(notesInputDto)
+            .exchange()
+            .expectStatus()
+            .isEqualTo(422)
+    }
+
     @Test
     fun `update an existing note will respond with 204 correct status`() {
         val transactionId = "transactionId"

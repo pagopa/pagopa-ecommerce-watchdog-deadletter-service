@@ -549,6 +549,43 @@ class DeadletterTransactionsService(
         }
     }
 
+    fun addNoteToDeadLetterTransactions(
+        noteText: String,
+        userId: String,
+        transactionIds: List<String>,
+    ): Flux<NoteDto> {
+        return transactionIds
+            .map { id ->
+                deadletterTransactionNoteRepository
+                    .countByTransactionId(id)
+                    .filter { noteNum -> noteNum < noteNumLimitConfig }
+                    .switchIfEmpty { Mono.error(NotesLimitException()) }
+                    .map {
+                        Note(
+                            id = UUID.randomUUID().toString(),
+                            text = noteText,
+                            transactionId = id,
+                            userId = userId,
+                            createdAt = Instant.now(),
+                            updatedAt = Instant.now(),
+                        )
+                    }
+                    .flatMap { deadletterTransactionNoteRepository.save(it) }
+                    .switchIfEmpty { Mono.error(InvalidTransactionId()) }
+                    .map {
+                        NoteDto(
+                            it.text,
+                            it.id,
+                            it.transactionId,
+                            it.createdAt.atOffset(ZoneOffset.UTC),
+                            it.updatedAt.atOffset(ZoneOffset.UTC),
+                            it.userId,
+                        )
+                    }
+            }
+            .let { Flux.concat(it) }
+    }
+
     fun getAllNotesByTransactionIdList(transactionIdList: List<String>): Flux<TransactionNotesDto> {
         return deadletterTransactionNoteRepository
             .findAllByTransactionIdIn(transactionIdList)
