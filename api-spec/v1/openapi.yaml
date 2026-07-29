@@ -441,6 +441,46 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProblemJson'
+  /deadletter-transactions/stats:
+    get:
+      tags:
+        - deadletter-transactions
+      summary: Get action stats of a given month on a day-by-day detail
+      operationId: getStats
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - name: year
+          in: query
+          required: true
+          description: The year to analyze
+          schema:
+            type: integer
+            minimum: 2000
+            maximum: 3000
+            example: 2026
+        - name: month
+          in: query
+          required: true
+          description: The month to analyze
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+            example: 7
+      responses:
+        '200':
+          description: List of day by day statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MonthStatsResponse'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
   /authenticate:
     post:
       tags:
@@ -640,9 +680,9 @@ components:
       properties:
         transactionIds:
           type: array
+          minItems: 1
           items:
             type: string
-            minItems: 1
         note:
           type: string
           minLength: 1
@@ -677,6 +717,30 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/TransactionNotes'
+    MonthStatsResponse:
+      type: object
+      properties:
+        stats:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date
+              finalized:
+                type: integer
+                minimum: 0
+              notFinalized:
+                type: integer
+                minimum: 0
+              notAnalyzed:
+                type: integer
+                minimum: 0
+                nullable: true
+            required:
+              - value
+              - type
     DeadletterTransactionActionInput:
       type: object
       properties:
@@ -689,9 +753,9 @@ components:
       properties:
         transactionIds:
           type: array
+          minItems: 1
           items:
             type: string
-            minItems: 1
         value:
           type: string
       required:

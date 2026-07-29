@@ -8,6 +8,7 @@ import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.DeadletterTran
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.DeadletterTransactionActionInputDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.DeadletterTransactionsActionInputDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.ListDeadletterTransactions200ResponseDto
+import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.MonthStatsResponseDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.NoteDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.NoteInputDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.NotesInputDto
@@ -183,5 +184,13 @@ class WatchdogDeadletterController(
                 }
                 .thenReturn(ResponseEntity.status(204).build())
         }
+    }
+
+    override fun getStats(
+        year: @NotNull @Min(value = 2000) @Max(value = 3000) @Valid Int,
+        month: @NotNull @Min(value = 1) @Max(value = 12) @Valid Int,
+        exchange: ServerWebExchange?,
+    ): Mono<ResponseEntity<MonthStatsResponseDto>> {
+        TODO("Not yet implemented")
     }
 }
