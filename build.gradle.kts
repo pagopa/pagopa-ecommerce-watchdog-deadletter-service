@@ -43,7 +43,7 @@ object Deps {
   const val azureIdentityVersion = "1.18.0"
   const val azureKeyVaultSecretsVersion = "4.10.3"
   const val azureKeyVaultCertificatesVersion = "4.8.3"
-  const val bouncyCastleVersion = "1.82"
+  const val bouncyCastleVersion = "1.84"
 }
 
 repositories { mavenCentral() }
