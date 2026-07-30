@@ -434,9 +434,12 @@ class WatchdogDeadletterControllerTest {
             .isEqualTo(422)
     }
 
+    @Test
     fun `add a new note to multiple transactions`() {
 
-        val notesInputDto = NotesInputDto(listOf("transactionId1", "transactionId2"), "noteText")
+        val transactionIds = listOf("transactionId1", "transactionId2")
+
+        val notesInputDto = NotesInputDto(transactionIds, "noteText")
         val notesDto =
             Flux.just(
                 NoteDto(
@@ -462,7 +465,7 @@ class WatchdogDeadletterControllerTest {
                 deadletterTransactionsService.addNoteToDeadLetterTransactions(
                     "noteText",
                     "userId",
-                    listOf("transactionId1", "transactionId1"),
+                    transactionIds,
                 )
             )
             .willReturn(notesDto)
@@ -477,6 +480,7 @@ class WatchdogDeadletterControllerTest {
             .isCreated
     }
 
+    @Test
     fun `add a new note to multiple transaction should return a error 404 because the transaction doesnt exist`() {
 
         val notesInputDto = NotesInputDto(listOf("transactionId1", "transactionId2"), "noteText")

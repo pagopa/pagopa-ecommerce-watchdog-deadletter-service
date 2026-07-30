@@ -307,7 +307,7 @@ class DeadletterTransactionServiceTest {
     }
 
     @Test
-    fun `getDeadletterTransactions should return an empy ListDeadletterTransactions200ResponseDto because of the searchNpgOperations error`() {
+    fun `getDeadletterTransactions should return an empty ListDeadletterTransactions200ResponseDto because of the searchNpgOperations error`() {
         val date: LocalDate = LocalDate.parse("2025-08-19")
         val pageNumber: Int = 0
         val pageSize: Int = 1
