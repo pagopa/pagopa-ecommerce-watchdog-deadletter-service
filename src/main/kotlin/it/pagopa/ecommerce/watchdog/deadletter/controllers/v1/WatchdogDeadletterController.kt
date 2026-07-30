@@ -42,7 +42,7 @@ class WatchdogDeadletterController(
 
     override fun addActionToDeadletterTransaction(
         deadletterTransactionId: String,
-        deadletterTransactionActionInputDto: @Valid Mono<DeadletterTransactionActionInputDto>,
+        @Valid deadletterTransactionActionInputDto: Mono<DeadletterTransactionActionInputDto>,
         exchange: ServerWebExchange,
     ): Mono<ResponseEntity<Void>> {
         return deadletterTransactionActionInputDto
@@ -59,7 +59,7 @@ class WatchdogDeadletterController(
     }
 
     override fun addActionToDeadletterTransactions(
-        deadletterTransactionsActionInputDto: @Valid Mono<DeadletterTransactionsActionInputDto>,
+        @Valid deadletterTransactionsActionInputDto: Mono<DeadletterTransactionsActionInputDto>,
         exchange: ServerWebExchange,
     ): Mono<ResponseEntity<Void>> {
         return deadletterTransactionsActionInputDto
@@ -76,7 +76,7 @@ class WatchdogDeadletterController(
 
     override fun addNoteToDeadletterTransaction(
         transactionId: String,
-        noteInputDto: @Valid Mono<NoteInputDto>,
+        @Valid noteInputDto: Mono<NoteInputDto>,
         exchange: ServerWebExchange,
     ): Mono<ResponseEntity<NoteDto>> {
         /*
@@ -94,7 +94,7 @@ class WatchdogDeadletterController(
     }
 
     override fun addNoteToDeadletterTransactions(
-        notesInputDto: @Valid Mono<NotesInputDto>,
+        @Valid notesInputDto: Mono<NotesInputDto>,
         exchange: ServerWebExchange,
     ): Mono<ResponseEntity<Flux<NoteDto>>> {
         return notesInputDto
@@ -124,7 +124,7 @@ class WatchdogDeadletterController(
     }
 
     override fun getNotesByTransactionIdList(
-        notesRequestDto: @Valid Mono<NotesRequestDto>,
+        @Valid notesRequestDto: Mono<NotesRequestDto>,
         exchange: ServerWebExchange,
     ): Mono<ResponseEntity<Flux<TransactionNotesDto>>> {
         logger.info("Received getNotesByTransactionIdList request")
@@ -173,7 +173,7 @@ class WatchdogDeadletterController(
     override fun updateNoteDeadletterTransaction(
         transactionId: String,
         noteId: String,
-        noteInputDto: @Valid Mono<NoteInputDto>,
+        @Valid noteInputDto: Mono<NoteInputDto>,
         exchange: ServerWebExchange,
     ): Mono<ResponseEntity<Void>> {
         logger.info("Received update request for note: [{}] ", noteId)
@@ -187,10 +187,12 @@ class WatchdogDeadletterController(
     }
 
     override fun getStats(
-        year: @NotNull @Min(value = 2000) @Max(value = 3000) @Valid Int,
-        month: @NotNull @Min(value = 1) @Max(value = 12) @Valid Int,
+        @NotNull @Min(value = 2000) @Max(value = 3000) @Valid year: Int,
+        @NotNull @Min(value = 1) @Max(value = 12) @Valid month: Int,
         exchange: ServerWebExchange?,
     ): Mono<ResponseEntity<MonthStatsResponseDto>> {
-        TODO("Not yet implemented")
+        return deadletterTransactionsService.getDailyStats(year, month).map {
+            ResponseEntity.ok(it)
+        }
     }
 }

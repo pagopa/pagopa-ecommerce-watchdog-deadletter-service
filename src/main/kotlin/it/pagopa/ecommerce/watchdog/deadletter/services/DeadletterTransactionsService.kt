@@ -10,6 +10,7 @@ import it.pagopa.ecommerce.watchdog.deadletter.exception.InvalidActionValue
 import it.pagopa.ecommerce.watchdog.deadletter.exception.InvalidNoteId
 import it.pagopa.ecommerce.watchdog.deadletter.exception.InvalidTransactionId
 import it.pagopa.ecommerce.watchdog.deadletter.exception.NotesLimitException
+import it.pagopa.ecommerce.watchdog.deadletter.repositories.DayStatsRepository
 import it.pagopa.ecommerce.watchdog.deadletter.repositories.DeadletterTransactionActionRepository
 import it.pagopa.ecommerce.watchdog.deadletter.repositories.DeadletterTransactionNoteRepository
 import it.pagopa.ecommerce.watchdog.deadletter.utils.ObfuscationUtils.obfuscateEmail
@@ -52,6 +53,7 @@ class DeadletterTransactionsService(
     private val nodoTechnicalSupportClient: NodoTechnicalSupportClient,
     private val deadletterTransactionActionRepository: DeadletterTransactionActionRepository,
     private val deadletterTransactionNoteRepository: DeadletterTransactionNoteRepository,
+    private val dayStatsRepository: DayStatsRepository,
     @Autowired val actionTypeConfig: ActionTypeConfig,
     @Value("\${note.numlimit}") private val noteNumLimitConfig: Long,
     @Value("\${note.update.limittime.minutes}") private val noteUpdateLimitTime: Long,
@@ -665,5 +667,23 @@ class DeadletterTransactionsService(
                     Mono.error(InvalidNoteId())
                 }
             }
+    }
+
+    fun getDailyStats(year: Int, month: Int): Mono<MonthStatsResponseDto> {
+        val stats = dayStatsRepository.getBetweenDates(year, month)
+
+        return stats.collectList().map {
+            val result = MonthStatsResponseDto()
+            it.forEach { stat ->
+                result.addStatsItem(
+                    MonthStatsResponseStatsInnerDto()
+                        .date(LocalDate.parse(stat.date))
+                        .finalized(stat.finalized)
+                        .notFinalized(stat.notFinalized)
+                        .notAnalyzed(stat.notAnalyzed)
+                )
+            }
+            return@map result
+        }
     }
 }

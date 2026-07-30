@@ -237,7 +237,10 @@ tasks.register("generate") { dependsOn(tasks.matching { it.group == "openapi-gen
 
 tasks.withType<KotlinCompile> {
   dependsOn("watchdog-v1", "ecommerce-helpdesk-service", "nodo-technical-support", "watchdog-v2")
-  compilerOptions { jvmTarget.set(JvmTarget.JVM_21) }
+  compilerOptions {
+    jvmTarget.set(JvmTarget.JVM_21)
+    freeCompilerArgs.add("-Xjvm-default=all")
+  }
 }
 
 tasks.test {

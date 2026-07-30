@@ -5,11 +5,13 @@ import it.pagopa.ecommerce.watchdog.deadletter.clients.NodoTechnicalSupportClien
 import it.pagopa.ecommerce.watchdog.deadletter.config.ActionTypeConfig
 import it.pagopa.ecommerce.watchdog.deadletter.documents.Action
 import it.pagopa.ecommerce.watchdog.deadletter.documents.ActionType
+import it.pagopa.ecommerce.watchdog.deadletter.documents.DayStats
 import it.pagopa.ecommerce.watchdog.deadletter.documents.Note
 import it.pagopa.ecommerce.watchdog.deadletter.exception.InvalidActionValue
 import it.pagopa.ecommerce.watchdog.deadletter.exception.InvalidNoteId
 import it.pagopa.ecommerce.watchdog.deadletter.exception.InvalidTransactionId
 import it.pagopa.ecommerce.watchdog.deadletter.exception.NotesLimitException
+import it.pagopa.ecommerce.watchdog.deadletter.repositories.DayStatsRepository
 import it.pagopa.ecommerce.watchdog.deadletter.repositories.DeadletterTransactionActionRepository
 import it.pagopa.ecommerce.watchdog.deadletter.repositories.DeadletterTransactionNoteRepository
 import it.pagopa.generated.ecommerce.helpdesk.model.DeadLetterEventDto
@@ -58,12 +60,14 @@ class DeadletterTransactionServiceTest {
         mock()
     private val actionConfig: ActionTypeConfig = ActionTypeConfig()
     private val deadletterTransactionsNoteRepo: DeadletterTransactionNoteRepository = mock()
+    private val dayStatsRepository: DayStatsRepository = mock()
     private val deadletterTransactionsService: DeadletterTransactionsService =
         DeadletterTransactionsService(
             ecommerceHelpdeskServiceV1,
             nodoTechnicalSupportClient,
             deadletterTransactionActionRepository,
             deadletterTransactionsNoteRepo,
+            dayStatsRepository,
             actionConfig,
             noteNumLimit,
             noteUpdateLimitTime,
@@ -307,7 +311,7 @@ class DeadletterTransactionServiceTest {
     }
 
     @Test
-    fun `getDeadletterTransactions should return an empy ListDeadletterTransactions200ResponseDto because of the searchNpgOperations error`() {
+    fun `getDeadletterTransactions should return an empty ListDeadletterTransactions200ResponseDto because of the searchNpgOperations error`() {
         val date: LocalDate = LocalDate.parse("2025-08-19")
         val pageNumber: Int = 0
         val pageSize: Int = 1
@@ -1529,6 +1533,28 @@ class DeadletterTransactionServiceTest {
             .expectNextMatches { response ->
                 response.deadletterTransactions[0].gatewayAuthorizationStatus == "EXECUTED"
             }
+            .verifyComplete()
+    }
+
+    @Test
+    fun `getDailyStats should return MonthStatsResponse with elements if they are present`() {
+
+        whenever(dayStatsRepository.getBetweenDates(any<Int>(), any<Int>()))
+            .thenReturn(Flux.just(DayStats("2026-07-01", 1, 0, 0, 0)))
+
+        StepVerifier.create(deadletterTransactionsService.getDailyStats(2026, 7))
+            .expectNextMatches { it.stats.size == 1 && it.stats[0].finalized == 1 }
+            .verifyComplete()
+    }
+
+    @Test
+    fun `getDailyStats should return MonthStatsResponse with no elements if they are not present`() {
+
+        whenever(dayStatsRepository.getBetweenDates(any<Int>(), any<Int>()))
+            .thenReturn(Flux.empty())
+
+        StepVerifier.create(deadletterTransactionsService.getDailyStats(2026, 7))
+            .expectNextMatches { it.stats.isEmpty() }
             .verifyComplete()
     }
 }

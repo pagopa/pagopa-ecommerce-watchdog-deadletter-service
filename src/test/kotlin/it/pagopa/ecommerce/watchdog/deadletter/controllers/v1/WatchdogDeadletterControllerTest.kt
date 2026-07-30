@@ -14,6 +14,7 @@ import java.time.LocalDate
 import java.time.OffsetDateTime
 import org.junit.jupiter.api.Test
 import org.mockito.BDDMockito.given
+import org.mockito.kotlin.any
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest
 import org.springframework.context.annotation.Import
@@ -434,9 +435,12 @@ class WatchdogDeadletterControllerTest {
             .isEqualTo(422)
     }
 
+    @Test
     fun `add a new note to multiple transactions`() {
 
-        val notesInputDto = NotesInputDto(listOf("transactionId1", "transactionId2"), "noteText")
+        val transactionIds = listOf("transactionId1", "transactionId2")
+
+        val notesInputDto = NotesInputDto(transactionIds, "noteText")
         val notesDto =
             Flux.just(
                 NoteDto(
@@ -462,7 +466,7 @@ class WatchdogDeadletterControllerTest {
                 deadletterTransactionsService.addNoteToDeadLetterTransactions(
                     "noteText",
                     "userId",
-                    listOf("transactionId1", "transactionId1"),
+                    transactionIds,
                 )
             )
             .willReturn(notesDto)
@@ -477,6 +481,7 @@ class WatchdogDeadletterControllerTest {
             .isCreated
     }
 
+    @Test
     fun `add a new note to multiple transaction should return a error 404 because the transaction doesnt exist`() {
 
         val notesInputDto = NotesInputDto(listOf("transactionId1", "transactionId2"), "noteText")
@@ -630,5 +635,60 @@ class WatchdogDeadletterControllerTest {
             .exchange()
             .expectStatus()
             .isNotFound
+    }
+
+    @Test
+    fun `get stats should return '200 OKAY' with the stats of the month`() {
+        given(authService.getAuthenticatedUserId()).willReturn(Mono.just("userId"))
+        given(deadletterTransactionsService.getDailyStats(any(), any()))
+            .willReturn(Mono.just(MonthStatsResponseDto()))
+
+        webClient
+            .get()
+            .uri { uriBuilder ->
+                uriBuilder
+                    .path("/deadletter-transactions/stats")
+                    .queryParam("year", 2026)
+                    .queryParam("month", 7)
+                    .build()
+            }
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody()
+    }
+
+    @Test
+    fun `get stats should return '400 BAD REQUEST' when required params are missing`() {
+        given(authService.getAuthenticatedUserId()).willReturn(Mono.just("userId"))
+
+        webClient
+            .get()
+            .uri { uriBuilder ->
+                uriBuilder.path("/deadletter-transactions/stats").queryParam("month", 7).build()
+            }
+            .exchange()
+            .expectStatus()
+            .isBadRequest
+    }
+
+    @Test
+    fun `get stats should return '400 BAD REQUEST' when required params are out of range`() {
+        given(authService.getAuthenticatedUserId()).willReturn(Mono.just("userId"))
+        given(deadletterTransactionsService.getDailyStats(any(), any()))
+            .willReturn(Mono.just(MonthStatsResponseDto()))
+
+        webClient
+            .get()
+            .uri { uriBuilder ->
+                uriBuilder
+                    .path("/deadletter-transactions/stats")
+                    .queryParam("year", 3026)
+                    .queryParam("month", 13)
+                    .build()
+            }
+            .exchange()
+            .expectStatus()
+            .isBadRequest
     }
 }
