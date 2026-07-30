@@ -14,6 +14,7 @@ import java.time.LocalDate
 import java.time.OffsetDateTime
 import org.junit.jupiter.api.Test
 import org.mockito.BDDMockito.given
+import org.mockito.kotlin.any
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest
 import org.springframework.context.annotation.Import
@@ -634,5 +635,60 @@ class WatchdogDeadletterControllerTest {
             .exchange()
             .expectStatus()
             .isNotFound
+    }
+
+    @Test
+    fun `get stats should return '200 OKAY' with the stats of the month`() {
+        given(authService.getAuthenticatedUserId()).willReturn(Mono.just("userId"))
+        given(deadletterTransactionsService.getDailyStats(any(), any()))
+            .willReturn(Mono.just(MonthStatsResponseDto()))
+
+        webClient
+            .get()
+            .uri { uriBuilder ->
+                uriBuilder
+                    .path("/deadletter-transactions/stats")
+                    .queryParam("year", 2026)
+                    .queryParam("month", 7)
+                    .build()
+            }
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody()
+    }
+
+    @Test
+    fun `get stats should return '400 BAD REQUEST' when required params are missing`() {
+        given(authService.getAuthenticatedUserId()).willReturn(Mono.just("userId"))
+
+        webClient
+            .get()
+            .uri { uriBuilder ->
+                uriBuilder.path("/deadletter-transactions/stats").queryParam("month", 7).build()
+            }
+            .exchange()
+            .expectStatus()
+            .isBadRequest
+    }
+
+    @Test
+    fun `get stats should return '400 BAD REQUEST' when required params are out of range`() {
+        given(authService.getAuthenticatedUserId()).willReturn(Mono.just("userId"))
+        given(deadletterTransactionsService.getDailyStats(any(), any()))
+            .willReturn(Mono.just(MonthStatsResponseDto()))
+
+        webClient
+            .get()
+            .uri { uriBuilder ->
+                uriBuilder
+                    .path("/deadletter-transactions/stats")
+                    .queryParam("year", 3026)
+                    .queryParam("month", 13)
+                    .build()
+            }
+            .exchange()
+            .expectStatus()
+            .isBadRequest
     }
 }

@@ -191,6 +191,8 @@ class WatchdogDeadletterController(
         @NotNull @Min(value = 1) @Max(value = 12) @Valid month: Int,
         exchange: ServerWebExchange?,
     ): Mono<ResponseEntity<MonthStatsResponseDto>> {
-        TODO("Not yet implemented")
+        return deadletterTransactionsService.getDailyStats(year, month).map {
+            ResponseEntity.ok(it)
+        }
     }
 }
