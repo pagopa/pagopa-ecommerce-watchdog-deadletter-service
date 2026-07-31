@@ -4,6 +4,7 @@ import it.pagopa.ecommerce.watchdog.deadletter.documents.Action
 import org.springframework.data.repository.reactive.ReactiveCrudRepository
 import org.springframework.stereotype.Repository
 import reactor.core.publisher.Flux
+import reactor.core.publisher.Mono
 
 @Repository
 interface DeadletterTransactionActionRepository : ReactiveCrudRepository<Action, String> {
@@ -11,4 +12,6 @@ interface DeadletterTransactionActionRepository : ReactiveCrudRepository<Action,
     fun findByTransactionId(transactionId: String): Flux<Action>
 
     fun findAllByTransactionIdIn(transactionIds: List<String>): Flux<Action>
+
+    fun findFirstByTransactionIdOrderByTimestampDesc(transactionId: String): Mono<Action>
 }
