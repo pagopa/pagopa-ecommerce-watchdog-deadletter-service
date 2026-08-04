@@ -5,6 +5,7 @@ import it.pagopa.ecommerce.watchdog.deadletter.clients.NodoTechnicalSupportClien
 import it.pagopa.ecommerce.watchdog.deadletter.config.ActionTypeConfig
 import it.pagopa.ecommerce.watchdog.deadletter.documents.Action
 import it.pagopa.ecommerce.watchdog.deadletter.documents.ActionType
+import it.pagopa.ecommerce.watchdog.deadletter.documents.DayStats
 import it.pagopa.ecommerce.watchdog.deadletter.documents.Note
 import it.pagopa.ecommerce.watchdog.deadletter.exception.InvalidActionValue
 import it.pagopa.ecommerce.watchdog.deadletter.exception.InvalidNoteId
@@ -453,15 +454,20 @@ class DeadletterTransactionsService(
             ecommerceHelpdeskServiceV1
                 .searchTransactions(transactionId)
                 .flatMap {
-                    deadletterTransactionActionRepository.save(
-                        Action(
-                            id = UUID.randomUUID().toString(),
-                            transactionId = transactionId,
-                            userId = userId,
-                            action = actionType,
-                            timestamp = Instant.now(),
+                    val result =
+                        deadletterTransactionActionRepository.save(
+                            Action(
+                                id = UUID.randomUUID().toString(),
+                                transactionId = transactionId,
+                                userId = userId,
+                                action = actionType,
+                                timestamp = Instant.now(),
+                            )
                         )
-                    )
+
+                    updateStats(transactionId, it.transactions, actionType).subscribe()
+
+                    return@flatMap result
                 }
                 .switchIfEmpty(Mono.error(InvalidTransactionId()))
     }
@@ -478,21 +484,24 @@ class DeadletterTransactionsService(
                 .flatMap { tId ->
                     ecommerceHelpdeskServiceV1
                         .searchTransactions(tId)
+                        .map { tId to it }
                         .switchIfEmpty(Mono.error(InvalidTransactionId()))
-                        .thenReturn(tId)
                 }
-                .map { tId ->
-                    deadletterTransactionActionRepository.save(
-                        Action(
-                            id = UUID.randomUUID().toString(),
-                            transactionId = tId,
-                            userId = userId,
-                            action = actionType,
-                            timestamp = Instant.now(),
+                .flatMap { tId ->
+                    val result =
+                        deadletterTransactionActionRepository.save(
+                            Action(
+                                id = UUID.randomUUID().toString(),
+                                transactionId = tId.first,
+                                userId = userId,
+                                action = actionType,
+                                timestamp = Instant.now(),
+                            )
                         )
-                    )
+
+                    updateStats(tId.first, tId.second.transactions, actionType).subscribe()
+                    return@flatMap result
                 }
-                .flatMap { it }
                 .collectList()
     }
 
@@ -685,5 +694,29 @@ class DeadletterTransactionsService(
             }
             return@map result
         }
+    }
+
+    fun updateStats(
+        transactionId: String,
+        transactions: List<TransactionResultDto>,
+        newAction: ActionType,
+    ): Flux<DayStats> {
+        return transactions
+            .filter { it.transactionInfo != null && it.transactionInfo.creationDate != null }
+            .map { transaction ->
+                dayStatsRepository
+                    .findById(transaction.transactionInfo.creationDate?.toLocalDate().toString())
+                    .flatMap { stats ->
+                        deadletterTransactionActionRepository
+                            .findFirstByTransactionIdOrderByTimestampDesc(transactionId)
+                            .map { prevAction ->
+                                stats.transition(prevAction.action.type, newAction.type)
+                            }
+                            .defaultIfEmpty(stats.transition(null, newAction.type))
+                    }
+                    .defaultIfEmpty(DayStats.createFrom(newAction))
+            }
+            .let { Flux.merge(it) }
+            .let { dayStatsRepository.saveAll(it) }
     }
 }

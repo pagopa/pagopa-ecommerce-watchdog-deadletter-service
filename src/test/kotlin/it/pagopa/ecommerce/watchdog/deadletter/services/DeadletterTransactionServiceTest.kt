@@ -44,6 +44,7 @@ import kotlin.test.assertNotNull
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.*
 import org.mockito.kotlin.argumentCaptor
+import org.reactivestreams.Publisher
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import reactor.test.StepVerifier
@@ -692,6 +693,9 @@ class DeadletterTransactionServiceTest {
         whenever(ecommerceHelpdeskServiceV1.searchTransactions(any()))
             .thenReturn(Mono.just(SearchTransactionResponseDto()))
         whenever(deadletterTransactionActionRepository.save(any())).thenReturn(Mono.just(action))
+        whenever(dayStatsRepository.saveAll(any<Publisher<DayStats>>())).thenAnswer {
+            Flux.from(it.getArgument<Publisher<DayStats>>(0))
+        }
 
         val resultMono =
             deadletterTransactionsService.addActionToDeadletterTransaction(
@@ -777,6 +781,10 @@ class DeadletterTransactionServiceTest {
 
         whenever(deadletterTransactionActionRepository.save(any())).thenAnswer {
             Mono.just(it.getArgument<Action>(0))
+        }
+
+        whenever(dayStatsRepository.saveAll(any<Publisher<DayStats>>())).thenAnswer {
+            Flux.from(it.getArgument<Publisher<DayStats>>(0))
         }
 
         val resultMono =
@@ -1555,6 +1563,149 @@ class DeadletterTransactionServiceTest {
 
         StepVerifier.create(deadletterTransactionsService.getDailyStats(2026, 7))
             .expectNextMatches { it.stats.isEmpty() }
+            .verifyComplete()
+    }
+
+    @Test
+    fun `updateStats should create daily stats based on transactions passed when no stat exists`() {
+
+        val tInfo = TransactionInfoDto().apply { creationDate = OffsetDateTime.now().minusDays(1) }
+        val transaction = TransactionResultDto().apply { transactionInfo = tInfo }
+
+        whenever(
+                deadletterTransactionActionRepository.findFirstByTransactionIdOrderByTimestampDesc(
+                    any<String>()
+                )
+            )
+            .thenReturn(Mono.empty())
+        whenever(dayStatsRepository.findById(any<String>())).thenReturn(Mono.empty())
+        whenever(dayStatsRepository.saveAll(any<Publisher<DayStats>>())).thenAnswer {
+            Flux.from(it.getArgument<Publisher<DayStats>>(0))
+        }
+
+        StepVerifier.create(
+                deadletterTransactionsService.updateStats(
+                    "test1",
+                    listOf(transaction),
+                    ActionType("testAction", ActionType.Type.NOT_FINAL),
+                )
+            )
+            .thenConsumeWhile {
+                it.notFinalized == 1 && it.finalized == 0 && it.notAnalyzed == null
+            }
+            .verifyComplete()
+
+        StepVerifier.create(
+                deadletterTransactionsService.updateStats(
+                    "test1",
+                    listOf(transaction),
+                    ActionType("testAction", ActionType.Type.FINAL),
+                )
+            )
+            .thenConsumeWhile {
+                it.notFinalized == 0 && it.finalized == 1 && it.notAnalyzed == null
+            }
+            .verifyComplete()
+    }
+
+    @Test
+    fun `updateStats should update daily stats based on transactions passed when previous action exists`() {
+
+        val mockStats = DayStats(LocalDate.now().toString(), 1, 2, 3, 1)
+        val pInfo = PaymentInfoDto().apply { idTransaction = "test1" }
+        val tInfo = TransactionInfoDto().apply { creationDate = OffsetDateTime.now().minusDays(1) }
+        val transaction =
+            TransactionResultDto().apply {
+                paymentInfo = pInfo
+                transactionInfo = tInfo
+            }
+        val previousActionNotF =
+            Action(
+                "testAction",
+                "test1",
+                "user1",
+                ActionType("ActionValue", ActionType.Type.NOT_FINAL),
+                Instant.now().minusSeconds(60 * 60 * 24),
+            )
+
+        val previousActionF =
+            Action(
+                "testAction",
+                "test1",
+                "user1",
+                ActionType("ActionValue", ActionType.Type.FINAL),
+                Instant.now().minusSeconds(60 * 60 * 24),
+            )
+
+        whenever(
+                deadletterTransactionActionRepository.findFirstByTransactionIdOrderByTimestampDesc(
+                    any<String>()
+                )
+            )
+            .thenReturn(Mono.just(previousActionNotF))
+            .thenReturn(Mono.just(previousActionF))
+            .thenReturn(Mono.empty())
+            .thenReturn(Mono.empty())
+
+        whenever(dayStatsRepository.findById(any<String>())).thenReturn(Mono.just(mockStats))
+        whenever(dayStatsRepository.saveAll(any<Publisher<DayStats>>())).thenAnswer {
+            Flux.from(it.getArgument<Publisher<DayStats>>(0))
+        }
+
+        StepVerifier.create(
+                deadletterTransactionsService.updateStats(
+                    "test1",
+                    listOf(transaction),
+                    ActionType("testAction", ActionType.Type.FINAL),
+                )
+            )
+            .thenConsumeWhile {
+                it.notFinalized == mockStats.notFinalized - 1 &&
+                    it.finalized == mockStats.finalized + 1 &&
+                    it.notAnalyzed == mockStats.notAnalyzed
+            }
+            .verifyComplete()
+
+        StepVerifier.create(
+                deadletterTransactionsService.updateStats(
+                    "test1",
+                    listOf(transaction),
+                    ActionType("testAction", ActionType.Type.NOT_FINAL),
+                )
+            )
+            .thenConsumeWhile {
+                it.notFinalized == mockStats.notFinalized + 1 &&
+                    it.finalized == mockStats.finalized - 1 &&
+                    it.notAnalyzed == mockStats.notAnalyzed
+            }
+            .verifyComplete()
+
+        StepVerifier.create(
+                deadletterTransactionsService.updateStats(
+                    "test1",
+                    listOf(transaction),
+                    ActionType("testAction", ActionType.Type.NOT_FINAL),
+                )
+            )
+            .thenConsumeWhile {
+                it.notFinalized == mockStats.notFinalized + 1 &&
+                    it.finalized == mockStats.finalized &&
+                    it.notAnalyzed == mockStats.notAnalyzed?.minus(1)
+            }
+            .verifyComplete()
+
+        StepVerifier.create(
+                deadletterTransactionsService.updateStats(
+                    "test1",
+                    listOf(transaction),
+                    ActionType("testAction", ActionType.Type.FINAL),
+                )
+            )
+            .thenConsumeWhile {
+                it.notFinalized == mockStats.notFinalized &&
+                    it.finalized == mockStats.finalized + 1 &&
+                    it.notAnalyzed == mockStats.notAnalyzed?.minus(1)
+            }
             .verifyComplete()
     }
 }
