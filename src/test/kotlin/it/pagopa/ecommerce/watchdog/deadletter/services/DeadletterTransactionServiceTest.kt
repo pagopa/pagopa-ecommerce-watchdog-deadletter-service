@@ -5,13 +5,13 @@ import it.pagopa.ecommerce.watchdog.deadletter.clients.NodoTechnicalSupportClien
 import it.pagopa.ecommerce.watchdog.deadletter.config.ActionTypeConfig
 import it.pagopa.ecommerce.watchdog.deadletter.documents.Action
 import it.pagopa.ecommerce.watchdog.deadletter.documents.ActionType
-import it.pagopa.ecommerce.watchdog.deadletter.documents.DayStats
+import it.pagopa.ecommerce.watchdog.deadletter.documents.CalendarStats
 import it.pagopa.ecommerce.watchdog.deadletter.documents.Note
 import it.pagopa.ecommerce.watchdog.deadletter.exception.InvalidActionValue
 import it.pagopa.ecommerce.watchdog.deadletter.exception.InvalidNoteId
 import it.pagopa.ecommerce.watchdog.deadletter.exception.InvalidTransactionId
 import it.pagopa.ecommerce.watchdog.deadletter.exception.NotesLimitException
-import it.pagopa.ecommerce.watchdog.deadletter.repositories.DayStatsRepository
+import it.pagopa.ecommerce.watchdog.deadletter.repositories.CalendarStatsRepository
 import it.pagopa.ecommerce.watchdog.deadletter.repositories.DeadletterTransactionActionRepository
 import it.pagopa.ecommerce.watchdog.deadletter.repositories.DeadletterTransactionNoteRepository
 import it.pagopa.generated.ecommerce.helpdesk.model.DeadLetterEventDto
@@ -61,14 +61,14 @@ class DeadletterTransactionServiceTest {
         mock()
     private val actionConfig: ActionTypeConfig = ActionTypeConfig()
     private val deadletterTransactionsNoteRepo: DeadletterTransactionNoteRepository = mock()
-    private val dayStatsRepository: DayStatsRepository = mock()
+    private val calendarStatsRepository: CalendarStatsRepository = mock()
     private val deadletterTransactionsService: DeadletterTransactionsService =
         DeadletterTransactionsService(
             ecommerceHelpdeskServiceV1,
             nodoTechnicalSupportClient,
             deadletterTransactionActionRepository,
             deadletterTransactionsNoteRepo,
-            dayStatsRepository,
+            calendarStatsRepository,
             actionConfig,
             noteNumLimit,
             noteUpdateLimitTime,
@@ -693,8 +693,8 @@ class DeadletterTransactionServiceTest {
         whenever(ecommerceHelpdeskServiceV1.searchTransactions(any()))
             .thenReturn(Mono.just(SearchTransactionResponseDto()))
         whenever(deadletterTransactionActionRepository.save(any())).thenReturn(Mono.just(action))
-        whenever(dayStatsRepository.saveAll(any<Publisher<DayStats>>())).thenAnswer {
-            Flux.from(it.getArgument<Publisher<DayStats>>(0))
+        whenever(calendarStatsRepository.saveAll(any<Publisher<CalendarStats>>())).thenAnswer {
+            Flux.from(it.getArgument<Publisher<CalendarStats>>(0))
         }
 
         val resultMono =
@@ -783,8 +783,8 @@ class DeadletterTransactionServiceTest {
             Mono.just(it.getArgument<Action>(0))
         }
 
-        whenever(dayStatsRepository.saveAll(any<Publisher<DayStats>>())).thenAnswer {
-            Flux.from(it.getArgument<Publisher<DayStats>>(0))
+        whenever(calendarStatsRepository.saveAll(any<Publisher<CalendarStats>>())).thenAnswer {
+            Flux.from(it.getArgument<Publisher<CalendarStats>>(0))
         }
 
         val resultMono =
@@ -1547,8 +1547,8 @@ class DeadletterTransactionServiceTest {
     @Test
     fun `getDailyStats should return MonthStatsResponse with elements if they are present`() {
 
-        whenever(dayStatsRepository.getBetweenDates(any<Int>(), any<Int>()))
-            .thenReturn(Flux.just(DayStats("2026-07-01", 1, 0, 0, 0)))
+        whenever(calendarStatsRepository.getBetweenDates(any<Int>(), any<Int>()))
+            .thenReturn(Flux.just(CalendarStats("2026-07-01", 1, 0, 0, 0)))
 
         StepVerifier.create(deadletterTransactionsService.getDailyStats(2026, 7))
             .expectNextMatches { it.stats.size == 1 && it.stats[0].finalized == 1 }
@@ -1558,7 +1558,7 @@ class DeadletterTransactionServiceTest {
     @Test
     fun `getDailyStats should return MonthStatsResponse with no elements if they are not present`() {
 
-        whenever(dayStatsRepository.getBetweenDates(any<Int>(), any<Int>()))
+        whenever(calendarStatsRepository.getBetweenDates(any<Int>(), any<Int>()))
             .thenReturn(Flux.empty())
 
         StepVerifier.create(deadletterTransactionsService.getDailyStats(2026, 7))
@@ -1578,9 +1578,9 @@ class DeadletterTransactionServiceTest {
                 )
             )
             .thenReturn(Mono.empty())
-        whenever(dayStatsRepository.findById(any<String>())).thenReturn(Mono.empty())
-        whenever(dayStatsRepository.saveAll(any<Publisher<DayStats>>())).thenAnswer {
-            Flux.from(it.getArgument<Publisher<DayStats>>(0))
+        whenever(calendarStatsRepository.findByDate(any<LocalDate>())).thenReturn(Mono.empty())
+        whenever(calendarStatsRepository.saveAll(any<Publisher<CalendarStats>>())).thenAnswer {
+            Flux.from(it.getArgument<Publisher<CalendarStats>>(0))
         }
 
         StepVerifier.create(
@@ -1611,7 +1611,7 @@ class DeadletterTransactionServiceTest {
     @Test
     fun `updateStats should update daily stats based on transactions passed when previous action exists`() {
 
-        val mockStats = DayStats(LocalDate.now().toString(), 1, 2, 3, 1)
+        val mockStats = CalendarStats(LocalDate.now().toString(), 1, 2, 3, 1)
         val pInfo = PaymentInfoDto().apply { idTransaction = "test1" }
         val tInfo = TransactionInfoDto().apply { creationDate = OffsetDateTime.now().minusDays(1) }
         val transaction =
@@ -1647,9 +1647,10 @@ class DeadletterTransactionServiceTest {
             .thenReturn(Mono.empty())
             .thenReturn(Mono.empty())
 
-        whenever(dayStatsRepository.findById(any<String>())).thenReturn(Mono.just(mockStats))
-        whenever(dayStatsRepository.saveAll(any<Publisher<DayStats>>())).thenAnswer {
-            Flux.from(it.getArgument<Publisher<DayStats>>(0))
+        whenever(calendarStatsRepository.findByDate(any<LocalDate>()))
+            .thenReturn(Mono.just(mockStats))
+        whenever(calendarStatsRepository.saveAll(any<Publisher<CalendarStats>>())).thenAnswer {
+            Flux.from(it.getArgument<Publisher<CalendarStats>>(0))
         }
 
         StepVerifier.create(
