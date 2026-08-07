@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
 import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
+import org.springframework.web.reactive.function.client.WebClientResponseException
 import reactor.core.publisher.Mono
 import reactor.test.StepVerifier
 
@@ -164,5 +165,23 @@ class StatsJobsTest {
                 assertEquals(5, stats.finalized, "The FINAL count is not zero")
             }
             .verifyComplete()
+    }
+
+    @Test
+    fun `updatePreviousDayStats should only log if helpdesk returns an error or there are no transactions`() {
+        whenever(calendarStatsRepository.findByDate(any<LocalDate>())).thenReturn(Mono.empty())
+        whenever(
+                ecommerceHelpdeskServiceClient.getDeadletterTransactionsByDateRange(
+                    any(),
+                    any(),
+                    any(),
+                    any(),
+                )
+            )
+            .thenReturn(Mono.error(WebClientResponseException(404, "NOT_FOUND", null, null, null)))
+            .thenReturn(Mono.error(RuntimeException()))
+
+        StepVerifier.create(statsJobs.updatePreviousDayStats()).verifyComplete()
+        StepVerifier.create(statsJobs.updatePreviousDayStats()).verifyComplete()
     }
 }

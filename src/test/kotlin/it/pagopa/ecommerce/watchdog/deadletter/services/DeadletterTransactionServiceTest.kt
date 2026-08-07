@@ -37,6 +37,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
+import java.util.Optional
 import java.util.UUID
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
@@ -680,22 +681,32 @@ class DeadletterTransactionServiceTest {
         val actionValueType = ActionType("test", ActionType.Type.NOT_FINAL)
         val actionValue = "test"
         val actionTypes = listOf(actionValueType)
+        val searchTransactionResponseDto =
+            SearchTransactionResponseDto().apply {
+                transactions = buildList {
+                    add(
+                        TransactionResultDto().apply {
+                            transactionInfo =
+                                TransactionInfoDto().apply {
+                                    creationDate = OffsetDateTime.now(ZoneOffset.UTC)
+                                }
+                        }
+                    )
+                }
+            }
         actionConfig.types = actionTypes
 
-        val action =
-            Action(
-                UUID.randomUUID().toString(),
-                transactionId,
-                userId,
-                actionValueType,
-                Instant.now(),
-            )
         whenever(ecommerceHelpdeskServiceV1.searchTransactions(any()))
-            .thenReturn(Mono.just(SearchTransactionResponseDto()))
-        whenever(deadletterTransactionActionRepository.save(any())).thenReturn(Mono.just(action))
-        whenever(calendarStatsRepository.saveAll(any<Publisher<CalendarStats>>())).thenAnswer {
-            Flux.from(it.getArgument<Publisher<CalendarStats>>(0))
+            .thenReturn(Mono.just(searchTransactionResponseDto))
+        whenever(deadletterTransactionActionRepository.save(any())).thenAnswer {
+            Mono.just(it.getArgument<Action>(0))
         }
+        whenever(
+                deadletterTransactionActionRepository.findFirstByTransactionIdOrderByTimestampDesc(
+                    any<String>()
+                )
+            )
+            .thenReturn(Mono.empty())
 
         val resultMono =
             deadletterTransactionsService.addActionToDeadletterTransaction(
@@ -704,7 +715,14 @@ class DeadletterTransactionServiceTest {
                 actionValue,
             )
 
-        StepVerifier.create(resultMono).expectNext(action).expectComplete().verify()
+        StepVerifier.create(resultMono)
+            .expectNextMatches {
+                it.transactionId == transactionId &&
+                    it.userId == userId &&
+                    it.action.value == actionValue
+            }
+            .expectComplete()
+            .verify()
 
         // Verify the object pass to the repository and his parameters
         val actionCaptor = argumentCaptor<Action>()
@@ -715,9 +733,9 @@ class DeadletterTransactionServiceTest {
 
         assertNotNull(newDeadLetterActionCapture.id)
         assertNotNull(newDeadLetterActionCapture.timestamp)
-        assertEquals(newDeadLetterActionCapture.transactionId, transactionId)
-        assertEquals(newDeadLetterActionCapture.userId, userId)
-        assertEquals(newDeadLetterActionCapture.action.value, actionValue)
+        assertEquals(transactionId, newDeadLetterActionCapture.transactionId)
+        assertEquals(userId, newDeadLetterActionCapture.userId)
+        assertEquals(actionValue, newDeadLetterActionCapture.action.value)
     }
 
     @Test
@@ -778,6 +796,13 @@ class DeadletterTransactionServiceTest {
 
         whenever(ecommerceHelpdeskServiceV1.searchTransactions(any()))
             .thenReturn(Mono.just(SearchTransactionResponseDto()))
+
+        whenever(
+                deadletterTransactionActionRepository.findFirstByTransactionIdOrderByTimestampDesc(
+                    any<String>()
+                )
+            )
+            .thenReturn(Mono.empty())
 
         whenever(deadletterTransactionActionRepository.save(any())).thenAnswer {
             Mono.just(it.getArgument<Action>(0))
@@ -1569,25 +1594,20 @@ class DeadletterTransactionServiceTest {
     @Test
     fun `updateStats should create daily stats based on transactions passed when no stat exists`() {
 
-        val tInfo = TransactionInfoDto().apply { creationDate = OffsetDateTime.now().minusDays(1) }
-        val transaction = TransactionResultDto().apply { transactionInfo = tInfo }
+        val transactionId = "tid1"
+        val creationDate = LocalDate.now().minusDays(1)
 
-        whenever(
-                deadletterTransactionActionRepository.findFirstByTransactionIdOrderByTimestampDesc(
-                    any<String>()
-                )
-            )
-            .thenReturn(Mono.empty())
         whenever(calendarStatsRepository.findByDate(any<LocalDate>())).thenReturn(Mono.empty())
-        whenever(calendarStatsRepository.saveAll(any<Publisher<CalendarStats>>())).thenAnswer {
-            Flux.from(it.getArgument<Publisher<CalendarStats>>(0))
+        whenever(calendarStatsRepository.save(any<CalendarStats>())).thenAnswer {
+            Mono.just(it.getArgument<Mono<CalendarStats>>(0))
         }
 
         StepVerifier.create(
                 deadletterTransactionsService.updateStats(
-                    "test1",
-                    listOf(transaction),
-                    ActionType("testAction", ActionType.Type.NOT_FINAL),
+                    transactionId,
+                    creationDate,
+                    Mono.just(Optional.empty()),
+                    Mono.just(ActionType("notFinal", ActionType.Type.NOT_FINAL)),
                 )
             )
             .thenConsumeWhile {
@@ -1597,9 +1617,10 @@ class DeadletterTransactionServiceTest {
 
         StepVerifier.create(
                 deadletterTransactionsService.updateStats(
-                    "test1",
-                    listOf(transaction),
-                    ActionType("testAction", ActionType.Type.FINAL),
+                    transactionId,
+                    creationDate,
+                    Mono.just(Optional.empty()),
+                    Mono.just(ActionType("final", ActionType.Type.FINAL)),
                 )
             )
             .thenConsumeWhile {
@@ -1612,52 +1633,19 @@ class DeadletterTransactionServiceTest {
     fun `updateStats should update daily stats based on transactions passed when previous action exists`() {
 
         val mockStats = CalendarStats(LocalDate.now().toString(), 1, 2, 3, 1)
-        val pInfo = PaymentInfoDto().apply { idTransaction = "test1" }
-        val tInfo = TransactionInfoDto().apply { creationDate = OffsetDateTime.now().minusDays(1) }
-        val transaction =
-            TransactionResultDto().apply {
-                paymentInfo = pInfo
-                transactionInfo = tInfo
-            }
-        val previousActionNotF =
-            Action(
-                "testAction",
-                "test1",
-                "user1",
-                ActionType("ActionValue", ActionType.Type.NOT_FINAL),
-                Instant.now().minusSeconds(60 * 60 * 24),
-            )
-
-        val previousActionF =
-            Action(
-                "testAction",
-                "test1",
-                "user1",
-                ActionType("ActionValue", ActionType.Type.FINAL),
-                Instant.now().minusSeconds(60 * 60 * 24),
-            )
-
-        whenever(
-                deadletterTransactionActionRepository.findFirstByTransactionIdOrderByTimestampDesc(
-                    any<String>()
-                )
-            )
-            .thenReturn(Mono.just(previousActionNotF))
-            .thenReturn(Mono.just(previousActionF))
-            .thenReturn(Mono.empty())
-            .thenReturn(Mono.empty())
 
         whenever(calendarStatsRepository.findByDate(any<LocalDate>()))
             .thenReturn(Mono.just(mockStats))
-        whenever(calendarStatsRepository.saveAll(any<Publisher<CalendarStats>>())).thenAnswer {
-            Flux.from(it.getArgument<Publisher<CalendarStats>>(0))
+        whenever(calendarStatsRepository.save(any<CalendarStats>())).thenAnswer {
+            Mono.just(it.getArgument<Mono<CalendarStats>>(0))
         }
 
         StepVerifier.create(
                 deadletterTransactionsService.updateStats(
                     "test1",
-                    listOf(transaction),
-                    ActionType("testAction", ActionType.Type.FINAL),
+                    LocalDate.now(),
+                    Mono.just(Optional.of(ActionType("notFinal", ActionType.Type.NOT_FINAL))),
+                    Mono.just(ActionType("final", ActionType.Type.FINAL)),
                 )
             )
             .thenConsumeWhile {
@@ -1670,8 +1658,9 @@ class DeadletterTransactionServiceTest {
         StepVerifier.create(
                 deadletterTransactionsService.updateStats(
                     "test1",
-                    listOf(transaction),
-                    ActionType("testAction", ActionType.Type.NOT_FINAL),
+                    LocalDate.now(),
+                    Mono.just(Optional.of(ActionType("final", ActionType.Type.FINAL))),
+                    Mono.just(ActionType("notFinal", ActionType.Type.NOT_FINAL)),
                 )
             )
             .thenConsumeWhile {
@@ -1684,8 +1673,9 @@ class DeadletterTransactionServiceTest {
         StepVerifier.create(
                 deadletterTransactionsService.updateStats(
                     "test1",
-                    listOf(transaction),
-                    ActionType("testAction", ActionType.Type.NOT_FINAL),
+                    LocalDate.now(),
+                    Mono.just(Optional.empty()),
+                    Mono.just(ActionType("notFinal", ActionType.Type.NOT_FINAL)),
                 )
             )
             .thenConsumeWhile {
@@ -1698,8 +1688,9 @@ class DeadletterTransactionServiceTest {
         StepVerifier.create(
                 deadletterTransactionsService.updateStats(
                     "test1",
-                    listOf(transaction),
-                    ActionType("testAction", ActionType.Type.FINAL),
+                    LocalDate.now(),
+                    Mono.just(Optional.empty()),
+                    Mono.just(ActionType("final", ActionType.Type.FINAL)),
                 )
             )
             .thenConsumeWhile {
