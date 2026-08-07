@@ -14,12 +14,12 @@
         </encoder>
     </appender>
     <springProfile name="local">
-        <root level="info">
+        <root level="${ROOT_LOGGING_LEVEL}">
             <appender-ref ref="STDOUT" />
         </root>
     </springProfile>
     <springProfile name="k8s">
-        <root level="INFO">
+        <root level="${ROOT_LOGGING_LEVEL}">
             <appender-ref ref="ECS_JSON_CONSOLE"/>
         </root>
     </springProfile>
