@@ -107,10 +107,11 @@ This will produce an executable inside `build/native/nativeCompile/`
 N.B. Compiling into a native executable takes a long time. Locally, it is recommended to launch it normally (in java) in
 order to test the service.
 
-Also exist a gradle command to compile and run it directly:
+Also, you can use the commands to compile and run it directly:
 
 ```shell
-( export $(grep -v '^#' .env.example | xargs) && gradle :nativeRun )
+( set -a; source .env; set +a; gradle bootRun ) # JVM
+( set -a; source .env; set +a; gradle :nativeRun ) # Native
 ```
 
 If you want to run the project locally with Spring Boot, you should initialize the mocks using the following commands (you need yarn installed on the WSL):
