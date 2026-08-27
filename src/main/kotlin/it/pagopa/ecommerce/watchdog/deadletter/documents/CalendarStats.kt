@@ -4,30 +4,39 @@ import java.time.LocalDate
 import org.springframework.data.annotation.Id
 import org.springframework.data.annotation.Version
 import org.springframework.data.mongodb.core.mapping.Document
+import org.springframework.data.mongodb.core.mapping.Field
+import org.springframework.data.mongodb.core.mapping.Sharded
 
-@Document(collection = "notes")
-data class DayStats(
-    @Id val date: String,
+@Document(collection = "calendar_stats")
+@Sharded(shardKey = ["date"])
+data class CalendarStats(
+    @Id @Field("_id") val date: String,
     val finalized: Int,
     val notFinalized: Int,
     val notAnalyzed: Int?,
-    @Version val version: Int,
+    @Version val version: Long? = null,
 ) {
     companion object {
-        fun createFrom(action: ActionType, date: LocalDate = LocalDate.now()): DayStats {
+        fun createFrom(
+            action: ActionType? = null,
+            date: LocalDate = LocalDate.now(),
+        ): CalendarStats {
             var finalized = 0
             var notFinalized = 0
 
-            when (action.type) {
+            when (action?.type) {
                 ActionType.Type.FINAL -> finalized += 1
                 ActionType.Type.NOT_FINAL -> notFinalized += 1
+                null -> {
+                    /* No action, just a bare initialization */
+                }
             }
 
-            return DayStats(date.toString(), finalized, notFinalized, null, 0)
+            return CalendarStats(date.toString(), finalized, notFinalized, null, null)
         }
     }
 
-    fun transition(old: ActionType.Type?, new: ActionType.Type): DayStats {
+    fun transition(old: ActionType.Type?, new: ActionType.Type): CalendarStats {
         var finalized = this.finalized
         var notFinalized = this.notFinalized
         var notAnalyzed = this.notAnalyzed
@@ -50,6 +59,6 @@ data class DayStats(
                 notFinalized += 1
             }
         }
-        return DayStats(this.date, finalized, notFinalized, notAnalyzed, this.version)
+        return CalendarStats(this.date, finalized, notFinalized, notAnalyzed, this.version)
     }
 }
