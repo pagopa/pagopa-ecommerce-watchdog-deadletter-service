@@ -3,6 +3,8 @@ package it.pagopa.ecommerce.watchdog.deadletter.scheduledjobs
 import it.pagopa.ecommerce.watchdog.deadletter.clients.EcommerceHelpdeskServiceClient
 import it.pagopa.ecommerce.watchdog.deadletter.documents.CalendarStats
 import it.pagopa.ecommerce.watchdog.deadletter.repositories.CalendarStatsRepository
+import it.pagopa.generated.ecommerce.helpdesk.model.PageInfoDto
+import it.pagopa.generated.ecommerce.helpdesk.model.SearchDeadLetterEventResponseDto
 import java.time.LocalDate
 import java.time.ZoneOffset
 import org.slf4j.LoggerFactory
@@ -40,19 +42,31 @@ class StatsJobs(
                 .getDeadletterTransactionsByDateRange(yesterday, yesterday, pageSize, 0)
                 .onErrorResume { error ->
                     when (error) {
-                        is WebClientResponseException.NotFound ->
+                        is WebClientResponseException.NotFound -> {
                             logger.info("No deadletter transactions found for date {}", yesterday)
+                            Mono.just(
+                                SearchDeadLetterEventResponseDto().apply {
+                                    page =
+                                        PageInfoDto().apply {
+                                            current = 0
+                                            results = 0
+                                            total = 0
+                                        }
+                                    deadLetterEvents = listOf()
+                                }
+                            )
+                        }
 
-                        else ->
+                        else -> {
                             logger.error(
                                 "Error retrieving deadletter transactions for date {}: [{}]",
                                 yesterday,
                                 error.message,
                                 error,
                             )
+                            Mono.empty()
+                        }
                     }
-
-                    Mono.empty()
                 }
                 .flatMap {
                     if (it.page.total <= 1) {
