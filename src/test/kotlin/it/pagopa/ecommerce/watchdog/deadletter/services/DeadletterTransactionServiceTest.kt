@@ -32,6 +32,8 @@ import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.ListDeadletter
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.ActionTypeDto as DtoV2
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.DeadletterTransactionActionDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.DeadletterTransactionActionsRequestDto
+import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.DeadletterTransactionDto
+import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.ListDeadletterTransactions200ResponseDto as ListDeadletterTransactions200ResponseDtoV2
 import it.pagopa.generated.nodo.support.model.PositionPaymentSnapshotDtoDto
 import java.time.Instant
 import java.time.LocalDate
@@ -43,6 +45,7 @@ import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito
 import org.mockito.kotlin.*
 import org.mockito.kotlin.argumentCaptor
 import org.reactivestreams.Publisher
@@ -1697,6 +1700,85 @@ class DeadletterTransactionServiceTest {
                 it.notFinalized == mockStats.notFinalized &&
                     it.finalized == mockStats.finalized + 1 &&
                     it.notAnalyzed == mockStats.notAnalyzed?.minus(1)
+            }
+            .verifyComplete()
+    }
+
+    @Test
+    fun `updateHistoricStats create or update daily stats based on the date range`() {
+
+        val from = LocalDate.parse("2026-08-28")
+        val to = LocalDate.parse("2026-08-30")
+        val spyService = Mockito.spy(deadletterTransactionsService)
+
+        Mockito.doReturn(
+                Mono.just(
+                    ListDeadletterTransactions200ResponseDtoV2().apply {
+                        deadletterTransactions =
+                            listOf(
+                                DeadletterTransactionDto().apply {
+                                    transactionId = "transactionId1"
+                                    insertionDate = OffsetDateTime.parse("2026-08-29T00:00:00Z")
+                                },
+                                DeadletterTransactionDto().apply {
+                                    transactionId = "transactionId2"
+                                    insertionDate = OffsetDateTime.parse("2026-08-30T00:00:00Z")
+                                },
+                                DeadletterTransactionDto().apply {
+                                    transactionId = "transactionId3"
+                                    insertionDate = OffsetDateTime.parse("2026-08-30T00:00:00Z")
+                                },
+                            )
+                    }
+                )
+            )
+            .`when`(spyService)
+            .getDeadletterTransactionsByDateRange(any<LocalDate>(), any<LocalDate>(), any(), any())
+
+        whenever(
+                deadletterTransactionActionRepository.findFirstByTransactionIdOrderByTimestampDesc(
+                    any()
+                )
+            )
+            .thenReturn(
+                Mono.just(
+                    Action(
+                        UUID.randomUUID().toString(),
+                        "testId1",
+                        "userIdTest",
+                        ActionType("test", ActionType.Type.FINAL),
+                        Instant.now(),
+                    )
+                )
+            )
+            .thenReturn(
+                Mono.just(
+                    Action(
+                        UUID.randomUUID().toString(),
+                        "testId2",
+                        "userIdTest",
+                        ActionType("testNot", ActionType.Type.NOT_FINAL),
+                        Instant.now(),
+                    )
+                )
+            )
+            .thenReturn(Mono.empty())
+
+        whenever(calendarStatsRepository.saveAll(any<Iterable<CalendarStats>>())).thenAnswer {
+            Flux.fromIterable(it.getArgument<Iterable<CalendarStats>>(0))
+        }
+
+        StepVerifier.create(spyService.updateHistoricStats(from, to))
+            .expectNextMatches {
+                val firstElem = it.stats.filter { v -> v.date == LocalDate.parse("2026-08-29") }[0]
+                val secondElem = it.stats.filter { v -> v.date == LocalDate.parse("2026-08-30") }[0]
+                it.stats.size == 2 &&
+                    firstElem.finalized == 1 &&
+                    firstElem.notFinalized == 0 &&
+                    firstElem.notAnalyzed.get() == 0 &&
+                    secondElem.finalized == 0 &&
+                    secondElem.notFinalized == 1 &&
+                    secondElem.notAnalyzed.get() == 1
             }
             .verifyComplete()
     }

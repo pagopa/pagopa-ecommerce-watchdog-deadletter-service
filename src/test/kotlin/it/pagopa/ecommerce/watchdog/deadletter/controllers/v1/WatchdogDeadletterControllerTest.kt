@@ -1,5 +1,6 @@
 package it.pagopa.ecommerce.watchdog.deadletter.controllers.v1
 
+import it.pagopa.ecommerce.watchdog.deadletter.config.JacksonConfig
 import it.pagopa.ecommerce.watchdog.deadletter.config.TestSecurityConfig
 import it.pagopa.ecommerce.watchdog.deadletter.documents.Action
 import it.pagopa.ecommerce.watchdog.deadletter.documents.ActionType
@@ -15,6 +16,7 @@ import java.time.OffsetDateTime
 import org.junit.jupiter.api.Test
 import org.mockito.BDDMockito.given
 import org.mockito.kotlin.any
+import org.openapitools.jackson.nullable.JsonNullable
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest
 import org.springframework.context.annotation.Import
@@ -27,7 +29,7 @@ import reactor.core.publisher.Mono
 
 @WebFluxTest(WatchdogDeadletterController::class)
 @TestPropertySource(locations = ["classpath:application.test.properties"])
-@Import(TestSecurityConfig::class)
+@Import(TestSecurityConfig::class, JacksonConfig::class)
 class WatchdogDeadletterControllerTest {
     @Autowired private lateinit var webClient: WebTestClient
 
@@ -690,5 +692,49 @@ class WatchdogDeadletterControllerTest {
             .exchange()
             .expectStatus()
             .isBadRequest
+    }
+
+    @Test
+    fun `POST stats should return the updated stats when a correct payload is passed`() {
+
+        val objResponse =
+            MonthStatsResponseDto().apply {
+                stats =
+                    listOf(
+                        MonthStatsResponseStatsInnerDto().apply {
+                            date = LocalDate.parse("2026-08-05")
+                            finalized = 1
+                            notFinalized = 1
+                            notAnalyzed = JsonNullable.of(10)
+                        },
+                        MonthStatsResponseStatsInnerDto().apply {
+                            date = LocalDate.parse("2026-08-06")
+                            finalized = 0
+                            notFinalized = 2
+                            notAnalyzed = JsonNullable.of(0)
+                        },
+                    )
+            }
+        given(authService.getAuthenticatedUserId()).willReturn(Mono.just("userId"))
+        given(deadletterTransactionsService.updateHistoricStats(any(), any()))
+            .willReturn(Mono.just(objResponse))
+
+        webClient
+            .post()
+            .uri { uriBuilder -> uriBuilder.path("/deadletter-transactions/stats").build() }
+            .bodyValue(
+                UpdateStatsRequestDto().apply {
+                    from = LocalDate.parse("2026-08-04")
+                    to = LocalDate.parse("2026-08-07")
+                }
+            )
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody()
+            .jsonPath("$.stats[0].notAnalyzed")
+            .isNumber
+            .jsonPath("$.stats[1].notAnalyzed")
+            .isNumber
     }
 }
