@@ -1708,7 +1708,7 @@ class DeadletterTransactionServiceTest {
     fun `updateHistoricStats create or update daily stats based on the date range`() {
 
         val from = LocalDate.parse("2026-08-28")
-        val to = LocalDate.parse("2026-08-30")
+        val to = LocalDate.parse("2026-08-31")
         val spyService = Mockito.spy(deadletterTransactionsService)
 
         Mockito.doReturn(
@@ -1770,15 +1770,19 @@ class DeadletterTransactionServiceTest {
 
         StepVerifier.create(spyService.updateHistoricStats(from, to))
             .expectNextMatches {
-                val firstElem = it.stats.filter { v -> v.date == LocalDate.parse("2026-08-29") }[0]
-                val secondElem = it.stats.filter { v -> v.date == LocalDate.parse("2026-08-30") }[0]
-                it.stats.size == 2 &&
-                    firstElem.finalized == 1 &&
+                val firstElem = it.stats.find { v -> v.date == LocalDate.parse("2026-08-28") }!!
+                val secondElem = it.stats.find { v -> v.date == LocalDate.parse("2026-08-29") }!!
+                val thirdElem = it.stats.find { v -> v.date == LocalDate.parse("2026-08-30") }!!
+                it.stats.size == 4 &&
+                    firstElem.finalized == 0 &&
                     firstElem.notFinalized == 0 &&
                     firstElem.notAnalyzed.get() == 0 &&
-                    secondElem.finalized == 0 &&
-                    secondElem.notFinalized == 1 &&
-                    secondElem.notAnalyzed.get() == 1
+                    secondElem.finalized == 1 &&
+                    secondElem.notFinalized == 0 &&
+                    secondElem.notAnalyzed.get() == 0 &&
+                    thirdElem.finalized == 0 &&
+                    thirdElem.notFinalized == 1 &&
+                    thirdElem.notAnalyzed.get() == 1
             }
             .verifyComplete()
     }
