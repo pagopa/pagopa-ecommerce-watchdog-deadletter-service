@@ -33,6 +33,7 @@ import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.PageInfoDto as
 import it.pagopa.generated.nodo.support.model.PositionPaymentSnapshotDtoDto
 import java.time.Instant
 import java.time.LocalDate
+import java.time.Period
 import java.time.ZoneOffset
 import java.time.format.DateTimeParseException
 import java.time.temporal.ChronoUnit
@@ -795,6 +796,23 @@ class DeadletterTransactionsService(
                         notAnalyzed = it.value.count { v -> v == null },
                     )
                 }
+            }
+            .map { l ->
+                val listWithFilledEmptyDays = l.toMutableList()
+                val dates = from.datesUntil(to.plusDays(1), Period.ofDays(1))
+                dates.forEach { date ->
+                    if (l.none { v -> v.date == date.toString() }) {
+                        listWithFilledEmptyDays.add(
+                            CalendarStats(
+                                date = date.toString(),
+                                finalized = 0,
+                                notFinalized = 0,
+                                notAnalyzed = 0,
+                            )
+                        )
+                    }
+                }
+                listWithFilledEmptyDays.toList()
             }
             .flatMap { calendarStatsRepository.saveAll(it).collectList() }
             .map {
