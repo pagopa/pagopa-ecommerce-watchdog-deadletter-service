@@ -481,6 +481,48 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProblemJson'
+    post:
+      tags:
+        - deadletter-transactions
+      summary: Update all stats in a given date range
+      operationId: updateStats
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: Given date range to update
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                from:
+                  type: string
+                  format: date
+                to:
+                  type: string
+                  format: date
+      responses:
+        '200':
+          description: List of stats generated and updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MonthStatsResponse'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+        '401':
+          description: Unauthorized. Missing or invalid authentication token.
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
   /authenticate:
     post:
       tags:

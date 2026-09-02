@@ -14,6 +14,7 @@ import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.NoteInputDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.NotesInputDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.NotesRequestDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.TransactionNotesDto
+import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.UpdateStatsRequestDto
 import jakarta.validation.Valid
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
@@ -194,5 +195,14 @@ class WatchdogDeadletterController(
         return deadletterTransactionsService.getDailyStats(year, month).map {
             ResponseEntity.ok(it)
         }
+    }
+
+    override fun updateStats(
+        updateStatsRequestDto: @Valid Mono<UpdateStatsRequestDto>,
+        exchange: ServerWebExchange?,
+    ): Mono<ResponseEntity<MonthStatsResponseDto>> {
+        return updateStatsRequestDto
+            .flatMap { deadletterTransactionsService.updateHistoricStats(it.from, it.to) }
+            .map { ResponseEntity.ok(it) }
     }
 }

@@ -45,6 +45,8 @@ import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import reactor.kotlin.core.publisher.switchIfEmpty
+import reactor.kotlin.core.publisher.toFlux
+import reactor.kotlin.core.publisher.toMono
 import reactor.kotlin.core.util.function.component1
 import reactor.kotlin.core.util.function.component2
 import reactor.kotlin.core.util.function.component3
@@ -766,5 +768,47 @@ class DeadletterTransactionsService(
                     }
             }
             .flatMap { calendarStatsRepository.save(it) }
+    }
+
+    fun updateHistoricStats(from: LocalDate, to: LocalDate): Mono<MonthStatsResponseDto> {
+        return getDeadletterTransactionsByDateRange(from, to, 0, 100)
+            .flatMapMany { it.deadletterTransactions.toFlux() }
+            .flatMap {
+                deadletterTransactionActionRepository
+                    .findFirstByTransactionIdOrderByTimestampDesc(it.transactionId)
+                    .map { v -> Triple(true, v, it.insertionDate.toLocalDate()) }
+                    .switchIfEmpty(Triple(false, null, it.insertionDate.toLocalDate()).toMono())
+            }
+            .collectMultimap(
+                { it.third }, // insertionDate
+                {
+                    val (isPresent, actionEntry, _) = it
+                    if (!isPresent) null else actionEntry.action.type
+                },
+            )
+            .map { entries ->
+                entries.map {
+                    CalendarStats(
+                        date = it.key.toString(),
+                        finalized = it.value.count { v -> v == ActionType.Type.FINAL },
+                        notFinalized = it.value.count { v -> v == ActionType.Type.NOT_FINAL },
+                        notAnalyzed = it.value.count { v -> v == null },
+                    )
+                }
+            }
+            .flatMap { calendarStatsRepository.saveAll(it).collectList() }
+            .map {
+                val res = MonthStatsResponseDto()
+                it.forEach { stat ->
+                    res.addStatsItem(
+                        MonthStatsResponseStatsInnerDto()
+                            .date(LocalDate.parse(stat.date))
+                            .finalized(stat.finalized)
+                            .notFinalized(stat.notFinalized)
+                            .notAnalyzed(stat.notAnalyzed)
+                    )
+                }
+                res
+            }
     }
 }
