@@ -108,6 +108,7 @@ microservice-chart:
     NOTE_UPDATE_LIMIT_TIME_MINUTES: "60"
     NOTE_DELETE_LIMIT_TIME_MINUTES: "60"
     SCHEDULED_JOB_STATS_CRON: "0 0 4 * * ?"
+    FEATURE_POST_STATS: "false"
   envSecret:
     MONGO_PASSWORD: mongo-ecommerce-password
     OTEL_EXPORTER_OTLP_HEADERS: elastic-otel-token-header
