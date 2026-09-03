@@ -1,5 +1,6 @@
 package it.pagopa.ecommerce.watchdog.deadletter.controllers.v1
 
+import it.pagopa.ecommerce.watchdog.deadletter.config.FeaturesConfig
 import it.pagopa.ecommerce.watchdog.deadletter.config.JacksonConfig
 import it.pagopa.ecommerce.watchdog.deadletter.config.TestSecurityConfig
 import it.pagopa.ecommerce.watchdog.deadletter.documents.Action
@@ -20,6 +21,7 @@ import org.openapitools.jackson.nullable.JsonNullable
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest
 import org.springframework.context.annotation.Import
+import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.context.TestPropertySource
 import org.springframework.test.context.bean.override.mockito.MockitoBean
@@ -36,6 +38,8 @@ class WatchdogDeadletterControllerTest {
     @MockitoBean lateinit var deadletterTransactionsService: DeadletterTransactionsService
 
     @MockitoBean lateinit var authService: AuthService
+
+    @MockitoBean lateinit var featuresConfig: FeaturesConfig
 
     @Test
     fun `add action to deadletter-transaction return '201 Created'`() {
@@ -695,7 +699,8 @@ class WatchdogDeadletterControllerTest {
     }
 
     @Test
-    fun `POST stats should return the updated stats when a correct payload is passed`() {
+    fun `POST stats should return the updated stats when a correct payload is passed and feature flag is enabled`() {
+        given(featuresConfig.postStats).willReturn(true)
 
         val objResponse =
             MonthStatsResponseDto().apply {
@@ -736,5 +741,23 @@ class WatchdogDeadletterControllerTest {
             .isNumber
             .jsonPath("$.stats[1].notAnalyzed")
             .isNumber
+    }
+
+    @Test
+    fun `POST stats should return LOCKED when feature flag is disabled`() {
+        given(featuresConfig.postStats).willReturn(false)
+
+        webClient
+            .post()
+            .uri { uriBuilder -> uriBuilder.path("/deadletter-transactions/stats").build() }
+            .bodyValue(
+                UpdateStatsRequestDto().apply {
+                    from = LocalDate.parse("2026-08-04")
+                    to = LocalDate.parse("2026-08-07")
+                }
+            )
+            .exchange()
+            .expectStatus()
+            .isEqualTo(HttpStatus.LOCKED)
     }
 }

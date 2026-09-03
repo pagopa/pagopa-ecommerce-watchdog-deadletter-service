@@ -1,5 +1,6 @@
 package it.pagopa.ecommerce.watchdog.deadletter.controllers.v1
 
+import it.pagopa.ecommerce.watchdog.deadletter.config.FeaturesConfig
 import it.pagopa.ecommerce.watchdog.deadletter.services.AuthService
 import it.pagopa.ecommerce.watchdog.deadletter.services.DeadletterTransactionsService
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.api.DeadletterTransactionsApi
@@ -24,6 +25,7 @@ import java.time.LocalDate
 import java.time.ZoneOffset
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.RequestParam
@@ -31,12 +33,14 @@ import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.server.ServerWebExchange
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
+import reactor.kotlin.core.publisher.toMono
 
 @RestController
 @Validated
 class WatchdogDeadletterController(
     @Autowired val deadletterTransactionsService: DeadletterTransactionsService,
     @Autowired val authService: AuthService,
+    @Autowired val featuresConfig: FeaturesConfig,
 ) : DeadletterTransactionsApi {
 
     private val logger = LoggerFactory.getLogger(this.javaClass)
@@ -201,8 +205,12 @@ class WatchdogDeadletterController(
         updateStatsRequestDto: @Valid Mono<UpdateStatsRequestDto>,
         exchange: ServerWebExchange?,
     ): Mono<ResponseEntity<MonthStatsResponseDto>> {
-        return updateStatsRequestDto
-            .flatMap { deadletterTransactionsService.updateHistoricStats(it.from, it.to) }
-            .map { ResponseEntity.ok(it) }
+        return if (featuresConfig.postStats) {
+            updateStatsRequestDto
+                .flatMap { deadletterTransactionsService.updateHistoricStats(it.from, it.to) }
+                .map { ResponseEntity.ok(it) }
+        } else {
+            ResponseEntity.status(HttpStatus.LOCKED).build<MonthStatsResponseDto>().toMono()
+        }
     }
 }
