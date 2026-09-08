@@ -17,7 +17,7 @@ plugins {
 
 group = "it.pagopa.ecommerce.watchdog.deadletter"
 
-version = "1.34.0"
+version = "1.38.2"
 
 description = "pagopa-ecommerce-watchdog-deadletter-service"
 
@@ -237,7 +237,10 @@ tasks.register("generate") { dependsOn(tasks.matching { it.group == "openapi-gen
 
 tasks.withType<KotlinCompile> {
   dependsOn("watchdog-v1", "ecommerce-helpdesk-service", "nodo-technical-support", "watchdog-v2")
-  compilerOptions { jvmTarget.set(JvmTarget.JVM_21) }
+  compilerOptions {
+    jvmTarget.set(JvmTarget.JVM_21)
+    freeCompilerArgs.add("-Xjvm-default=all")
+  }
 }
 
 tasks.test {

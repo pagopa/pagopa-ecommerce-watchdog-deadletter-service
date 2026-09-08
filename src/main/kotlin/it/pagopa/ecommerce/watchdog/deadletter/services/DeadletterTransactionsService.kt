@@ -5,11 +5,13 @@ import it.pagopa.ecommerce.watchdog.deadletter.clients.NodoTechnicalSupportClien
 import it.pagopa.ecommerce.watchdog.deadletter.config.ActionTypeConfig
 import it.pagopa.ecommerce.watchdog.deadletter.documents.Action
 import it.pagopa.ecommerce.watchdog.deadletter.documents.ActionType
+import it.pagopa.ecommerce.watchdog.deadletter.documents.CalendarStats
 import it.pagopa.ecommerce.watchdog.deadletter.documents.Note
 import it.pagopa.ecommerce.watchdog.deadletter.exception.InvalidActionValue
 import it.pagopa.ecommerce.watchdog.deadletter.exception.InvalidNoteId
 import it.pagopa.ecommerce.watchdog.deadletter.exception.InvalidTransactionId
 import it.pagopa.ecommerce.watchdog.deadletter.exception.NotesLimitException
+import it.pagopa.ecommerce.watchdog.deadletter.repositories.CalendarStatsRepository
 import it.pagopa.ecommerce.watchdog.deadletter.repositories.DeadletterTransactionActionRepository
 import it.pagopa.ecommerce.watchdog.deadletter.repositories.DeadletterTransactionNoteRepository
 import it.pagopa.ecommerce.watchdog.deadletter.utils.ObfuscationUtils.obfuscateEmail
@@ -31,10 +33,12 @@ import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.PageInfoDto as
 import it.pagopa.generated.nodo.support.model.PositionPaymentSnapshotDtoDto
 import java.time.Instant
 import java.time.LocalDate
+import java.time.Period
 import java.time.ZoneOffset
 import java.time.format.DateTimeParseException
 import java.time.temporal.ChronoUnit
 import java.util.*
+import kotlin.jvm.optionals.getOrNull
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
@@ -42,6 +46,8 @@ import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import reactor.kotlin.core.publisher.switchIfEmpty
+import reactor.kotlin.core.publisher.toFlux
+import reactor.kotlin.core.publisher.toMono
 import reactor.kotlin.core.util.function.component1
 import reactor.kotlin.core.util.function.component2
 import reactor.kotlin.core.util.function.component3
@@ -52,6 +58,7 @@ class DeadletterTransactionsService(
     private val nodoTechnicalSupportClient: NodoTechnicalSupportClient,
     private val deadletterTransactionActionRepository: DeadletterTransactionActionRepository,
     private val deadletterTransactionNoteRepository: DeadletterTransactionNoteRepository,
+    private val calendarStatsRepository: CalendarStatsRepository,
     @Autowired val actionTypeConfig: ActionTypeConfig,
     @Value("\${note.numlimit}") private val noteNumLimitConfig: Long,
     @Value("\${note.update.limittime.minutes}") private val noteUpdateLimitTime: Long,
@@ -450,16 +457,35 @@ class DeadletterTransactionsService(
         else
             ecommerceHelpdeskServiceV1
                 .searchTransactions(transactionId)
-                .flatMap {
-                    deadletterTransactionActionRepository.save(
-                        Action(
-                            id = UUID.randomUUID().toString(),
-                            transactionId = transactionId,
-                            userId = userId,
-                            action = actionType,
-                            timestamp = Instant.now(),
-                        )
-                    )
+                .map { it?.transactions?.firstOrNull() }
+                .flatMap { t ->
+                    val previousAction =
+                        deadletterTransactionActionRepository
+                            .findFirstByTransactionIdOrderByTimestampDesc(transactionId)
+                            .cache()
+                    val newAction =
+                        deadletterTransactionActionRepository
+                            .save(
+                                Action(
+                                    id = UUID.randomUUID().toString(),
+                                    transactionId = transactionId,
+                                    userId = userId,
+                                    action = actionType,
+                                    timestamp = Instant.now(),
+                                )
+                            )
+                            .cache()
+
+                    t?.transactionInfo?.creationDate?.toLocalDate()?.let { date ->
+                        updateStats(
+                                transactionId,
+                                date,
+                                previousAction.map { it.action }.singleOptional(),
+                                newAction.map { it.action },
+                            )
+                            .subscribe()
+                    }
+                    newAction
                 }
                 .switchIfEmpty(Mono.error(InvalidTransactionId()))
     }
@@ -476,21 +502,35 @@ class DeadletterTransactionsService(
                 .flatMap { tId ->
                     ecommerceHelpdeskServiceV1
                         .searchTransactions(tId)
+                        .map { tId to it.transactions.firstOrNull() }
                         .switchIfEmpty(Mono.error(InvalidTransactionId()))
-                        .thenReturn(tId)
                 }
-                .map { tId ->
-                    deadletterTransactionActionRepository.save(
-                        Action(
-                            id = UUID.randomUUID().toString(),
-                            transactionId = tId,
-                            userId = userId,
-                            action = actionType,
-                            timestamp = Instant.now(),
+                .flatMap { (tId, transaction) ->
+                    val previousAction =
+                        deadletterTransactionActionRepository
+                            .findFirstByTransactionIdOrderByTimestampDesc(tId)
+                    val newAction =
+                        deadletterTransactionActionRepository.save(
+                            Action(
+                                id = UUID.randomUUID().toString(),
+                                transactionId = tId,
+                                userId = userId,
+                                action = actionType,
+                                timestamp = Instant.now(),
+                            )
                         )
-                    )
+
+                    transaction?.transactionInfo?.creationDate?.toLocalDate()?.let { date ->
+                        updateStats(
+                                tId,
+                                date,
+                                previousAction.map { it.action }.singleOptional(),
+                                newAction.map { it.action },
+                            )
+                            .subscribe()
+                    }
+                    newAction
                 }
-                .flatMap { it }
                 .collectList()
     }
 
@@ -664,6 +704,129 @@ class DeadletterTransactionsService(
                 } else {
                     Mono.error(InvalidNoteId())
                 }
+            }
+    }
+
+    fun getDailyStats(year: Int, month: Int): Mono<MonthStatsResponseDto> {
+        val stats = calendarStatsRepository.getBetweenDates(year, month)
+
+        return stats.collectList().map {
+            val result = MonthStatsResponseDto()
+            it.forEach { stat ->
+                result.addStatsItem(
+                    MonthStatsResponseStatsInnerDto()
+                        .date(LocalDate.parse(stat.date))
+                        .finalized(stat.finalized)
+                        .notFinalized(stat.notFinalized)
+                        .notAnalyzed(stat.notAnalyzed)
+                )
+            }
+            return@map result
+        }
+    }
+
+    fun updateStats(
+        transactionId: String,
+        transactionCreationDate: LocalDate,
+        previousAction: Mono<Optional<ActionType>>,
+        newAction: Mono<ActionType>,
+    ): Mono<CalendarStats> {
+        return Mono.zip(previousAction, newAction)
+            .flatMap { (oldOpt, new) ->
+                calendarStatsRepository
+                    .findByDate(transactionCreationDate)
+                    .map { stats ->
+                        oldOpt.ifPresentOrElse(
+                            {
+                                logger.debug(
+                                    "Previous action found for {}, stats already exists on {}",
+                                    transactionId,
+                                    transactionCreationDate,
+                                )
+                            },
+                            {
+                                logger.debug(
+                                    "No previous action was found for {}, but stats already exist on {}",
+                                    transactionId,
+                                    transactionCreationDate,
+                                )
+                            },
+                        )
+
+                        val old: ActionType? = oldOpt.getOrNull()
+
+                        stats.transition(old?.type, new.type)
+                    }
+                    .switchIfEmpty {
+                        newAction.map {
+                            logger.debug(
+                                "No previous stats for {} on {}, creating from scratch",
+                                transactionId,
+                                transactionCreationDate,
+                            )
+                            CalendarStats.createFrom(it, transactionCreationDate)
+                        }
+                    }
+            }
+            .flatMap { calendarStatsRepository.save(it) }
+    }
+
+    fun updateHistoricStats(from: LocalDate, to: LocalDate): Mono<MonthStatsResponseDto> {
+        return getDeadletterTransactionsByDateRange(from, to, 0, 100)
+            .flatMapMany { it.deadletterTransactions.toFlux() }
+            .flatMap {
+                deadletterTransactionActionRepository
+                    .findFirstByTransactionIdOrderByTimestampDesc(it.transactionId)
+                    .map { v -> Triple(true, v, it.insertionDate.toLocalDate()) }
+                    .switchIfEmpty(Triple(false, null, it.insertionDate.toLocalDate()).toMono())
+            }
+            .collectMultimap(
+                { it.third }, // insertionDate
+                {
+                    val (isPresent, actionEntry, _) = it
+                    if (!isPresent) null else actionEntry.action.type
+                },
+            )
+            .map { entries ->
+                entries.map {
+                    CalendarStats(
+                        date = it.key.toString(),
+                        finalized = it.value.count { v -> v == ActionType.Type.FINAL },
+                        notFinalized = it.value.count { v -> v == ActionType.Type.NOT_FINAL },
+                        notAnalyzed = it.value.count { v -> v == null },
+                    )
+                }
+            }
+            .map { l ->
+                val listWithFilledEmptyDays = l.toMutableList()
+                val dates = from.datesUntil(to.plusDays(1), Period.ofDays(1))
+                dates.forEach { date ->
+                    if (l.none { v -> v.date == date.toString() }) {
+                        listWithFilledEmptyDays.add(
+                            CalendarStats(
+                                date = date.toString(),
+                                finalized = 0,
+                                notFinalized = 0,
+                                notAnalyzed = 0,
+                            )
+                        )
+                    }
+                }
+                listWithFilledEmptyDays.toList()
+            }
+            .flatMap { calendarStatsRepository.saveAll(it).collectList() }
+            .map {
+                val res = MonthStatsResponseDto()
+                it.forEach { stat ->
+                    res.addStatsItem(
+                        MonthStatsResponseStatsInnerDto()
+                            .date(LocalDate.parse(stat.date))
+                            .finalized(stat.finalized)
+                            .notFinalized(stat.notFinalized)
+                            .notAnalyzed(stat.notAnalyzed)
+                    )
+                }
+                res
             }
     }
 }

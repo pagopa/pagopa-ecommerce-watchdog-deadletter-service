@@ -1,5 +1,7 @@
 package it.pagopa.ecommerce.watchdog.deadletter.controllers.v1
 
+import it.pagopa.ecommerce.watchdog.deadletter.config.FeaturesConfig
+import it.pagopa.ecommerce.watchdog.deadletter.config.JacksonConfig
 import it.pagopa.ecommerce.watchdog.deadletter.config.TestSecurityConfig
 import it.pagopa.ecommerce.watchdog.deadletter.documents.Action
 import it.pagopa.ecommerce.watchdog.deadletter.documents.ActionType
@@ -14,9 +16,12 @@ import java.time.LocalDate
 import java.time.OffsetDateTime
 import org.junit.jupiter.api.Test
 import org.mockito.BDDMockito.given
+import org.mockito.kotlin.any
+import org.openapitools.jackson.nullable.JsonNullable
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest
 import org.springframework.context.annotation.Import
+import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.context.TestPropertySource
 import org.springframework.test.context.bean.override.mockito.MockitoBean
@@ -26,13 +31,15 @@ import reactor.core.publisher.Mono
 
 @WebFluxTest(WatchdogDeadletterController::class)
 @TestPropertySource(locations = ["classpath:application.test.properties"])
-@Import(TestSecurityConfig::class)
+@Import(TestSecurityConfig::class, JacksonConfig::class)
 class WatchdogDeadletterControllerTest {
     @Autowired private lateinit var webClient: WebTestClient
 
     @MockitoBean lateinit var deadletterTransactionsService: DeadletterTransactionsService
 
     @MockitoBean lateinit var authService: AuthService
+
+    @MockitoBean lateinit var featuresConfig: FeaturesConfig
 
     @Test
     fun `add action to deadletter-transaction return '201 Created'`() {
@@ -434,9 +441,12 @@ class WatchdogDeadletterControllerTest {
             .isEqualTo(422)
     }
 
+    @Test
     fun `add a new note to multiple transactions`() {
 
-        val notesInputDto = NotesInputDto(listOf("transactionId1", "transactionId2"), "noteText")
+        val transactionIds = listOf("transactionId1", "transactionId2")
+
+        val notesInputDto = NotesInputDto(transactionIds, "noteText")
         val notesDto =
             Flux.just(
                 NoteDto(
@@ -462,7 +472,7 @@ class WatchdogDeadletterControllerTest {
                 deadletterTransactionsService.addNoteToDeadLetterTransactions(
                     "noteText",
                     "userId",
-                    listOf("transactionId1", "transactionId1"),
+                    transactionIds,
                 )
             )
             .willReturn(notesDto)
@@ -477,6 +487,7 @@ class WatchdogDeadletterControllerTest {
             .isCreated
     }
 
+    @Test
     fun `add a new note to multiple transaction should return a error 404 because the transaction doesnt exist`() {
 
         val notesInputDto = NotesInputDto(listOf("transactionId1", "transactionId2"), "noteText")
@@ -630,5 +641,123 @@ class WatchdogDeadletterControllerTest {
             .exchange()
             .expectStatus()
             .isNotFound
+    }
+
+    @Test
+    fun `get stats should return '200 OKAY' with the stats of the month`() {
+        given(authService.getAuthenticatedUserId()).willReturn(Mono.just("userId"))
+        given(deadletterTransactionsService.getDailyStats(any(), any()))
+            .willReturn(Mono.just(MonthStatsResponseDto()))
+
+        webClient
+            .get()
+            .uri { uriBuilder ->
+                uriBuilder
+                    .path("/deadletter-transactions/stats")
+                    .queryParam("year", 2026)
+                    .queryParam("month", 7)
+                    .build()
+            }
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody()
+    }
+
+    @Test
+    fun `get stats should return '400 BAD REQUEST' when required params are missing`() {
+        given(authService.getAuthenticatedUserId()).willReturn(Mono.just("userId"))
+
+        webClient
+            .get()
+            .uri { uriBuilder ->
+                uriBuilder.path("/deadletter-transactions/stats").queryParam("month", 7).build()
+            }
+            .exchange()
+            .expectStatus()
+            .isBadRequest
+    }
+
+    @Test
+    fun `get stats should return '400 BAD REQUEST' when required params are out of range`() {
+        given(authService.getAuthenticatedUserId()).willReturn(Mono.just("userId"))
+        given(deadletterTransactionsService.getDailyStats(any(), any()))
+            .willReturn(Mono.just(MonthStatsResponseDto()))
+
+        webClient
+            .get()
+            .uri { uriBuilder ->
+                uriBuilder
+                    .path("/deadletter-transactions/stats")
+                    .queryParam("year", 3026)
+                    .queryParam("month", 13)
+                    .build()
+            }
+            .exchange()
+            .expectStatus()
+            .isBadRequest
+    }
+
+    @Test
+    fun `POST stats should return the updated stats when a correct payload is passed and feature flag is enabled`() {
+        given(featuresConfig.postStats).willReturn(true)
+
+        val objResponse =
+            MonthStatsResponseDto().apply {
+                stats =
+                    listOf(
+                        MonthStatsResponseStatsInnerDto().apply {
+                            date = LocalDate.parse("2026-08-05")
+                            finalized = 1
+                            notFinalized = 1
+                            notAnalyzed = JsonNullable.of(10)
+                        },
+                        MonthStatsResponseStatsInnerDto().apply {
+                            date = LocalDate.parse("2026-08-06")
+                            finalized = 0
+                            notFinalized = 2
+                            notAnalyzed = JsonNullable.of(0)
+                        },
+                    )
+            }
+        given(authService.getAuthenticatedUserId()).willReturn(Mono.just("userId"))
+        given(deadletterTransactionsService.updateHistoricStats(any(), any()))
+            .willReturn(Mono.just(objResponse))
+
+        webClient
+            .post()
+            .uri { uriBuilder -> uriBuilder.path("/deadletter-transactions/stats").build() }
+            .bodyValue(
+                UpdateStatsRequestDto().apply {
+                    from = LocalDate.parse("2026-08-04")
+                    to = LocalDate.parse("2026-08-07")
+                }
+            )
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody()
+            .jsonPath("$.stats[0].notAnalyzed")
+            .isNumber
+            .jsonPath("$.stats[1].notAnalyzed")
+            .isNumber
+    }
+
+    @Test
+    fun `POST stats should return LOCKED when feature flag is disabled`() {
+        given(featuresConfig.postStats).willReturn(false)
+
+        webClient
+            .post()
+            .uri { uriBuilder -> uriBuilder.path("/deadletter-transactions/stats").build() }
+            .bodyValue(
+                UpdateStatsRequestDto().apply {
+                    from = LocalDate.parse("2026-08-04")
+                    to = LocalDate.parse("2026-08-07")
+                }
+            )
+            .exchange()
+            .expectStatus()
+            .isEqualTo(HttpStatus.LOCKED)
     }
 }

@@ -1,5 +1,6 @@
 package it.pagopa.ecommerce.watchdog.deadletter.controllers.v1
 
+import it.pagopa.ecommerce.watchdog.deadletter.config.FeaturesConfig
 import it.pagopa.ecommerce.watchdog.deadletter.services.AuthService
 import it.pagopa.ecommerce.watchdog.deadletter.services.DeadletterTransactionsService
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.api.DeadletterTransactionsApi
@@ -8,11 +9,13 @@ import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.DeadletterTran
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.DeadletterTransactionActionInputDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.DeadletterTransactionsActionInputDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.ListDeadletterTransactions200ResponseDto
+import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.MonthStatsResponseDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.NoteDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.NoteInputDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.NotesInputDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.NotesRequestDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.TransactionNotesDto
+import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.UpdateStatsRequestDto
 import jakarta.validation.Valid
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
@@ -22,6 +25,7 @@ import java.time.LocalDate
 import java.time.ZoneOffset
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.RequestParam
@@ -29,19 +33,21 @@ import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.server.ServerWebExchange
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
+import reactor.kotlin.core.publisher.toMono
 
 @RestController
 @Validated
 class WatchdogDeadletterController(
     @Autowired val deadletterTransactionsService: DeadletterTransactionsService,
     @Autowired val authService: AuthService,
+    @Autowired val featuresConfig: FeaturesConfig,
 ) : DeadletterTransactionsApi {
 
     private val logger = LoggerFactory.getLogger(this.javaClass)
 
     override fun addActionToDeadletterTransaction(
         deadletterTransactionId: String,
-        deadletterTransactionActionInputDto: @Valid Mono<DeadletterTransactionActionInputDto>,
+        @Valid deadletterTransactionActionInputDto: Mono<DeadletterTransactionActionInputDto>,
         exchange: ServerWebExchange,
     ): Mono<ResponseEntity<Void>> {
         return deadletterTransactionActionInputDto
@@ -58,7 +64,7 @@ class WatchdogDeadletterController(
     }
 
     override fun addActionToDeadletterTransactions(
-        deadletterTransactionsActionInputDto: @Valid Mono<DeadletterTransactionsActionInputDto>,
+        @Valid deadletterTransactionsActionInputDto: Mono<DeadletterTransactionsActionInputDto>,
         exchange: ServerWebExchange,
     ): Mono<ResponseEntity<Void>> {
         return deadletterTransactionsActionInputDto
@@ -75,7 +81,7 @@ class WatchdogDeadletterController(
 
     override fun addNoteToDeadletterTransaction(
         transactionId: String,
-        noteInputDto: @Valid Mono<NoteInputDto>,
+        @Valid noteInputDto: Mono<NoteInputDto>,
         exchange: ServerWebExchange,
     ): Mono<ResponseEntity<NoteDto>> {
         /*
@@ -93,7 +99,7 @@ class WatchdogDeadletterController(
     }
 
     override fun addNoteToDeadletterTransactions(
-        notesInputDto: @Valid Mono<NotesInputDto>,
+        @Valid notesInputDto: Mono<NotesInputDto>,
         exchange: ServerWebExchange,
     ): Mono<ResponseEntity<Flux<NoteDto>>> {
         return notesInputDto
@@ -123,7 +129,7 @@ class WatchdogDeadletterController(
     }
 
     override fun getNotesByTransactionIdList(
-        notesRequestDto: @Valid Mono<NotesRequestDto>,
+        @Valid notesRequestDto: Mono<NotesRequestDto>,
         exchange: ServerWebExchange,
     ): Mono<ResponseEntity<Flux<TransactionNotesDto>>> {
         logger.info("Received getNotesByTransactionIdList request")
@@ -172,7 +178,7 @@ class WatchdogDeadletterController(
     override fun updateNoteDeadletterTransaction(
         transactionId: String,
         noteId: String,
-        noteInputDto: @Valid Mono<NoteInputDto>,
+        @Valid noteInputDto: Mono<NoteInputDto>,
         exchange: ServerWebExchange,
     ): Mono<ResponseEntity<Void>> {
         logger.info("Received update request for note: [{}] ", noteId)
@@ -182,6 +188,29 @@ class WatchdogDeadletterController(
                     deadletterTransactionsService.updateNote(noteId, noteInputDto.note, userId)
                 }
                 .thenReturn(ResponseEntity.status(204).build())
+        }
+    }
+
+    override fun getStats(
+        @NotNull @Min(value = 2000) @Max(value = 3000) @Valid year: Int,
+        @NotNull @Min(value = 1) @Max(value = 12) @Valid month: Int,
+        exchange: ServerWebExchange?,
+    ): Mono<ResponseEntity<MonthStatsResponseDto>> {
+        return deadletterTransactionsService.getDailyStats(year, month).map {
+            ResponseEntity.ok(it)
+        }
+    }
+
+    override fun updateStats(
+        updateStatsRequestDto: @Valid Mono<UpdateStatsRequestDto>,
+        exchange: ServerWebExchange?,
+    ): Mono<ResponseEntity<MonthStatsResponseDto>> {
+        return if (featuresConfig.postStats) {
+            updateStatsRequestDto
+                .flatMap { deadletterTransactionsService.updateHistoricStats(it.from, it.to) }
+                .map { ResponseEntity.ok(it) }
+        } else {
+            ResponseEntity.status(HttpStatus.LOCKED).build<MonthStatsResponseDto>().toMono()
         }
     }
 }

@@ -5,11 +5,13 @@ import it.pagopa.ecommerce.watchdog.deadletter.clients.NodoTechnicalSupportClien
 import it.pagopa.ecommerce.watchdog.deadletter.config.ActionTypeConfig
 import it.pagopa.ecommerce.watchdog.deadletter.documents.Action
 import it.pagopa.ecommerce.watchdog.deadletter.documents.ActionType
+import it.pagopa.ecommerce.watchdog.deadletter.documents.CalendarStats
 import it.pagopa.ecommerce.watchdog.deadletter.documents.Note
 import it.pagopa.ecommerce.watchdog.deadletter.exception.InvalidActionValue
 import it.pagopa.ecommerce.watchdog.deadletter.exception.InvalidNoteId
 import it.pagopa.ecommerce.watchdog.deadletter.exception.InvalidTransactionId
 import it.pagopa.ecommerce.watchdog.deadletter.exception.NotesLimitException
+import it.pagopa.ecommerce.watchdog.deadletter.repositories.CalendarStatsRepository
 import it.pagopa.ecommerce.watchdog.deadletter.repositories.DeadletterTransactionActionRepository
 import it.pagopa.ecommerce.watchdog.deadletter.repositories.DeadletterTransactionNoteRepository
 import it.pagopa.generated.ecommerce.helpdesk.model.DeadLetterEventDto
@@ -30,18 +32,23 @@ import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.ListDeadletter
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.ActionTypeDto as DtoV2
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.DeadletterTransactionActionDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.DeadletterTransactionActionsRequestDto
+import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.DeadletterTransactionDto
+import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.ListDeadletterTransactions200ResponseDto as ListDeadletterTransactions200ResponseDtoV2
 import it.pagopa.generated.nodo.support.model.PositionPaymentSnapshotDtoDto
 import java.time.Instant
 import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
+import java.util.Optional
 import java.util.UUID
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito
 import org.mockito.kotlin.*
 import org.mockito.kotlin.argumentCaptor
+import org.reactivestreams.Publisher
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import reactor.test.StepVerifier
@@ -58,12 +65,14 @@ class DeadletterTransactionServiceTest {
         mock()
     private val actionConfig: ActionTypeConfig = ActionTypeConfig()
     private val deadletterTransactionsNoteRepo: DeadletterTransactionNoteRepository = mock()
+    private val calendarStatsRepository: CalendarStatsRepository = mock()
     private val deadletterTransactionsService: DeadletterTransactionsService =
         DeadletterTransactionsService(
             ecommerceHelpdeskServiceV1,
             nodoTechnicalSupportClient,
             deadletterTransactionActionRepository,
             deadletterTransactionsNoteRepo,
+            calendarStatsRepository,
             actionConfig,
             noteNumLimit,
             noteUpdateLimitTime,
@@ -307,7 +316,7 @@ class DeadletterTransactionServiceTest {
     }
 
     @Test
-    fun `getDeadletterTransactions should return an empy ListDeadletterTransactions200ResponseDto because of the searchNpgOperations error`() {
+    fun `getDeadletterTransactions should return an empty ListDeadletterTransactions200ResponseDto because of the searchNpgOperations error`() {
         val date: LocalDate = LocalDate.parse("2025-08-19")
         val pageNumber: Int = 0
         val pageSize: Int = 1
@@ -675,19 +684,32 @@ class DeadletterTransactionServiceTest {
         val actionValueType = ActionType("test", ActionType.Type.NOT_FINAL)
         val actionValue = "test"
         val actionTypes = listOf(actionValueType)
+        val searchTransactionResponseDto =
+            SearchTransactionResponseDto().apply {
+                transactions = buildList {
+                    add(
+                        TransactionResultDto().apply {
+                            transactionInfo =
+                                TransactionInfoDto().apply {
+                                    creationDate = OffsetDateTime.now(ZoneOffset.UTC)
+                                }
+                        }
+                    )
+                }
+            }
         actionConfig.types = actionTypes
 
-        val action =
-            Action(
-                UUID.randomUUID().toString(),
-                transactionId,
-                userId,
-                actionValueType,
-                Instant.now(),
-            )
         whenever(ecommerceHelpdeskServiceV1.searchTransactions(any()))
-            .thenReturn(Mono.just(SearchTransactionResponseDto()))
-        whenever(deadletterTransactionActionRepository.save(any())).thenReturn(Mono.just(action))
+            .thenReturn(Mono.just(searchTransactionResponseDto))
+        whenever(deadletterTransactionActionRepository.save(any())).thenAnswer {
+            Mono.just(it.getArgument<Action>(0))
+        }
+        whenever(
+                deadletterTransactionActionRepository.findFirstByTransactionIdOrderByTimestampDesc(
+                    any<String>()
+                )
+            )
+            .thenReturn(Mono.empty())
 
         val resultMono =
             deadletterTransactionsService.addActionToDeadletterTransaction(
@@ -696,7 +718,14 @@ class DeadletterTransactionServiceTest {
                 actionValue,
             )
 
-        StepVerifier.create(resultMono).expectNext(action).expectComplete().verify()
+        StepVerifier.create(resultMono)
+            .expectNextMatches {
+                it.transactionId == transactionId &&
+                    it.userId == userId &&
+                    it.action.value == actionValue
+            }
+            .expectComplete()
+            .verify()
 
         // Verify the object pass to the repository and his parameters
         val actionCaptor = argumentCaptor<Action>()
@@ -707,9 +736,9 @@ class DeadletterTransactionServiceTest {
 
         assertNotNull(newDeadLetterActionCapture.id)
         assertNotNull(newDeadLetterActionCapture.timestamp)
-        assertEquals(newDeadLetterActionCapture.transactionId, transactionId)
-        assertEquals(newDeadLetterActionCapture.userId, userId)
-        assertEquals(newDeadLetterActionCapture.action.value, actionValue)
+        assertEquals(transactionId, newDeadLetterActionCapture.transactionId)
+        assertEquals(userId, newDeadLetterActionCapture.userId)
+        assertEquals(actionValue, newDeadLetterActionCapture.action.value)
     }
 
     @Test
@@ -771,8 +800,19 @@ class DeadletterTransactionServiceTest {
         whenever(ecommerceHelpdeskServiceV1.searchTransactions(any()))
             .thenReturn(Mono.just(SearchTransactionResponseDto()))
 
+        whenever(
+                deadletterTransactionActionRepository.findFirstByTransactionIdOrderByTimestampDesc(
+                    any<String>()
+                )
+            )
+            .thenReturn(Mono.empty())
+
         whenever(deadletterTransactionActionRepository.save(any())).thenAnswer {
             Mono.just(it.getArgument<Action>(0))
+        }
+
+        whenever(calendarStatsRepository.saveAll(any<Publisher<CalendarStats>>())).thenAnswer {
+            Flux.from(it.getArgument<Publisher<CalendarStats>>(0))
         }
 
         val resultMono =
@@ -1528,6 +1568,221 @@ class DeadletterTransactionServiceTest {
             )
             .expectNextMatches { response ->
                 response.deadletterTransactions[0].gatewayAuthorizationStatus == "EXECUTED"
+            }
+            .verifyComplete()
+    }
+
+    @Test
+    fun `getDailyStats should return MonthStatsResponse with elements if they are present`() {
+
+        whenever(calendarStatsRepository.getBetweenDates(any<Int>(), any<Int>()))
+            .thenReturn(Flux.just(CalendarStats("2026-07-01", 1, 0, 0, 0)))
+
+        StepVerifier.create(deadletterTransactionsService.getDailyStats(2026, 7))
+            .expectNextMatches { it.stats.size == 1 && it.stats[0].finalized == 1 }
+            .verifyComplete()
+    }
+
+    @Test
+    fun `getDailyStats should return MonthStatsResponse with no elements if they are not present`() {
+
+        whenever(calendarStatsRepository.getBetweenDates(any<Int>(), any<Int>()))
+            .thenReturn(Flux.empty())
+
+        StepVerifier.create(deadletterTransactionsService.getDailyStats(2026, 7))
+            .expectNextMatches { it.stats.isEmpty() }
+            .verifyComplete()
+    }
+
+    @Test
+    fun `updateStats should create daily stats based on transactions passed when no stat exists`() {
+
+        val transactionId = "tid1"
+        val creationDate = LocalDate.now().minusDays(1)
+
+        whenever(calendarStatsRepository.findByDate(any<LocalDate>())).thenReturn(Mono.empty())
+        whenever(calendarStatsRepository.save(any<CalendarStats>())).thenAnswer {
+            Mono.just(it.getArgument<Mono<CalendarStats>>(0))
+        }
+
+        StepVerifier.create(
+                deadletterTransactionsService.updateStats(
+                    transactionId,
+                    creationDate,
+                    Mono.just(Optional.empty()),
+                    Mono.just(ActionType("notFinal", ActionType.Type.NOT_FINAL)),
+                )
+            )
+            .thenConsumeWhile {
+                it.notFinalized == 1 && it.finalized == 0 && it.notAnalyzed == null
+            }
+            .verifyComplete()
+
+        StepVerifier.create(
+                deadletterTransactionsService.updateStats(
+                    transactionId,
+                    creationDate,
+                    Mono.just(Optional.empty()),
+                    Mono.just(ActionType("final", ActionType.Type.FINAL)),
+                )
+            )
+            .thenConsumeWhile {
+                it.notFinalized == 0 && it.finalized == 1 && it.notAnalyzed == null
+            }
+            .verifyComplete()
+    }
+
+    @Test
+    fun `updateStats should update daily stats based on transactions passed when previous action exists`() {
+
+        val mockStats = CalendarStats(LocalDate.now().toString(), 1, 2, 3, 1)
+
+        whenever(calendarStatsRepository.findByDate(any<LocalDate>()))
+            .thenReturn(Mono.just(mockStats))
+        whenever(calendarStatsRepository.save(any<CalendarStats>())).thenAnswer {
+            Mono.just(it.getArgument<Mono<CalendarStats>>(0))
+        }
+
+        StepVerifier.create(
+                deadletterTransactionsService.updateStats(
+                    "test1",
+                    LocalDate.now(),
+                    Mono.just(Optional.of(ActionType("notFinal", ActionType.Type.NOT_FINAL))),
+                    Mono.just(ActionType("final", ActionType.Type.FINAL)),
+                )
+            )
+            .thenConsumeWhile {
+                it.notFinalized == mockStats.notFinalized - 1 &&
+                    it.finalized == mockStats.finalized + 1 &&
+                    it.notAnalyzed == mockStats.notAnalyzed
+            }
+            .verifyComplete()
+
+        StepVerifier.create(
+                deadletterTransactionsService.updateStats(
+                    "test1",
+                    LocalDate.now(),
+                    Mono.just(Optional.of(ActionType("final", ActionType.Type.FINAL))),
+                    Mono.just(ActionType("notFinal", ActionType.Type.NOT_FINAL)),
+                )
+            )
+            .thenConsumeWhile {
+                it.notFinalized == mockStats.notFinalized + 1 &&
+                    it.finalized == mockStats.finalized - 1 &&
+                    it.notAnalyzed == mockStats.notAnalyzed
+            }
+            .verifyComplete()
+
+        StepVerifier.create(
+                deadletterTransactionsService.updateStats(
+                    "test1",
+                    LocalDate.now(),
+                    Mono.just(Optional.empty()),
+                    Mono.just(ActionType("notFinal", ActionType.Type.NOT_FINAL)),
+                )
+            )
+            .thenConsumeWhile {
+                it.notFinalized == mockStats.notFinalized + 1 &&
+                    it.finalized == mockStats.finalized &&
+                    it.notAnalyzed == mockStats.notAnalyzed?.minus(1)
+            }
+            .verifyComplete()
+
+        StepVerifier.create(
+                deadletterTransactionsService.updateStats(
+                    "test1",
+                    LocalDate.now(),
+                    Mono.just(Optional.empty()),
+                    Mono.just(ActionType("final", ActionType.Type.FINAL)),
+                )
+            )
+            .thenConsumeWhile {
+                it.notFinalized == mockStats.notFinalized &&
+                    it.finalized == mockStats.finalized + 1 &&
+                    it.notAnalyzed == mockStats.notAnalyzed?.minus(1)
+            }
+            .verifyComplete()
+    }
+
+    @Test
+    fun `updateHistoricStats create or update daily stats based on the date range`() {
+
+        val from = LocalDate.parse("2026-08-28")
+        val to = LocalDate.parse("2026-08-31")
+        val spyService = Mockito.spy(deadletterTransactionsService)
+
+        Mockito.doReturn(
+                Mono.just(
+                    ListDeadletterTransactions200ResponseDtoV2().apply {
+                        deadletterTransactions =
+                            listOf(
+                                DeadletterTransactionDto().apply {
+                                    transactionId = "transactionId1"
+                                    insertionDate = OffsetDateTime.parse("2026-08-29T00:00:00Z")
+                                },
+                                DeadletterTransactionDto().apply {
+                                    transactionId = "transactionId2"
+                                    insertionDate = OffsetDateTime.parse("2026-08-30T00:00:00Z")
+                                },
+                                DeadletterTransactionDto().apply {
+                                    transactionId = "transactionId3"
+                                    insertionDate = OffsetDateTime.parse("2026-08-30T00:00:00Z")
+                                },
+                            )
+                    }
+                )
+            )
+            .`when`(spyService)
+            .getDeadletterTransactionsByDateRange(any<LocalDate>(), any<LocalDate>(), any(), any())
+
+        whenever(
+                deadletterTransactionActionRepository.findFirstByTransactionIdOrderByTimestampDesc(
+                    any()
+                )
+            )
+            .thenReturn(
+                Mono.just(
+                    Action(
+                        UUID.randomUUID().toString(),
+                        "testId1",
+                        "userIdTest",
+                        ActionType("test", ActionType.Type.FINAL),
+                        Instant.now(),
+                    )
+                )
+            )
+            .thenReturn(
+                Mono.just(
+                    Action(
+                        UUID.randomUUID().toString(),
+                        "testId2",
+                        "userIdTest",
+                        ActionType("testNot", ActionType.Type.NOT_FINAL),
+                        Instant.now(),
+                    )
+                )
+            )
+            .thenReturn(Mono.empty())
+
+        whenever(calendarStatsRepository.saveAll(any<Iterable<CalendarStats>>())).thenAnswer {
+            Flux.fromIterable(it.getArgument<Iterable<CalendarStats>>(0))
+        }
+
+        StepVerifier.create(spyService.updateHistoricStats(from, to))
+            .expectNextMatches {
+                val firstElem = it.stats.find { v -> v.date == LocalDate.parse("2026-08-28") }!!
+                val secondElem = it.stats.find { v -> v.date == LocalDate.parse("2026-08-29") }!!
+                val thirdElem = it.stats.find { v -> v.date == LocalDate.parse("2026-08-30") }!!
+                it.stats.size == 4 &&
+                    firstElem.finalized == 0 &&
+                    firstElem.notFinalized == 0 &&
+                    firstElem.notAnalyzed.get() == 0 &&
+                    secondElem.finalized == 1 &&
+                    secondElem.notFinalized == 0 &&
+                    secondElem.notAnalyzed.get() == 0 &&
+                    thirdElem.finalized == 0 &&
+                    thirdElem.notFinalized == 1 &&
+                    thirdElem.notAnalyzed.get() == 1
             }
             .verifyComplete()
     }
