@@ -710,6 +710,10 @@ class DeadletterTransactionServiceTest {
                 )
             )
             .thenReturn(Mono.empty())
+        whenever(calendarStatsRepository.findByDate(any<LocalDate>())).thenReturn(Mono.empty())
+        whenever(calendarStatsRepository.save(any<CalendarStats>())).thenAnswer {
+            Mono.just(it.getArgument<CalendarStats>(0))
+        }
 
         val resultMono =
             deadletterTransactionsService.addActionToDeadletterTransaction(
@@ -806,13 +810,13 @@ class DeadletterTransactionServiceTest {
                 )
             )
             .thenReturn(Mono.empty())
+        whenever(calendarStatsRepository.findByDate(any<LocalDate>())).thenReturn(Mono.empty())
+        whenever(calendarStatsRepository.save(any<CalendarStats>())).thenAnswer {
+            Mono.just(it.getArgument<CalendarStats>(0))
+        }
 
         whenever(deadletterTransactionActionRepository.save(any())).thenAnswer {
             Mono.just(it.getArgument<Action>(0))
-        }
-
-        whenever(calendarStatsRepository.saveAll(any<Publisher<CalendarStats>>())).thenAnswer {
-            Flux.from(it.getArgument<Publisher<CalendarStats>>(0))
         }
 
         val resultMono =
