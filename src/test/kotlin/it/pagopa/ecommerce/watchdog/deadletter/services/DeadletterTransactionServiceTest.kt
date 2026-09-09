@@ -757,9 +757,7 @@ class DeadletterTransactionServiceTest {
                 transactions = buildList {
                     add(
                         TransactionResultDto().apply {
-                            transactionInfo = TransactionInfoDto().apply {
-                                creationDate = null
-                            }
+                            transactionInfo = TransactionInfoDto().apply { creationDate = null }
                         }
                     )
                 }
@@ -997,9 +995,7 @@ class DeadletterTransactionServiceTest {
                     transactions = buildList {
                         add(
                             TransactionResultDto().apply {
-                                transactionInfo = TransactionInfoDto().apply {
-                                    creationDate = null
-                                }
+                                transactionInfo = TransactionInfoDto().apply { creationDate = null }
                             }
                         )
                     }
@@ -1022,9 +1018,7 @@ class DeadletterTransactionServiceTest {
                 userId,
             )
 
-        StepVerifier.create(resultMono)
-            .expectNextMatches { it.size == 2 }
-            .verifyComplete()
+        StepVerifier.create(resultMono).expectNextMatches { it.size == 2 }.verifyComplete()
 
         verify(deadletterTransactionActionRepository, times(2)).save(any())
         verify(calendarStatsRepository, never()).findByDate(any<LocalDate>())
