@@ -745,6 +745,54 @@ class DeadletterTransactionServiceTest {
     }
 
     @Test
+    fun `addActionToDeadletterTransaction should save action without updating stats when creationDate is missing`() {
+        val transactionId = "testId"
+        val userId = "userIdTest"
+        val actionValueType = ActionType("test", ActionType.Type.NOT_FINAL)
+        val actionValue = "test"
+        actionConfig.types = listOf(actionValueType)
+
+        val searchTransactionResponseDto =
+            SearchTransactionResponseDto().apply {
+                transactions = buildList {
+                    add(
+                        TransactionResultDto().apply {
+                            transactionInfo = TransactionInfoDto().apply {
+                                creationDate = null
+                            }
+                        }
+                    )
+                }
+            }
+
+        whenever(ecommerceHelpdeskServiceV1.searchTransactions(any()))
+            .thenReturn(Mono.just(searchTransactionResponseDto))
+        whenever(deadletterTransactionActionRepository.save(any())).thenAnswer {
+            Mono.just(it.getArgument<Action>(0))
+        }
+        whenever(
+                deadletterTransactionActionRepository.findFirstByTransactionIdOrderByTimestampDesc(
+                    any<String>()
+                )
+            )
+            .thenReturn(Mono.empty())
+
+        StepVerifier.create(
+                deadletterTransactionsService.addActionToDeadletterTransaction(
+                    transactionId,
+                    userId,
+                    actionValue,
+                )
+            )
+            .expectNextMatches { it.transactionId == transactionId && it.userId == userId }
+            .verifyComplete()
+
+        verify(deadletterTransactionActionRepository).save(any())
+        verify(calendarStatsRepository, never()).findByDate(any<LocalDate>())
+        verify(calendarStatsRepository, never()).save(any<CalendarStats>())
+    }
+
+    @Test
     fun `addActionToDeadletterTransaction should return an InvalidActionValue`() {
         val transactionId = "testId"
         val userId = "userIdTest"
@@ -798,99 +846,6 @@ class DeadletterTransactionServiceTest {
                 Action(UUID.randomUUID().toString(), it, userId, actionValueType, Instant.now())
             }
 
-        @Test
-        fun `addActionToDeadletterTransaction should fail when updateStats fails`() {
-            val transactionId = "testId"
-            val userId = "userIdTest"
-            val actionValueType = ActionType("test", ActionType.Type.NOT_FINAL)
-            val actionValue = "test"
-            actionConfig.types = listOf(actionValueType)
-
-            val searchTransactionResponseDto =
-                SearchTransactionResponseDto().apply {
-                    transactions = buildList {
-                        add(
-                            TransactionResultDto().apply {
-                                transactionInfo =
-                                    TransactionInfoDto().apply {
-                                        creationDate = OffsetDateTime.now(ZoneOffset.UTC)
-                                    }
-                            }
-                        )
-                    }
-                }
-
-            whenever(ecommerceHelpdeskServiceV1.searchTransactions(any()))
-                .thenReturn(Mono.just(searchTransactionResponseDto))
-            whenever(
-                    deadletterTransactionActionRepository
-                        .findFirstByTransactionIdOrderByTimestampDesc(any<String>())
-                )
-                .thenReturn(Mono.empty())
-            whenever(deadletterTransactionActionRepository.save(any())).thenAnswer {
-                Mono.just(it.getArgument<Action>(0))
-            }
-            whenever(calendarStatsRepository.findByDate(any<LocalDate>())).thenReturn(Mono.empty())
-            whenever(calendarStatsRepository.save(any<CalendarStats>()))
-                .thenReturn(Mono.error(RuntimeException("stats save failed")))
-
-            StepVerifier.create(
-                    deadletterTransactionsService.addActionToDeadletterTransaction(
-                        transactionId,
-                        userId,
-                        actionValue,
-                    )
-                )
-                .expectErrorMatches { it is RuntimeException && it.message == "stats save failed" }
-                .verify()
-        }
-
-        @Test
-        fun `addActionToDeadletterTransactions should fail when updateStats fails`() {
-            val transactionIds = listOf("testId1")
-            val userId = "userIdTest"
-            val actionValueType = ActionType("test", ActionType.Type.NOT_FINAL)
-            val actionValue = "test"
-            actionConfig.types = listOf(actionValueType)
-
-            val searchTransactionResponseDto =
-                SearchTransactionResponseDto().apply {
-                    transactions = buildList {
-                        add(
-                            TransactionResultDto().apply {
-                                transactionInfo =
-                                    TransactionInfoDto().apply {
-                                        creationDate = OffsetDateTime.now(ZoneOffset.UTC)
-                                    }
-                            }
-                        )
-                    }
-                }
-
-            whenever(ecommerceHelpdeskServiceV1.searchTransactions(any()))
-                .thenReturn(Mono.just(searchTransactionResponseDto))
-            whenever(
-                    deadletterTransactionActionRepository
-                        .findFirstByTransactionIdOrderByTimestampDesc(any<String>())
-                )
-                .thenReturn(Mono.empty())
-            whenever(deadletterTransactionActionRepository.save(any())).thenAnswer {
-                Mono.just(it.getArgument<Action>(0))
-            }
-            whenever(calendarStatsRepository.findByDate(any<LocalDate>())).thenReturn(Mono.empty())
-            whenever(calendarStatsRepository.save(any<CalendarStats>()))
-                .thenReturn(Mono.error(RuntimeException("stats save failed")))
-
-            StepVerifier.create(
-                    deadletterTransactionsService.addActionToDeadletterTransactions(
-                        DeadletterTransactionsActionInputDto(transactionIds, actionValue),
-                        userId,
-                    )
-                )
-                .expectErrorMatches { it is RuntimeException && it.message == "stats save failed" }
-                .verify()
-        }
-
         val input = DeadletterTransactionsActionInputDto(transactionIds, actionValue)
 
         whenever(ecommerceHelpdeskServiceV1.searchTransactions(any()))
@@ -931,6 +886,149 @@ class DeadletterTransactionServiceTest {
             assertEquals(newDeadLetterActionCapture.userId, it.userId)
             assertEquals(newDeadLetterActionCapture.action.value, it.action.value)
         }
+    }
+
+    @Test
+    fun `addActionToDeadletterTransaction should fail when updateStats fails`() {
+        val transactionId = "testId"
+        val userId = "userIdTest"
+        val actionValueType = ActionType("test", ActionType.Type.NOT_FINAL)
+        val actionValue = "test"
+        actionConfig.types = listOf(actionValueType)
+
+        val searchTransactionResponseDto =
+            SearchTransactionResponseDto().apply {
+                transactions = buildList {
+                    add(
+                        TransactionResultDto().apply {
+                            transactionInfo =
+                                TransactionInfoDto().apply {
+                                    creationDate = OffsetDateTime.now(ZoneOffset.UTC)
+                                }
+                        }
+                    )
+                }
+            }
+
+        whenever(ecommerceHelpdeskServiceV1.searchTransactions(any()))
+            .thenReturn(Mono.just(searchTransactionResponseDto))
+        whenever(
+                deadletterTransactionActionRepository.findFirstByTransactionIdOrderByTimestampDesc(
+                    any<String>()
+                )
+            )
+            .thenReturn(Mono.empty())
+        whenever(deadletterTransactionActionRepository.save(any())).thenAnswer {
+            Mono.just(it.getArgument<Action>(0))
+        }
+        whenever(calendarStatsRepository.findByDate(any<LocalDate>())).thenReturn(Mono.empty())
+        whenever(calendarStatsRepository.save(any<CalendarStats>()))
+            .thenReturn(Mono.error(RuntimeException("stats save failed")))
+
+        StepVerifier.create(
+                deadletterTransactionsService.addActionToDeadletterTransaction(
+                    transactionId,
+                    userId,
+                    actionValue,
+                )
+            )
+            .expectErrorMatches { it is RuntimeException && it.message == "stats save failed" }
+            .verify()
+    }
+
+    @Test
+    fun `addActionToDeadletterTransactions should fail when updateStats fails`() {
+        val transactionIds = listOf("testId1")
+        val userId = "userIdTest"
+        val actionValueType = ActionType("test", ActionType.Type.NOT_FINAL)
+        val actionValue = "test"
+        actionConfig.types = listOf(actionValueType)
+
+        val searchTransactionResponseDto =
+            SearchTransactionResponseDto().apply {
+                transactions = buildList {
+                    add(
+                        TransactionResultDto().apply {
+                            transactionInfo =
+                                TransactionInfoDto().apply {
+                                    creationDate = OffsetDateTime.now(ZoneOffset.UTC)
+                                }
+                        }
+                    )
+                }
+            }
+
+        whenever(ecommerceHelpdeskServiceV1.searchTransactions(any()))
+            .thenReturn(Mono.just(searchTransactionResponseDto))
+        whenever(
+                deadletterTransactionActionRepository.findFirstByTransactionIdOrderByTimestampDesc(
+                    any<String>()
+                )
+            )
+            .thenReturn(Mono.empty())
+        whenever(deadletterTransactionActionRepository.save(any())).thenAnswer {
+            Mono.just(it.getArgument<Action>(0))
+        }
+        whenever(calendarStatsRepository.findByDate(any<LocalDate>())).thenReturn(Mono.empty())
+        whenever(calendarStatsRepository.save(any<CalendarStats>()))
+            .thenReturn(Mono.error(RuntimeException("stats save failed")))
+
+        StepVerifier.create(
+                deadletterTransactionsService.addActionToDeadletterTransactions(
+                    DeadletterTransactionsActionInputDto(transactionIds, actionValue),
+                    userId,
+                )
+            )
+            .expectErrorMatches { it is RuntimeException && it.message == "stats save failed" }
+            .verify()
+    }
+
+    @Test
+    fun `addActionToDeadletterTransactions should save actions without updating stats when creationDate is missing`() {
+        val transactionIds = listOf("testId1", "testId2")
+        val userId = "userIdTest"
+        val actionValueType = ActionType("test", ActionType.Type.NOT_FINAL)
+        val actionValue = "test"
+        actionConfig.types = listOf(actionValueType)
+
+        whenever(ecommerceHelpdeskServiceV1.searchTransactions(any())).thenAnswer {
+            Mono.just(
+                SearchTransactionResponseDto().apply {
+                    transactions = buildList {
+                        add(
+                            TransactionResultDto().apply {
+                                transactionInfo = TransactionInfoDto().apply {
+                                    creationDate = null
+                                }
+                            }
+                        )
+                    }
+                }
+            )
+        }
+        whenever(deadletterTransactionActionRepository.save(any())).thenAnswer {
+            Mono.just(it.getArgument<Action>(0))
+        }
+        whenever(
+                deadletterTransactionActionRepository.findFirstByTransactionIdOrderByTimestampDesc(
+                    any<String>()
+                )
+            )
+            .thenReturn(Mono.empty())
+
+        val resultMono =
+            deadletterTransactionsService.addActionToDeadletterTransactions(
+                DeadletterTransactionsActionInputDto(transactionIds, actionValue),
+                userId,
+            )
+
+        StepVerifier.create(resultMono)
+            .expectNextMatches { it.size == 2 }
+            .verifyComplete()
+
+        verify(deadletterTransactionActionRepository, times(2)).save(any())
+        verify(calendarStatsRepository, never()).findByDate(any<LocalDate>())
+        verify(calendarStatsRepository, never()).save(any<CalendarStats>())
     }
 
     @Test
