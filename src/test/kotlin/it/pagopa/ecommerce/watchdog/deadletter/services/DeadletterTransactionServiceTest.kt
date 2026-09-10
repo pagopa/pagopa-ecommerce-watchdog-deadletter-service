@@ -1821,6 +1821,15 @@ class DeadletterTransactionServiceTest {
     }
 
     @Test
+    fun `transition should be idempotent when action does not change`() {
+        val stats = CalendarStats("2026-09-10", 1, 0, null, 1)
+
+        val updated = stats.transition(ActionType.Type.FINAL, ActionType.Type.FINAL)
+
+        assertEquals(stats, updated)
+    }
+
+    @Test
     fun `updateStats should update daily stats based on transactions passed when previous action exists`() {
 
         val mockStats = CalendarStats(LocalDate.now().toString(), 1, 2, 3, 1)
