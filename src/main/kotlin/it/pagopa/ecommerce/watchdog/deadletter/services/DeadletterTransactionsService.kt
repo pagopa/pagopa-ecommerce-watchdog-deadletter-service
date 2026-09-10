@@ -476,16 +476,18 @@ class DeadletterTransactionsService(
                             )
                             .cache()
 
-                    t?.transactionInfo?.creationDate?.toLocalDate()?.let { date ->
+                    val creationDate = t?.transactionInfo?.creationDate?.toLocalDate()
+                    if (creationDate == null) {
+                        newAction
+                    } else {
                         updateStats(
                                 transactionId,
-                                date,
+                                creationDate,
                                 previousAction.map { it.action }.singleOptional(),
                                 newAction.map { it.action },
                             )
-                            .subscribe()
+                            .then(newAction)
                     }
-                    newAction
                 }
                 .switchIfEmpty(Mono.error(InvalidTransactionId()))
     }
@@ -502,7 +504,7 @@ class DeadletterTransactionsService(
                 .flatMap { tId ->
                     ecommerceHelpdeskServiceV1
                         .searchTransactions(tId)
-                        .map { tId to it.transactions.firstOrNull() }
+                        .map { tId to it?.transactions?.firstOrNull() }
                         .switchIfEmpty(Mono.error(InvalidTransactionId()))
                 }
                 .flatMap { (tId, transaction) ->
@@ -520,16 +522,18 @@ class DeadletterTransactionsService(
                             )
                         )
 
-                    transaction?.transactionInfo?.creationDate?.toLocalDate()?.let { date ->
+                    val creationDate = transaction?.transactionInfo?.creationDate?.toLocalDate()
+                    if (creationDate == null) {
+                        newAction
+                    } else {
                         updateStats(
                                 tId,
-                                date,
+                                creationDate,
                                 previousAction.map { it.action }.singleOptional(),
                                 newAction.map { it.action },
                             )
-                            .subscribe()
+                            .then(newAction)
                     }
-                    newAction
                 }
                 .collectList()
     }
