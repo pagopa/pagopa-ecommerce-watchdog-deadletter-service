@@ -37,6 +37,10 @@ data class CalendarStats(
     }
 
     fun transition(old: ActionType.Type?, new: ActionType.Type): CalendarStats {
+        if (old == new) {
+            return this
+        }
+
         var finalized = this.finalized
         var notFinalized = this.notFinalized
         var notAnalyzed = this.notAnalyzed
@@ -51,13 +55,18 @@ data class CalendarStats(
                 finalized -= 1
             }
             null to ActionType.Type.FINAL -> {
-                notAnalyzed = notAnalyzed?.minus(1)
+                if (notAnalyzed != null) {
+                    notAnalyzed -= 1
+                }
                 finalized += 1
             }
             null to ActionType.Type.NOT_FINAL -> {
-                notAnalyzed = notAnalyzed?.minus(1)
+                if (notAnalyzed != null) {
+                    notAnalyzed -= 1
+                }
                 notFinalized += 1
             }
+            else -> {}
         }
         return CalendarStats(this.date, finalized, notFinalized, notAnalyzed, this.version)
     }
