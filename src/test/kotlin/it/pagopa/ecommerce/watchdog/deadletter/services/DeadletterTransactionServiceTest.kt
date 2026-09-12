@@ -677,6 +677,34 @@ class DeadletterTransactionServiceTest {
     }
 
     @Test
+    fun `transition should never decrement counters below zero`() {
+        val stats = CalendarStats(LocalDate.now().toString(), 0, 0, 0, 1)
+
+        val finalizedFromNullStats = stats.transition(null, ActionType.Type.FINAL)
+        val notFinalizedFromNullStats = stats.transition(null, ActionType.Type.NOT_FINAL)
+        val finalizedFromOldStats =
+            stats.transition(ActionType.Type.NOT_FINAL, ActionType.Type.FINAL)
+        val notFinalizedFromOldStats =
+            stats.transition(ActionType.Type.FINAL, ActionType.Type.NOT_FINAL)
+
+        assertEquals(0, finalizedFromNullStats.notAnalyzed)
+        assertEquals(0, notFinalizedFromNullStats.notAnalyzed)
+        assertEquals(0, finalizedFromOldStats.notFinalized)
+        assertEquals(0, notFinalizedFromOldStats.finalized)
+    }
+
+    @Test
+    fun `transition should normalize negative counters on idempotent update`() {
+        val stats = CalendarStats(LocalDate.now().toString(), -1, -2, -3, 1)
+
+        val normalized = stats.transition(ActionType.Type.FINAL, ActionType.Type.FINAL)
+
+        assertEquals(0, normalized.finalized)
+        assertEquals(0, normalized.notFinalized)
+        assertEquals(0, normalized.notAnalyzed)
+    }
+
+    @Test
     fun `addActionToDeadletterTransaction should save a deadletterTransactionAction`() {
         val transactionId = "testId"
         val userId = "userIdTest"

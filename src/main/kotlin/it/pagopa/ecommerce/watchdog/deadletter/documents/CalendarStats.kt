@@ -36,38 +36,53 @@ data class CalendarStats(
         }
     }
 
-    fun transition(old: ActionType.Type?, new: ActionType.Type): CalendarStats {
-        if (old == new) {
-            return this
+    fun transition(
+        previousActionType: ActionType.Type?,
+        nextActionType: ActionType.Type,
+    ): CalendarStats {
+        if (previousActionType == nextActionType) {
+            return CalendarStats(
+                this.date,
+                this.finalized.coerceAtLeast(0),
+                this.notFinalized.coerceAtLeast(0),
+                this.notAnalyzed?.coerceAtLeast(0),
+                this.version,
+            )
         }
 
         var finalized = this.finalized
         var notFinalized = this.notFinalized
         var notAnalyzed = this.notAnalyzed
 
-        when (old to new) {
+        when (previousActionType to nextActionType) {
             ActionType.Type.NOT_FINAL to ActionType.Type.FINAL -> {
-                notFinalized -= 1
+                notFinalized = (notFinalized - 1).coerceAtLeast(0)
                 finalized += 1
             }
             ActionType.Type.FINAL to ActionType.Type.NOT_FINAL -> {
                 notFinalized += 1
-                finalized -= 1
+                finalized = (finalized - 1).coerceAtLeast(0)
             }
             null to ActionType.Type.FINAL -> {
                 if (notAnalyzed != null) {
-                    notAnalyzed -= 1
+                    notAnalyzed = (notAnalyzed - 1).coerceAtLeast(0)
                 }
                 finalized += 1
             }
             null to ActionType.Type.NOT_FINAL -> {
                 if (notAnalyzed != null) {
-                    notAnalyzed -= 1
+                    notAnalyzed = (notAnalyzed - 1).coerceAtLeast(0)
                 }
                 notFinalized += 1
             }
             else -> {}
         }
-        return CalendarStats(this.date, finalized, notFinalized, notAnalyzed, this.version)
+        return CalendarStats(
+            this.date,
+            finalized.coerceAtLeast(0),
+            notFinalized.coerceAtLeast(0),
+            notAnalyzed?.coerceAtLeast(0),
+            this.version,
+        )
     }
 }
