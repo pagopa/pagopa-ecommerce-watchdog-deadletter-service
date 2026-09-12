@@ -47,27 +47,33 @@ data class CalendarStats(
 
         when (old to new) {
             ActionType.Type.NOT_FINAL to ActionType.Type.FINAL -> {
-                notFinalized -= 1
+                notFinalized = (notFinalized - 1).coerceAtLeast(0)
                 finalized += 1
             }
             ActionType.Type.FINAL to ActionType.Type.NOT_FINAL -> {
                 notFinalized += 1
-                finalized -= 1
+                finalized = (finalized - 1).coerceAtLeast(0)
             }
             null to ActionType.Type.FINAL -> {
                 if (notAnalyzed != null) {
-                    notAnalyzed -= 1
+                    notAnalyzed = (notAnalyzed - 1).coerceAtLeast(0)
                 }
                 finalized += 1
             }
             null to ActionType.Type.NOT_FINAL -> {
                 if (notAnalyzed != null) {
-                    notAnalyzed -= 1
+                    notAnalyzed = (notAnalyzed - 1).coerceAtLeast(0)
                 }
                 notFinalized += 1
             }
             else -> {}
         }
-        return CalendarStats(this.date, finalized, notFinalized, notAnalyzed, this.version)
+        return CalendarStats(
+            this.date,
+            finalized.coerceAtLeast(0),
+            notFinalized.coerceAtLeast(0),
+            notAnalyzed?.coerceAtLeast(0),
+            this.version,
+        )
     }
 }
