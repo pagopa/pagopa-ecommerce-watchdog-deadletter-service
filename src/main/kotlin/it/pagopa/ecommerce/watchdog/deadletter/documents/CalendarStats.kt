@@ -38,7 +38,13 @@ data class CalendarStats(
 
     fun transition(old: ActionType.Type?, new: ActionType.Type): CalendarStats {
         if (old == new) {
-            return this
+            return CalendarStats(
+                this.date,
+                this.finalized.coerceAtLeast(0),
+                this.notFinalized.coerceAtLeast(0),
+                this.notAnalyzed?.coerceAtLeast(0),
+                this.version,
+            )
         }
 
         var finalized = this.finalized

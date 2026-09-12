@@ -692,6 +692,17 @@ class DeadletterTransactionServiceTest {
     }
 
     @Test
+    fun `transition should normalize negative counters on idempotent update`() {
+        val stats = CalendarStats(LocalDate.now().toString(), -1, -2, -3, 1)
+
+        val normalized = stats.transition(ActionType.Type.FINAL, ActionType.Type.FINAL)
+
+        assertEquals(0, normalized.finalized)
+        assertEquals(0, normalized.notFinalized)
+        assertEquals(0, normalized.notAnalyzed)
+    }
+
+    @Test
     fun `addActionToDeadletterTransaction should save a deadletterTransactionAction`() {
         val transactionId = "testId"
         val userId = "userIdTest"
