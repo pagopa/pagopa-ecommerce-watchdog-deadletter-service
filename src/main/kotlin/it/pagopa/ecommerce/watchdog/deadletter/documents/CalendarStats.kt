@@ -36,8 +36,8 @@ data class CalendarStats(
         }
     }
 
-    fun transition(old: ActionType.Type?, new: ActionType.Type): CalendarStats {
-        if (old == new) {
+    fun transition(previousActionType: ActionType.Type?, nextActionType: ActionType.Type): CalendarStats {
+        if (previousActionType == nextActionType) {
             return CalendarStats(
                 this.date,
                 this.finalized.coerceAtLeast(0),
@@ -51,7 +51,7 @@ data class CalendarStats(
         var notFinalized = this.notFinalized
         var notAnalyzed = this.notAnalyzed
 
-        when (old to new) {
+        when (previousActionType to nextActionType) {
             ActionType.Type.NOT_FINAL to ActionType.Type.FINAL -> {
                 notFinalized = (notFinalized - 1).coerceAtLeast(0)
                 finalized += 1
