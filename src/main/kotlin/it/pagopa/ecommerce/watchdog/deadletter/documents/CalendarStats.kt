@@ -36,7 +36,10 @@ data class CalendarStats(
         }
     }
 
-    fun transition(previousActionType: ActionType.Type?, nextActionType: ActionType.Type): CalendarStats {
+    fun transition(
+        previousActionType: ActionType.Type?,
+        nextActionType: ActionType.Type,
+    ): CalendarStats {
         if (previousActionType == nextActionType) {
             return CalendarStats(
                 this.date,

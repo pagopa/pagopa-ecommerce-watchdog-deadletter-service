@@ -682,8 +682,10 @@ class DeadletterTransactionServiceTest {
 
         val finalizedFromNullStats = stats.transition(null, ActionType.Type.FINAL)
         val notFinalizedFromNullStats = stats.transition(null, ActionType.Type.NOT_FINAL)
-        val finalizedFromOldStats = stats.transition(ActionType.Type.NOT_FINAL, ActionType.Type.FINAL)
-        val notFinalizedFromOldStats = stats.transition(ActionType.Type.FINAL, ActionType.Type.NOT_FINAL)
+        val finalizedFromOldStats =
+            stats.transition(ActionType.Type.NOT_FINAL, ActionType.Type.FINAL)
+        val notFinalizedFromOldStats =
+            stats.transition(ActionType.Type.FINAL, ActionType.Type.NOT_FINAL)
 
         assertEquals(0, finalizedFromNullStats.notAnalyzed)
         assertEquals(0, notFinalizedFromNullStats.notAnalyzed)
