@@ -14,6 +14,7 @@ import it.pagopa.generated.ecommerce.watchdog.deadletter.v1.model.*
 import java.time.Instant
 import java.time.LocalDate
 import java.time.OffsetDateTime
+import java.util.stream.IntStream
 import org.junit.jupiter.api.Test
 import org.mockito.BDDMockito.given
 import org.mockito.kotlin.any
@@ -609,6 +610,41 @@ class WatchdogDeadletterControllerTest {
             .expectStatus()
             .isOk
             .expectBody()
+    }
+
+    @Test
+    fun `get all the notes of exactly 100 transactionIds`() {
+        val transactionIds = IntStream.range(0, 100).mapToObj { "testId$it" }.toList()
+        val notesRequestDto = NotesRequestDto(transactionIds)
+
+        given(authService.getAuthenticatedUserId()).willReturn(Mono.just("userId"))
+        given(deadletterTransactionsService.getAllNotesByTransactionIdList(transactionIds))
+            .willReturn(Flux.empty())
+
+        webClient
+            .post()
+            .uri("/deadletter-transactions/notes")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(notesRequestDto)
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody()
+    }
+
+    @Test
+    fun `get all the notes of more than 100 transactionIds should return 400 BAD REQUEST`() {
+        val notesRequestDto =
+            NotesRequestDto(IntStream.range(0, 101).mapToObj { "testId$it" }.toList())
+
+        webClient
+            .post()
+            .uri("/deadletter-transactions/notes")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(notesRequestDto)
+            .exchange()
+            .expectStatus()
+            .isBadRequest
     }
 
     @Test
