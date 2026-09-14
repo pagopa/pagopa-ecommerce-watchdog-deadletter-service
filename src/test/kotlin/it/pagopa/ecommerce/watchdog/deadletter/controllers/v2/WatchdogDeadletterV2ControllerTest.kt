@@ -166,8 +166,7 @@ class WatchdogDeadletterV2ControllerTest {
 
     @Test
     fun `list deadletter transactions actions should return '200 OKAY' with exactly 100 deadletter transaction ids`() {
-        val transactionIds =
-            IntStream.range(0, 100).mapToObj { "transaction-id-$it" }.toList()
+        val transactionIds = IntStream.range(0, 100).mapToObj { "transaction-id-$it" }.toList()
         val body = DeadletterTransactionActionsRequestDto(transactionIds)
 
         given(deadletterTransactionsService.listActionsForDeadletterTransactions(body))
