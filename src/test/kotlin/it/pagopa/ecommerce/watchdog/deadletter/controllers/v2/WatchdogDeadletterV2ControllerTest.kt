@@ -10,6 +10,7 @@ import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.ListDeadletter
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.PageInfoDto
 import java.time.LocalDate
 import java.util.ArrayList
+import java.util.stream.IntStream
 import org.junit.jupiter.api.Test
 import org.mockito.BDDMockito.given
 import org.springframework.beans.factory.annotation.Autowired
@@ -161,6 +162,43 @@ class WatchdogDeadletterV2ControllerTest {
             .expectStatus()
             .isOk
             .expectBody()
+    }
+
+    @Test
+    fun `list deadletter transactions actions should return '200 OKAY' with exactly 100 deadletter transaction ids`() {
+        val transactionIds =
+            IntStream.range(0, 100).mapToObj { "transaction-id-$it" }.toList()
+        val body = DeadletterTransactionActionsRequestDto(transactionIds)
+
+        given(deadletterTransactionsService.listActionsForDeadletterTransactions(body))
+            .willReturn(Flux.just(listOf<DeadletterTransactionActionDto>()))
+
+        webClient
+            .post()
+            .uri("/v2/deadletter-transactions/actions")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(body)
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody()
+    }
+
+    @Test
+    fun `list deadletter transactions actions should return '400 BAD REQUEST' with more than 100 deadletter transaction ids`() {
+        val body =
+            DeadletterTransactionActionsRequestDto(
+                IntStream.range(0, 101).mapToObj { "transaction-id-$it" }.toList()
+            )
+
+        webClient
+            .post()
+            .uri("/v2/deadletter-transactions/actions")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(body)
+            .exchange()
+            .expectStatus()
+            .isBadRequest
     }
 
     @Test
