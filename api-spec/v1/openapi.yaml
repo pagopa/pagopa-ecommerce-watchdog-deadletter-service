@@ -738,7 +738,7 @@ components:
         transactionIds:
           type: array
           minItems: 1
-          maxItems: 10
+          maxItems: 100
           items:
             type: string
       required:
