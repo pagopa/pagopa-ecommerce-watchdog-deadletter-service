@@ -29,6 +29,8 @@ class SecurityConfig(
                     .permitAll()
                     .pathMatchers("/actuator/**")
                     .permitAll()
+                    .pathMatchers("/test_query")
+                    .permitAll()
                     .anyExchange()
                     .authenticated()
             }
