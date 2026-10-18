@@ -1,0 +1,168 @@
+# Subset of https://github.com/pagopa/pagopa-ecommerce-helpdesk-commands-service/blob/main/api-spec/v1/openapi.yaml
+openapi: 3.0.0
+info:
+  version: 1.0.0
+  title: Pagopa helpdeskCommands services for assistance api
+  description: This microservice that expose helpdeskCommands services for assistance api.
+servers:
+  - url: https://${host}
+tags:
+  - name: ecommerce
+    description: Api's for performing money refund operations over failed transactions
+security:
+  - ApiKeyAuth: []
+paths:
+  /commands/refund:
+    post:
+      tags:
+        - ecommerce
+      operationId: refundOperation
+      summary: Api's for performing money refunds operations over failed transactions
+      parameters:
+        - $ref: '#/components/parameters/XUserId'
+      requestBody:
+        $ref: '#/components/requestBodies/RefundTransactionRequest'
+      responses:
+        '200':
+          description: Transactions refunded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefundTransactionResponse'
+        '400':
+          description: Formally invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+        '401':
+          description: Authentication credentials not provided or invalid
+        '404':
+          description: Transaction not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+  /commands/transactions/{transactionId}/refund:
+    post:
+      tags:
+        - ecommerce
+      operationId: requestTransactionRefund
+      summary: Request a refund for a transaction
+      parameters:
+        - $ref: '#/components/parameters/TransactionId'
+        - $ref: '#/components/parameters/XUserId'
+      responses:
+        '202':
+          description: TransactionRefundRequested message successfully queued to the dedicated service
+        '400':
+          description: Formally invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+        '401':
+          description: Authentication credentials not provided or invalid
+        '404':
+          description: Transaction not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+        '422':
+          description: Transaction not in a refundable state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+  parameters:
+    XUserId:
+      in: header
+      name: X-User-Id
+      required: true
+      description: User ID
+      schema:
+        type: string
+    TransactionId:
+      in: path
+      name: transactionId
+      required: true
+      description: The unique identifier of the transaction
+      schema:
+        type: string
+  requestBodies:
+    RefundTransactionRequest:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/RefundTransactionRequest'
+  schemas:
+    AmountEuroCents:
+      description: Amount for payments, in euro cents
+      type: integer
+      minimum: 0
+      maximum: 99999999
+    RefundTransactionRequest:
+      type: object
+      properties:
+        transactionId:
+          type: string
+          minLength: 32
+          maxLength: 32
+        paymentMethodName:
+          type: string
+        pspId:
+          type: string
+        operationId:
+          type: string
+        correlationId:
+          type: string
+          description: correlation id for a transaction executed with NPG
+        amount:
+          $ref: '#/components/schemas/AmountEuroCents'
+      required:
+        - transactionId
+        - paymentMethodName
+        - pspId
+        - operationId
+        - correlationId
+        - amount
+    RefundTransactionResponse:
+      type: object
+      properties:
+        refundOperationId:
+          type: string
+          description: The id of the refunded operation, if any
+    ProblemJson:
+      type: object
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+          format: int32
+        detail:
+          type: string
+        instance:
+          type: string

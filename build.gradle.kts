@@ -233,10 +233,48 @@ tasks.register<org.openapitools.generator.gradle.plugin.tasks.GenerateTask>(
   )
 }
 
+tasks.register<org.openapitools.generator.gradle.plugin.tasks.GenerateTask>(
+  "ecommerce-helpdesk-commands-service"
+) {
+  description = "Generates the ecommerce-helpdesk-commands classes for this project."
+  group = "openapi-generation"
+  generatorName.set("java")
+  inputSpec.set("$rootDir/api-spec/ecommerce-helpdesk-commands-service/openapi.yaml")
+  outputDir.set(layout.buildDirectory.get().dir("generated").asFile.toString())
+  apiPackage.set("it.pagopa.generated.ecommerce.helpdesk.commands.api")
+  modelPackage.set("it.pagopa.generated.ecommerce.helpdesk.commands.model")
+  generateApiDocumentation.set(false)
+  generateApiTests.set(false)
+  generateModelTests.set(false)
+  library.set("webclient")
+  modelNameSuffix.set("Dto")
+  configOptions.set(
+    mapOf(
+      "swaggerAnnotations" to "false",
+      "openApiNullable" to "true",
+      "interfaceOnly" to "false",
+      "hideGenerationTimestamp" to "true",
+      "skipDefaultInterface" to "true",
+      "useSwaggerUI" to "false",
+      "reactive" to "true",
+      "useSpringBoot3" to "true",
+      "oas3" to "true",
+      "generateSupportingFiles" to "false",
+      "useJakartaEe" to "true",
+    )
+  )
+}
+
 tasks.register("generate") { dependsOn(tasks.matching { it.group == "openapi-generation" }) }
 
 tasks.withType<KotlinCompile> {
-  dependsOn("watchdog-v1", "ecommerce-helpdesk-service", "nodo-technical-support", "watchdog-v2")
+  dependsOn(
+    "watchdog-v1",
+    "ecommerce-helpdesk-service",
+    "ecommerce-helpdesk-commands-service",
+    "nodo-technical-support",
+    "watchdog-v2",
+  )
   compilerOptions {
     jvmTarget.set(JvmTarget.JVM_21)
     freeCompilerArgs.add("-Xjvm-default=all")

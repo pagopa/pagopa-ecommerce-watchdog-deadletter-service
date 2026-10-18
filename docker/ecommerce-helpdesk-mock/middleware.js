@@ -1,5 +1,14 @@
 module.exports = function (req, res, next) {
   const db = req.app.db
+
+  // helpdesk-commands mock: queued refund and forced refund
+  if (req.method === 'POST' && /^\/commands\/transactions\/[^/]+\/refund$/.test(req.path)) {
+    return res.sendStatus(202);
+  }
+  if (req.method === 'POST' && req.path === '/commands/refund') {
+    return res.status(200).json({ refundOperationId: `R${Date.now()}` });
+  }
+
   if (req.method === 'POST') {
     // Converts POST to GET
     req.method = 'GET'
