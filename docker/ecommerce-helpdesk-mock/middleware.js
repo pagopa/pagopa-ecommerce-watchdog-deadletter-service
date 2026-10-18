@@ -2,10 +2,10 @@ module.exports = function (req, res, next) {
   const db = req.app.db
 
   // helpdesk-commands mock: queued refund and forced refund
-  if (req.method === 'POST' && /^\/commands\/transactions\/[^/]+\/refund$/.test(req.path)) {
+  if (req.method === 'POST' && /^(\/v1)?\/commands\/transactions\/[^/]+\/refund$/.test(req.path)) {
     return res.sendStatus(202);
   }
-  if (req.method === 'POST' && req.path === '/commands/refund') {
+  if (req.method === 'POST' && /^(\/v1)?\/commands\/refund$/.test(req.path)) {
     return res.status(200).json({ refundOperationId: `R${Date.now()}` });
   }
 
