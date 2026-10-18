@@ -1,0 +1,434 @@
+{
+  "info": {
+    "name": "Watchdog Deadletter - Local",
+    "description": "Collection per testare in locale pagopa-ecommerce-watchdog-deadletter-service (http://localhost:8080).\n\n1. Esegui `Auth > Login`: salva il JWT nella variabile `token`, usata come Bearer da tutte le altre richieste.\n2. Imposta `transactionId` (collection variables) con un id presente nei mock.\n3. `Transactions > Refund` calcola da solo l'OTP (TOTP) dal secret `totpSecret`.\n\nATTENZIONE: il login firma il JWT con una chiave presa da Azure Key Vault. In locale, senza Key Vault raggiungibile, `Login` risponde 500 (Connection refused su localhost:443).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      { "key": "token", "value": "{{token}}", "type": "string" }
+    ]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "username", "value": "test" },
+    { "key": "password", "value": "test" },
+    { "key": "token", "value": "" },
+    { "key": "transactionId", "value": "00000000000000000000000000000001" },
+    { "key": "secondTransactionId", "value": "00000000000000000000000000000002" },
+    { "key": "noteId", "value": "" },
+    { "key": "actionValue", "value": "In attesa" },
+    { "key": "date", "value": "2026-10-17" },
+    { "key": "fromDate", "value": "2026-10-01" },
+    { "key": "toDate", "value": "2026-10-17" },
+    { "key": "year", "value": "2026" },
+    { "key": "month", "value": "10" },
+    { "key": "totpSecret", "value": "JBSWY3DPEHPK3PXP" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Actuator health",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/actuator/health"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Servizio UP', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().status).to.eql('UP');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/authenticate"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login OK (200)', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "if (pm.response.code === 200) {",
+                  "  // urlRedirect ha la forma https://.../#token=<JWT>",
+                  "  const url = pm.response.json().urlRedirect || '';",
+                  "  const match = url.match(/[#&?]token=([^&]+)/);",
+                  "  pm.test('Token JWT presente in urlRedirect', function () {",
+                  "    pm.expect(match, 'token non trovato in urlRedirect: ' + url).to.not.be.null;",
+                  "  });",
+                  "  if (match) {",
+                  "    pm.collectionVariables.set('token', decodeURIComponent(match[1]));",
+                  "    console.log('Token salvato nella variabile token');",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Action types",
+      "item": [
+        {
+          "name": "List action types",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/actions" },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 e lista di azioni', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json()).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Deadletter v1",
+      "item": [
+        {
+          "name": "List deadletter transactions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/deadletter-transactions?date={{date}}&pageNumber=0&pageSize=10"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', function () { pm.response.to.have.status(200); });",
+                  "const body = pm.response.json();",
+                  "if (body.deadletterTransactions && body.deadletterTransactions.length > 0) {",
+                  "  pm.collectionVariables.set('transactionId', body.deadletterTransactions[0].transactionId);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get stats (month)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/deadletter-transactions/stats?year={{year}}&month={{month}}"
+          }
+        },
+        {
+          "name": "Update stats (date range)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"from\": \"{{fromDate}}\",\n  \"to\": \"{{toDate}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/deadletter-transactions/stats"
+          }
+        },
+        {
+          "name": "List actions of a transaction",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/deadletter-transactions/{{transactionId}}/actions"
+          }
+        },
+        {
+          "name": "Add action to a transaction",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"value\": \"{{actionValue}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/deadletter-transactions/{{transactionId}}/actions"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 azione creata', function () { pm.response.to.have.status(201); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Add action (bulk)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transactionIds\": [\"{{transactionId}}\", \"{{secondTransactionId}}\"],\n  \"value\": \"{{actionValue}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/deadletter-transactions/actions/bulk"
+          }
+        },
+        {
+          "name": "Add note",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"note\": \"Nota di test da Postman\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/deadletter-transactions/{{transactionId}}/notes"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 nota creata', function () { pm.response.to.have.status(201); });",
+                  "if (pm.response.code === 201) {",
+                  "  const id = pm.response.json().id;",
+                  "  if (id) { pm.collectionVariables.set('noteId', id); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update note",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"note\": \"Nota aggiornata da Postman\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/deadletter-transactions/{{transactionId}}/notes/{{noteId}}"
+          }
+        },
+        {
+          "name": "Delete note",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/deadletter-transactions/{{transactionId}}/notes/{{noteId}}"
+          }
+        },
+        {
+          "name": "Add note (bulk)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transactionIds\": [\"{{transactionId}}\", \"{{secondTransactionId}}\"],\n  \"note\": \"Nota bulk da Postman\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/deadletter-transactions/notes/bulk"
+          }
+        },
+        {
+          "name": "Get notes by transaction ids",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transactionIds\": [\"{{transactionId}}\", \"{{secondTransactionId}}\"]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/deadletter-transactions/notes"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Deadletter v2",
+      "item": [
+        {
+          "name": "List deadletter transactions (date range)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/v2/deadletter-transactions?fromDate={{fromDate}}&toDate={{toDate}}&pageNumber=0&pageSize=10"
+          }
+        },
+        {
+          "name": "List actions for transaction ids",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transactionIds\": [\"{{transactionId}}\", \"{{secondTransactionId}}\"]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/v2/deadletter-transactions/actions"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Transactions v1",
+      "item": [
+        {
+          "name": "Get transaction",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/v1/transactions/{{transactionId}}"
+          }
+        },
+        {
+          "name": "Get transaction status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/v1/transactions/{{transactionId}}/status"
+          }
+        },
+        {
+          "name": "Refund (queued, OTP)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"otpCode\": \"{{otpCode}}\",\n  \"force\": false\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/v1/transactions/{{transactionId}}/refund",
+            "description": "Atteso 201. L'OTP viene calcolato nel pre-request dal secret `totpSecret`. Ogni codice e' usabile una sola volta: tra due rimborsi attendi il cambio di finestra (30s)."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// TOTP RFC 6238: HMAC-SHA1, 6 cifre, step 30s (come utils/Totp.kt)",
+                  "function base32ToHex(b32) {",
+                  "  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';",
+                  "  let bits = '';",
+                  "  b32.replace(/=+$/, '').replace(/\\s/g, '').toUpperCase().split('').forEach(function (c) {",
+                  "    bits += alphabet.indexOf(c).toString(2).padStart(5, '0');",
+                  "  });",
+                  "  let hex = '';",
+                  "  for (let i = 0; i + 8 <= bits.length; i += 8) {",
+                  "    hex += parseInt(bits.substr(i, 8), 2).toString(16).padStart(2, '0');",
+                  "  }",
+                  "  return hex;",
+                  "}",
+                  "const step = Math.floor(Date.now() / 1000 / 30);",
+                  "const counterHex = step.toString(16).padStart(16, '0');",
+                  "const key = CryptoJS.enc.Hex.parse(base32ToHex(pm.collectionVariables.get('totpSecret')));",
+                  "const hmac = CryptoJS.HmacSHA1(CryptoJS.enc.Hex.parse(counterHex), key).toString(CryptoJS.enc.Hex);",
+                  "const offset = parseInt(hmac.substr(hmac.length - 1), 16);",
+                  "const binary = parseInt(hmac.substr(offset * 2, 8), 16) & 0x7fffffff;",
+                  "const otp = (binary % 1000000).toString().padStart(6, '0');",
+                  "pm.collectionVariables.set('otpCode', otp);",
+                  "console.log('OTP calcolato: ' + otp + ' (step ' + step + ')');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Refund (forced, OTP)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"otpCode\": \"{{otpCode}}\",\n  \"force\": true\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/v1/transactions/{{transactionId}}/refund",
+            "description": "Atteso 200 (rimborso sincrono, solo transazioni NPG) o 502 se il gateway fallisce. Stesso calcolo OTP della richiesta precedente."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function base32ToHex(b32) {",
+                  "  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';",
+                  "  let bits = '';",
+                  "  b32.replace(/=+$/, '').replace(/\\s/g, '').toUpperCase().split('').forEach(function (c) {",
+                  "    bits += alphabet.indexOf(c).toString(2).padStart(5, '0');",
+                  "  });",
+                  "  let hex = '';",
+                  "  for (let i = 0; i + 8 <= bits.length; i += 8) {",
+                  "    hex += parseInt(bits.substr(i, 8), 2).toString(16).padStart(2, '0');",
+                  "  }",
+                  "  return hex;",
+                  "}",
+                  "const step = Math.floor(Date.now() / 1000 / 30);",
+                  "const counterHex = step.toString(16).padStart(16, '0');",
+                  "const key = CryptoJS.enc.Hex.parse(base32ToHex(pm.collectionVariables.get('totpSecret')));",
+                  "const hmac = CryptoJS.HmacSHA1(CryptoJS.enc.Hex.parse(counterHex), key).toString(CryptoJS.enc.Hex);",
+                  "const offset = parseInt(hmac.substr(hmac.length - 1), 16);",
+                  "const binary = parseInt(hmac.substr(offset * 2, 8), 16) & 0x7fffffff;",
+                  "const otp = (binary % 1000000).toString().padStart(6, '0');",
+                  "pm.collectionVariables.set('otpCode', otp);",
+                  "console.log('OTP calcolato: ' + otp + ' (step ' + step + ')');"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+
