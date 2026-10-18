@@ -10,4 +10,5 @@ data class Operator(
     val name: String,
     val surname: String,
     val email: String,
+    val lastTotpTimeStep: Long? = null,
 )
