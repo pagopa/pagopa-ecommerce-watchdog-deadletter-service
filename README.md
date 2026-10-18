@@ -275,6 +275,40 @@ To hash a new password to be added on the database, install the [Spring Boot CLI
     spring encodepassword PASSWORD_TO_BE_HASHED
 ```
 
+## Local development without Azure Key Vault
+
+The JWT signing key is normally read from Azure Key Vault (a Base64 PKCS12 keystore, EC P-256).
+Locally, Key Vault is not reachable and `POST /authenticate` fails with `Connection refused ...:443`.
+To avoid it, point the service to a local PKCS12 keystore:
+
+1. Generate the keystore (**local use only**, never commit it; `docker/config/jwt/*.p12` is git-ignored):
+   ```shell
+   mkdir -p docker/config/jwt
+   keytool -genkeypair -alias watchdog-local -keyalg EC -groupname secp256r1 \
+     -sigalg SHA256withECDSA -storetype PKCS12 \
+     -keystore docker/config/jwt/local-jwt.p12 \
+     -storepass testPass -keypass testPass \
+     -dname "CN=watchdog-local-dev" -validity 3650
+   ```
+2. Set in `.env` (the password must match the one used to create the keystore):
+   ```
+   AUTH_JWT_SECRET_KEY_PASSWORD=testPass
+   AUTH_JWT_LOCAL_KEYSTORE_PATH=/config/jwt/local-jwt.p12
+   ```
+   With `docker compose` the folder `./docker/config/jwt` is already mounted read-only on `/config/jwt`.
+   When running outside Docker use the host path of the keystore instead. `AUTH_AZURE_KV_ENDPOINT` can stay a dummy value.
+3. Start the stack (`docker compose up --build -d`): the logs will show the warning
+   `USING LOCAL JWT KEYSTORE ... INSTEAD OF AZURE KEY VAULT`.
+4. Log in with the seeded operator (`test` / `test`):
+   ```shell
+   curl -s -X POST http://localhost:8080/authenticate \
+     -H 'Content-Type: application/json' \
+     -d '{"username":"test","password":"test"}'
+   ```
+   The JWT is in the `urlRedirect` field after `#token=`. A ready-to-use Postman collection is in `postman/`.
+
+When `AUTH_JWT_LOCAL_KEYSTORE_PATH` is empty (default) Key Vault is used, so never set it in deployed environments.
+
 ## Contributors 👥
 
 Made with ❤️ by PagoPA S.p.A.
