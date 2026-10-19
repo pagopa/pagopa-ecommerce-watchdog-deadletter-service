@@ -15,14 +15,15 @@ class StructuredLoggingTest {
     private val logger = LoggerFactory.getLogger("structured-logging-test") as Logger
     private val appender =
         object : ListAppender<ILoggingEvent>() {
-            override fun append(eventObject: ILoggingEvent) {
-                eventObject.prepareForDeferredProcessing()
-                super.append(eventObject)
+                override fun append(eventObject: ILoggingEvent) {
+                    eventObject.prepareForDeferredProcessing()
+                    super.append(eventObject)
+                }
             }
-        }.also {
-            it.start()
-            logger.addAppender(it)
-        }
+            .also {
+                it.start()
+                logger.addAppender(it)
+            }
 
     @Test
     fun `emits fields as MDC entries only for the log call`() {
