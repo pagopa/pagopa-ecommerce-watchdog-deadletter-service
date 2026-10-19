@@ -22,6 +22,10 @@ import it.pagopa.generated.ecommerce.watchdog.transactions.v1.model.TransactionE
 import it.pagopa.generated.ecommerce.watchdog.transactions.v1.model.TransactionRefundRequestDto
 import it.pagopa.generated.ecommerce.watchdog.transactions.v1.model.TransactionStatusResponseDto
 import it.pagopa.generated.nodo.support.model.PositionPaymentSnapshotDtoDto
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
 import java.util.Optional
 import org.slf4j.LoggerFactory
 import org.slf4j.event.Level
@@ -174,23 +178,15 @@ class TransactionCheckService(
                         ?.operations
                         ?.firstOrNull { it.operationType == OperationTypeDto.AUTHORIZATION }
                         ?.operationId ?: info.authorizationOperationId
-                val request =
-                    RefundTransactionRequestDto()
-                        .transactionId(transactionId)
-                        .paymentMethodName(info.paymentMethodName)
-                        .pspId(transaction.pspInfo.pspId)
-                        .operationId(operationId)
-                        .correlationId(info.correlationId?.toString())
-                        .amount(info.grandTotal)
+                // Optional fields of the helpdesk payload: check the source values, not the request
+                val paymentMethodName = info.paymentMethodName
+                val pspId = transaction.pspInfo.pspId
+                val correlationId = info.correlationId?.toString()
+                val amount = info.grandTotal
                 if (
-                    listOf(
-                            request.paymentMethodName,
-                            request.pspId,
-                            request.operationId,
-                            request.correlationId,
-                            request.amount,
-                        )
-                        .any { it == null }
+                    listOf(paymentMethodName, pspId, operationId, correlationId, amount).any {
+                        it == null
+                    }
                 ) {
                     rejectForcedRefund(
                         transactionId,
@@ -198,7 +194,15 @@ class TransactionCheckService(
                         "Missing data to perform a forced refund for this transaction",
                     )
                 } else {
-                    Mono.just(request)
+                    Mono.just(
+                        RefundTransactionRequestDto()
+                            .transactionId(transactionId)
+                            .paymentMethodName(paymentMethodName)
+                            .pspId(pspId)
+                            .operationId(operationId)
+                            .correlationId(correlationId)
+                            .amount(amount)
+                    )
                 }
             }
         }
@@ -385,6 +389,22 @@ class TransactionCheckService(
             }
     }
 
+    /**
+     * Parses the operation time as an instant. The helpdesk contract allows ISO-8601 timestamps
+     * with any offset; timestamps without timezone (e.g. `2025-10-28 11:51:03.455`) are assumed to
+     * be UTC. Missing or unparsable values are considered the oldest.
+     */
+    private fun parseOperationTime(value: String?): Instant? =
+        if (value.isNullOrBlank()) {
+            null
+        } else {
+            runCatching { OffsetDateTime.parse(value).toInstant() }
+                .recoverCatching {
+                    LocalDateTime.parse(value.trim().replace(' ', 'T')).toInstant(ZoneOffset.UTC)
+                }
+                .getOrNull()
+        }
+
     private fun buildTransactionCheck(
         transactionId: String,
         transaction: TransactionResultDto,
@@ -395,11 +415,11 @@ class TransactionCheckService(
         val npgOperationResult =
             npgDetails
                 ?.operations
-                ?.maxByOrNull { it.operationTime.orEmpty() }
+                ?.maxByOrNull { parseOperationTime(it.operationTime) ?: Instant.MIN }
                 ?.operationResult
                 ?.value
 
-        transaction.userInfo?.notificationEmail?.let {
+        transaction.userInfo.notificationEmail?.let {
             transaction.userInfo.notificationEmail(obfuscateEmail(it))
         }
 

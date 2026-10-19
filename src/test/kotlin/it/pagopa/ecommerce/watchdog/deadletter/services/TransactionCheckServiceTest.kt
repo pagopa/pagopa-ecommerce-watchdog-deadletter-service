@@ -166,6 +166,61 @@ class TransactionCheckServiceTest {
     }
 
     @Test
+    fun `getTransaction and getTransactionStatus map a downstream 404 to not found`() {
+        whenever(helpdeskClient.searchTransactions(transactionId))
+            .thenReturn(Mono.error(downstreamError(HttpStatus.NOT_FOUND)))
+
+        StepVerifier.create(service.getTransaction(transactionId))
+            .expectError(InvalidTransactionId::class.java)
+            .verify()
+        StepVerifier.create(service.getTransactionStatus(transactionId))
+            .expectError(InvalidTransactionId::class.java)
+            .verify()
+    }
+
+    private fun givenNpgOperations(vararg operations: OperationDto) {
+        givenTransaction()
+        whenever(helpdeskClient.searchNpgOperations(transactionId))
+            .thenReturn(Mono.just(SearchNpgOperationsResponseDto().operations(operations.toList())))
+        whenever(nodoClient.paymentTokenPaymentTokenGet("token"))
+            .thenReturn(Mono.just(PositionPaymentSnapshotDtoDto().status("PAID")))
+    }
+
+    private fun operation(result: OperationResultDto, time: String?) =
+        OperationDto()
+            .operationId("op-${result.value}")
+            .operationType(OperationTypeDto.CAPTURE)
+            .operationResult(result)
+            .operationTime(time)
+
+    private fun expectGatewayStatus(expected: String) {
+        StepVerifier.create(service.getTransaction(transactionId))
+            .assertNext { assertEquals(expected, it.gatewayStatus) }
+            .verifyComplete()
+    }
+
+    @Test
+    fun `gateway status uses the latest operation comparing instants with different offsets`() {
+        // 10:00+02:00 is 08:00Z: older than 09:00Z even if it sorts after it as a string
+        givenNpgOperations(
+            operation(OperationResultDto.AUTHORIZED, "2025-07-02T10:00:00+02:00"),
+            operation(OperationResultDto.EXECUTED, "2025-07-02T09:00:00Z"),
+        )
+
+        expectGatewayStatus("EXECUTED")
+    }
+
+    @Test
+    fun `gateway status handles timezone-less and missing operation times`() {
+        givenNpgOperations(
+            operation(OperationResultDto.EXECUTED, "2025-07-02 09:30:00.000"),
+            operation(OperationResultDto.AUTHORIZED, null),
+        )
+
+        expectGatewayStatus("EXECUTED")
+    }
+
+    @Test
     fun `getTransactionStatus returns the eCommerce status`() {
         givenTransaction()
 
