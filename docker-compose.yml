@@ -8,6 +8,8 @@ services:
       - ./.env
     ports:
       - "8080:8080"
+    volumes:
+      - ./docker/config/jwt:/config/jwt:ro
     networks:
       - pagopa-ecommerce-watchdog-deadletter-service-net
     depends_on:

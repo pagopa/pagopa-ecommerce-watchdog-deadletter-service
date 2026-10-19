@@ -14,6 +14,7 @@ import it.pagopa.ecommerce.watchdog.deadletter.config.azure.AzureSecretConfigPro
 import it.pagopa.ecommerce.watchdog.deadletter.domain.jwt.PrivateKeyWithKid
 import it.pagopa.ecommerce.watchdog.deadletter.domain.jwt.PublicKeyWithKid
 import java.io.ByteArrayInputStream
+import java.io.FileInputStream
 import java.security.KeyStore
 import java.security.MessageDigest
 import java.security.PrivateKey
@@ -24,6 +25,7 @@ import java.security.interfaces.ECPublicKey
 import java.time.OffsetDateTime
 import java.util.Base64
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
@@ -33,6 +35,7 @@ class ReactiveAzureKVSecurityKeysService(
     private val secretClient: SecretAsyncClient,
     private val certClient: CertificateAsyncClient,
     private val azureSecretConfig: AzureSecretConfigProperties,
+    @Value("\${auth.jwt.local.keystore.path:}") private val localKeystorePath: String = "",
 ) {
     private val certFactory = CertificateFactory.getInstance("X.509")
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -70,6 +73,9 @@ class ReactiveAzureKVSecurityKeysService(
     }
 
     fun getKeyStore(): Mono<KeyStore> {
+        if (localKeystorePath.isNotBlank()) {
+            return loadLocalKeyStore()
+        }
         return this.getSecret().map {
             val keystore = KeyStore.getInstance("PKCS12")
             val decodedPfx = Base64.getDecoder().decode(it.value)
@@ -80,6 +86,24 @@ class ReactiveAzureKVSecurityKeysService(
             keystore
         }
     }
+
+    /**
+     * LOCAL DEVELOPMENT ONLY: loads the signing keystore (PKCS12, same password as the Key Vault
+     * one) from a file instead of Azure Key Vault. Active only when `auth.jwt.local.keystore.path`
+     * is set, which must never happen in deployed environments.
+     */
+    private fun loadLocalKeyStore(): Mono<KeyStore> =
+        Mono.fromCallable {
+            logger.warn(
+                "!!! USING LOCAL JWT KEYSTORE [{}] INSTEAD OF AZURE KEY VAULT: LOCAL DEVELOPMENT ONLY !!!",
+                localKeystorePath,
+            )
+            val keystore = KeyStore.getInstance("PKCS12")
+            FileInputStream(localKeystorePath).use {
+                keystore.load(it, azureSecretConfig.password.toCharArray())
+            }
+            keystore
+        }
 
     fun getPublicJwkFromKeyStore(): Mono<JWK> {
         return this.getKeyStore().map {
