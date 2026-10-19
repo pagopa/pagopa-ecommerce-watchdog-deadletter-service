@@ -6,17 +6,20 @@ import java.time.Instant
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
-/** TOTP (RFC 6238) with HMAC-SHA1, 6 digits and 30 seconds steps, as used by Authenticator apps. */
+/**
+ * TOTP (RFC 6238) with HMAC-SHA256, 6 digits and 30 seconds steps, as used by Authenticator apps.
+ */
 object Totp {
     const val STEP_SECONDS = 30L
     private const val DIGITS = 6
+    private const val HMAC_ALGORITHM = "HmacSHA256"
     private const val BASE32_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
 
     fun timeStep(instant: Instant): Long = instant.epochSecond / STEP_SECONDS
 
     fun generate(secret: ByteArray, timeStep: Long): String {
-        val mac = Mac.getInstance("HmacSHA1")
-        mac.init(SecretKeySpec(secret, "HmacSHA1"))
+        val mac = Mac.getInstance(HMAC_ALGORITHM)
+        mac.init(SecretKeySpec(secret, HMAC_ALGORITHM))
         val hash = mac.doFinal(ByteBuffer.allocate(8).putLong(timeStep).array())
         val offset = hash.last().toInt() and 0x0f
         val binary =

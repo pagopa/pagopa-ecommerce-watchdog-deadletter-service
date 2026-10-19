@@ -10,18 +10,18 @@ import org.junit.jupiter.params.provider.CsvSource
 
 class TotpTest {
 
-    // RFC 6238 Appendix B secret ("12345678901234567890") encoded in Base32
-    private val rfcSecret = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ"
+    // RFC 6238 Appendix B SHA256 secret ("12345678901234567890123456789012") encoded in Base32
+    private val rfcSecret = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZA===="
 
     @ParameterizedTest
     @CsvSource(
-        "59, 287082",
-        "1111111109, 081804",
-        "1111111111, 050471",
-        "1234567890, 005924",
-        "2000000000, 279037",
+        "59, 119246",
+        "1111111109, 084774",
+        "1111111111, 062674",
+        "1234567890, 819424",
+        "2000000000, 698825",
     )
-    fun `generates RFC 6238 SHA1 codes truncated to 6 digits`(
+    fun `generates RFC 6238 SHA256 codes truncated to 6 digits`(
         epochSeconds: Long,
         expected: String,
     ) {
