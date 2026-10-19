@@ -135,6 +135,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProblemJson'
+        '429':
+          description: Too many invalid OTP attempts, the operator is temporarily locked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
         '500':
           description: Internal server error.
           content:

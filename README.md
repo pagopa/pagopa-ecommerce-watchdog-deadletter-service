@@ -289,6 +289,9 @@ Operators' Base32 secrets are provided in the `AUTH_TOTP_SECRETS` env variable a
 On the cluster the value comes from the `watchdog-totp-secrets` Key Vault secret (helm `envSecret`), so changing it restarts the service.
 Each code can be used only once: the last accepted time step is stored in the `lastTotpTimeStep` field of the operator document.
 
+To prevent brute force, every attempt is counted atomically on the operator document (`totpFailedAttempts`) before verifying the code, so the limit also holds across replicas and concurrent requests.
+After `auth.totp.max-attempts` (default 5) consecutive failures the operator is locked until `totpLockedUntil` (`auth.totp.lock-duration-minutes`, default 15) and the refund API answers `429`. A successful code resets the counter.
+
 For local development, e.g. `AUTH_TOTP_SECRETS={"test":"JBSWY3DPEHPK3PXP"}`.
 
 ## Local development without Azure Key Vault
