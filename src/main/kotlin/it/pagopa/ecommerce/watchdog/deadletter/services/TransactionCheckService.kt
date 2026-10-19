@@ -305,6 +305,9 @@ class TransactionCheckService(
                 )
             }
             .mapNotNull<TransactionResultDto> { it.transactions.firstOrNull() }
+            .onErrorMap(WebClientResponseException::class.java) {
+                if (it.statusCode == HttpStatus.NOT_FOUND) InvalidTransactionId() else it
+            }
             .switchIfEmpty(Mono.error(InvalidTransactionId()))
 
     private fun fetchNpgDetails(
