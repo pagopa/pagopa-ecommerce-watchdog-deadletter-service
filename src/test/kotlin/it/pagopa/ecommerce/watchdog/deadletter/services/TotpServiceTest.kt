@@ -43,17 +43,11 @@ class TotpServiceTest {
     fun setUp() {
         whenever(secretsProvider.getSecret("op")).thenReturn(Mono.just(secret))
         givenAttemptReserved(true)
-        givenLockApplied(false)
     }
 
     private fun givenAttemptReserved(reserved: Boolean) {
-        whenever(operatorsRepository.reserveTotpAttempt("op", now, maxAttempts))
+        whenever(operatorsRepository.reserveTotpAttempt("op", now, maxAttempts, lockedUntil))
             .thenReturn(Mono.just(if (reserved) 1L else 0L))
-    }
-
-    private fun givenLockApplied(locked: Boolean) {
-        whenever(operatorsRepository.lockTotpIfTooManyAttempts("op", maxAttempts, lockedUntil))
-            .thenReturn(Mono.just(if (locked) 1L else 0L))
     }
 
     private fun givenUpdateModifies(count: Long) {
@@ -72,48 +66,47 @@ class TotpServiceTest {
         givenUpdateModifies(1)
 
         StepVerifier.create(service.verifyAndConsume("op", validCode, "tx")).verifyComplete()
-        verify(operatorsRepository).reserveTotpAttempt("op", now, maxAttempts)
+        verify(operatorsRepository).reserveTotpAttempt("op", now, maxAttempts, lockedUntil)
         verify(operatorsRepository).updateLastTotpTimeStepIfNewer("op", Totp.timeStep(now))
-        verify(operatorsRepository, never()).lockTotpIfTooManyAttempts(any(), any(), any())
     }
 
     @Test
-    fun `rejects a code that was already used and counts it as a failure`() {
+    fun `rejects a code that was already used`() {
         givenUpdateModifies(0)
 
         expectError(validCode, InvalidOtpException::class.java)
-        verify(operatorsRepository).lockTotpIfTooManyAttempts("op", maxAttempts, lockedUntil)
     }
 
     @Test
-    fun `rejects a wrong code, counts it and does not consume the time step`() {
+    fun `rejects a wrong code, the attempt is already counted and the time step is not consumed`() {
         expectError(wrongCode, InvalidOtpException::class.java)
-        verify(operatorsRepository).reserveTotpAttempt("op", now, maxAttempts)
-        verify(operatorsRepository).lockTotpIfTooManyAttempts("op", maxAttempts, lockedUntil)
+        verify(operatorsRepository).reserveTotpAttempt("op", now, maxAttempts, lockedUntil)
         verify(operatorsRepository, never()).updateLastTotpTimeStepIfNewer(any(), any())
     }
 
     @Test
-    fun `still rejects the wrong code when it triggers the lock`() {
-        givenLockApplied(true)
-
-        expectError(wrongCode, InvalidOtpException::class.java)
-    }
-
-    @Test
-    fun `rejects any code without verifying it when the operator is locked or out of attempts`() {
+    fun `rejects any code without verifying it when the operator is locked`() {
         givenAttemptReserved(false)
+        whenever(operatorsRepository.existsById("op")).thenReturn(Mono.just(true))
 
         expectError(validCode, TooManyOtpAttemptsException::class.java)
         verify(operatorsRepository, never()).updateLastTotpTimeStepIfNewer(any(), any())
-        verify(operatorsRepository, never()).lockTotpIfTooManyAttempts(any(), any(), any())
+    }
+
+    @Test
+    fun `rejects as invalid, not as locked, an operator that does not exist`() {
+        givenAttemptReserved(false)
+        whenever(operatorsRepository.existsById("op")).thenReturn(Mono.just(false))
+
+        expectError(validCode, InvalidOtpException::class.java)
+        verify(operatorsRepository, never()).updateLastTotpTimeStepIfNewer(any(), any())
     }
 
     @Test
     fun `rejects when the operator has no secret or a malformed one`() {
         whenever(secretsProvider.getSecret("missing")).thenReturn(Mono.empty())
         expectError(validCode, InvalidOtpException::class.java, "missing")
-        verify(operatorsRepository, never()).reserveTotpAttempt(any(), any(), any())
+        verify(operatorsRepository, never()).reserveTotpAttempt(any(), any(), any(), any())
 
         whenever(secretsProvider.getSecret("op")).thenReturn(Mono.just("not-base32!"))
         expectError(validCode, InvalidOtpException::class.java)
@@ -121,7 +114,7 @@ class TotpServiceTest {
 
     @Test
     fun `propagates database errors`() {
-        whenever(operatorsRepository.reserveTotpAttempt("op", now, maxAttempts))
+        whenever(operatorsRepository.reserveTotpAttempt("op", now, maxAttempts, lockedUntil))
             .thenReturn(Mono.error(RuntimeException("mongo down")))
 
         expectError(validCode, RuntimeException::class.java)

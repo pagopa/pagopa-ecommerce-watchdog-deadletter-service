@@ -1,5 +1,6 @@
 package it.pagopa.ecommerce.watchdog.deadletter.documents
 
+import java.time.Instant
 import org.springframework.data.annotation.Id
 import org.springframework.data.mongodb.core.mapping.Document
 
@@ -11,4 +12,6 @@ data class Operator(
     val surname: String,
     val email: String,
     val lastTotpTimeStep: Long? = null,
+    val totpFailedAttempts: Int? = null,
+    val totpLockedUntil: Instant? = null,
 )

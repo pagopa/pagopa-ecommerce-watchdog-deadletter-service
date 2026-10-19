@@ -28,8 +28,9 @@ class TotpService(
 
     /**
      * Verifies [code] against the operator's TOTP secret and consumes it, so the same code cannot
-     * be used twice. After [maxAttempts] consecutive failures the operator is locked for
-     * [lockDurationMinutes]. [transactionId] is used only for log correlation.
+     * be used twice. Every verification counts as an attempt: after [maxAttempts] attempts without
+     * a valid code the operator is locked for [lockDurationMinutes]. [transactionId] is used only
+     * for log correlation.
      *
      * @return an empty [Mono] on success, an [InvalidOtpException] or a
      *   [TooManyOtpAttemptsException] error otherwise
@@ -45,16 +46,34 @@ class TotpService(
                     .then(Mono.defer { verify(operatorId, secret, code, transactionId) })
             }
 
-    // Atomic: counts the attempt before verifying, so concurrent requests cannot bypass the limit.
-    private fun reserveAttempt(operatorId: String, transactionId: String): Mono<Void> =
-        operatorsRepository
-            .reserveTotpAttempt(operatorId, clock.instant(), maxAttempts)
+    // Atomic: counts the attempt (and stores the lock expiry on the last allowed one) before
+    // verifying, so concurrent requests cannot bypass the limit and no crash can leave a stale
+    // lock.
+    private fun reserveAttempt(operatorId: String, transactionId: String): Mono<Void> {
+        val now = clock.instant()
+        val lockedUntil = now.plus(Duration.ofMinutes(lockDurationMinutes))
+        return operatorsRepository
+            .reserveTotpAttempt(operatorId, now, maxAttempts, lockedUntil)
             .doOnError {
                 logMongoError("Failed to reserve OTP attempt", operatorId, transactionId, it)
             }
             .flatMap { reserved ->
                 if (reserved == 1L) {
                     Mono.empty()
+                } else {
+                    rejectNotReserved(operatorId, transactionId)
+                }
+            }
+    }
+
+    // Nothing reserved: either the operator is locked or it does not exist (nothing to protect).
+    private fun rejectNotReserved(operatorId: String, transactionId: String): Mono<Void> =
+        operatorsRepository
+            .existsById(operatorId)
+            .doOnError { logMongoError("Failed to load operator", operatorId, transactionId, it) }
+            .flatMap { exists ->
+                if (!exists) {
+                    reject(operatorId, transactionId, "operator_not_found", mongoDetails)
                 } else {
                     logger.event(
                         Level.WARN,
@@ -80,8 +99,8 @@ class TotpService(
             try {
                 Totp.matchingTimeStep(secret, code, clock.instant())
             } catch (e: IllegalArgumentException) {
-                return registerFailure(operatorId, transactionId, "malformed_secret")
-            } ?: return registerFailure(operatorId, transactionId, "wrong_code")
+                return reject(operatorId, transactionId, "malformed_secret", mongoDetails)
+            } ?: return reject(operatorId, transactionId, "wrong_code", mongoDetails)
         return consumeTimeStep(operatorId, step, transactionId)
     }
 
@@ -102,36 +121,9 @@ class TotpService(
                     )
                     Mono.empty()
                 } else {
-                    registerFailure(operatorId, transactionId, "code_already_used")
+                    reject(operatorId, transactionId, "code_already_used", mongoDetails)
                 }
             }
-
-    // The attempt was already counted by reserveAttempt: lock the operator if the limit is reached.
-    private fun registerFailure(
-        operatorId: String,
-        transactionId: String,
-        reason: String,
-    ): Mono<Void> {
-        val lockedUntil = clock.instant().plus(Duration.ofMinutes(lockDurationMinutes))
-        return operatorsRepository
-            .lockTotpIfTooManyAttempts(operatorId, maxAttempts, lockedUntil)
-            .doOnError { logMongoError("Failed to lock OTP", operatorId, transactionId, it) }
-            .doOnNext { locked ->
-                if (locked == 1L) {
-                    logger.event(
-                        Level.WARN,
-                        "Operator locked for too many OTP attempts",
-                        fields(
-                            operatorId,
-                            transactionId,
-                            LogFields.OUTCOME_FAILURE,
-                            mongoDetails + ("lockedUntil" to lockedUntil.toString()),
-                        ),
-                    )
-                }
-            }
-            .then(reject(operatorId, transactionId, reason, mongoDetails))
-    }
 
     private fun <T> reject(
         operatorId: String,
