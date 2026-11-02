@@ -7,12 +7,14 @@ import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
 /**
- * TOTP (RFC 6238) with HMAC-SHA256, 6 digits and 30 seconds steps, as used by Authenticator apps.
+ * TOTP (RFC 6238) with HMAC-SHA1, 6 digits and 30 seconds steps, as used by Authenticator apps.
  */
 object Totp {
     const val STEP_SECONDS = 30L
     private const val DIGITS = 6
-    private const val HMAC_ALGORITHM = "HmacSHA256"
+    // HMAC-SHA1 is the RFC 6238 default and the only algorithm supported by most Authenticator
+    // apps. HMAC is not affected by SHA-1 collision attacks.
+    private const val HMAC_ALGORITHM = "HmacSHA1" // NOSONAR
     private const val BASE32_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
 
     fun timeStep(instant: Instant): Long = instant.epochSecond / STEP_SECONDS
