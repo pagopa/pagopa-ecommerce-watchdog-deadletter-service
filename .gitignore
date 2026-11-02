@@ -163,3 +163,6 @@ gradle-app.setting
 
 # Node dependencies for mocks
 /node_modules
+
+# Local-only JWT signing keystore (see README: Local development without Azure Key Vault)
+/docker/config/jwt/*.p12

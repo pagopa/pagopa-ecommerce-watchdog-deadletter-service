@@ -1,0 +1,246 @@
+openapi: 3.0.0
+info:
+  version: 1.0.0
+  title: PagoPA Ecommerce Watchdog Transactions API
+  description: API to check a single transaction and to perform compensating actions on it.
+servers:
+  - url: http://localhost:8080
+tags:
+  - name: transactions
+    description: Single transaction check and compensating actions
+paths:
+  /v1/transactions/{transactionId}:
+    get:
+      tags:
+        - transactions
+      summary: Get a transaction with statuses, events and details
+      operationId: getTransaction
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TransactionId'
+      responses:
+        '200':
+          description: Transaction found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionCheck'
+        '400':
+          description: Invalid transaction id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+        '401':
+          description: Unauthorized. Missing or invalid authentication token.
+        '404':
+          description: Transaction not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+  /v1/transactions/{transactionId}/status:
+    get:
+      tags:
+        - transactions
+      summary: Get the eCommerce status of a transaction
+      description: Lightweight endpoint meant to be polled after a refund request.
+      operationId: getTransactionStatus
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TransactionId'
+      responses:
+        '200':
+          description: Current eCommerce status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionStatusResponse'
+        '400':
+          description: Invalid transaction id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+        '401':
+          description: Unauthorized. Missing or invalid authentication token.
+        '404':
+          description: Transaction not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+  /v1/transactions/{transactionId}/refund:
+    post:
+      tags:
+        - transactions
+      summary: Refund a transaction (OTP protected)
+      description: >
+        Verifies the operator's Authenticator (TOTP) code and requests a refund.
+        With `force=false` the refund is queued (201); with `force=true` the refund is
+        performed synchronously against the payment gateway (200 or 502).
+      operationId: refundTransaction
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TransactionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionRefundRequest'
+      responses:
+        '200':
+          description: Forced refund completed
+        '201':
+          description: Refund request taken in charge
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+        '401':
+          description: Unauthorized. Missing or invalid authentication token.
+        '404':
+          description: Transaction not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+        '409':
+          description: Transaction not refundable (wrong state or forced refund not supported)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+        '422':
+          description: Invalid OTP code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+        '429':
+          description: Too many invalid OTP attempts, the operator is temporarily locked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+        '502':
+          description: Forced refund rejected by the downstream payment gateway
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    TransactionId:
+      name: transactionId
+      in: path
+      required: true
+      description: eCommerce transaction id
+      schema:
+        type: string
+        pattern: '^[0-9a-fA-F]{32}$'
+  schemas:
+    TransactionCheck:
+      type: object
+      properties:
+        transactionId:
+          type: string
+        eCommerceStatus:
+          type: string
+        nodoStatus:
+          type: string
+        gatewayStatus:
+          type: string
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransactionEvent'
+        eCommerceDetails:
+          type: object
+        npgDetails:
+          type: object
+        nodoDetails:
+          type: object
+      required:
+        - transactionId
+        - events
+    TransactionEvent:
+      type: object
+      properties:
+        eventCode:
+          type: string
+        creationDate:
+          type: string
+          format: date-time
+      required:
+        - eventCode
+        - creationDate
+    TransactionStatusResponse:
+      type: object
+      properties:
+        eCommerceStatus:
+          type: string
+      required:
+        - eCommerceStatus
+    TransactionRefundRequest:
+      type: object
+      properties:
+        otpCode:
+          type: string
+          pattern: '^[0-9]{6}$'
+          description: Authenticator (TOTP) code of the operator
+        force:
+          type: boolean
+          default: false
+          description: When true the refund is performed synchronously on the payment gateway
+      required:
+        - otpCode
+    ProblemJson:
+      type: object
+      properties:
+        type:
+          type: string
+          format: uri
+          example: https://example.com/problem/invalid-request
+        title:
+          type: string
+          example: Invalid Request
+        status:
+          type: integer
+          example: 400
+        detail:
+          type: string
+          example: The provided input is not valid
+        instance:
+          type: string
+          format: uri
+          example: /v1/transactions/6460dc3e61ba4ed6bfea2c4468b2862c

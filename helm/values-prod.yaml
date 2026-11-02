@@ -79,6 +79,9 @@ microservice-chart:
     ECOMMERCE_HELPDESK_SERVER_READ_TIMEOUT_MILLIS: "10000"
     ECOMMERCE_HELPDESK_SERVER_CONNECTION_TIMEOUT_MILLIS: "10000"
     ECOMMERCE_HELPDESK_SERVER_MAX_IN_MEMORY_SIZE: "10485760"
+    ECOMMERCE_HELPDESK_COMMANDS_SERVER_URI: "https://api.platform.pagopa.it/ecommerce/helpdesk-commands-service/v1"
+    ECOMMERCE_HELPDESK_COMMANDS_SERVER_READ_TIMEOUT_MILLIS: "10000"
+    ECOMMERCE_HELPDESK_COMMANDS_SERVER_CONNECTION_TIMEOUT_MILLIS: "10000"
     NODO_TECHNICAL_SUPPORT_SERVER_URI: "https://api.platform.pagopa.it/technical-support/ndp/api/v1"
     NODO_TECHNICAL_SUPPORT_SERVER_READ_TIMEOUT_MILLIS: "10000"
     NODO_TECHNICAL_SUPPORT_SERVER_CONNECTION_TIMEOUT_MILLIS: "10000"
@@ -113,7 +116,9 @@ microservice-chart:
     MONGO_PASSWORD: mongo-ecommerce-password
     OTEL_EXPORTER_OTLP_HEADERS: elastic-otel-token-header
     ECOMMERCE_HELPDESK_API_KEY: ecommerce-helpdesk-service-api-key-for-watchdog
+    ECOMMERCE_HELPDESK_COMMANDS_API_KEY: ecommerce-helpdesk-commands-service-api-key-for-watchdog
     NODO_TECHNICAL_SUPPORT_API_KEY: nodo-helpdesk-service-api-key-for-watchdog
+    AUTH_TOTP_SECRETS: watchdog-totp-secrets
   nodeSelector: {}
   tolerations: []
   affinity:

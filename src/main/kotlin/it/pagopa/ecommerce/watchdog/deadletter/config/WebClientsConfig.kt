@@ -4,6 +4,11 @@ import io.netty.channel.ChannelOption
 import io.netty.handler.timeout.ReadTimeoutHandler
 import it.pagopa.generated.ecommerce.helpdesk.ApiClient as EcommerceHelpdeskApiClient
 import it.pagopa.generated.ecommerce.helpdesk.api.ECommerceApi
+import it.pagopa.generated.ecommerce.helpdesk.commands.ApiClient as EcommerceHelpdeskCommandsApiClient
+import it.pagopa.generated.ecommerce.helpdesk.commands.api.EcommerceApi as EcommerceHelpdeskCommandsApi
+import it.pagopa.generated.ecommerce.helpdesk.commands.model.ProblemJsonDto as CommandsProblemJsonDto
+import it.pagopa.generated.ecommerce.helpdesk.commands.model.RefundTransactionRequestDto
+import it.pagopa.generated.ecommerce.helpdesk.commands.model.RefundTransactionResponseDto
 import it.pagopa.generated.ecommerce.helpdesk.model.DeadLetterEventDto
 import it.pagopa.generated.ecommerce.helpdesk.model.DeadLetterExcludedStatusesDto
 import it.pagopa.generated.ecommerce.helpdesk.model.DeadLetterSearchDateTimeRangeDto
@@ -166,5 +171,46 @@ class WebClientsConfig {
         apiClient.setBasePath(serverUri)
         apiClient.setApiKey(apiKey)
         return PositionPaymentSnapshotResourceApi(apiClient)
+    }
+
+    @Bean(name = ["ecommerceHelpdeskCommandsWebClient"])
+    @RegisterReflectionForBinding(
+        CommandsProblemJsonDto::class,
+        RefundTransactionRequestDto::class,
+        RefundTransactionResponseDto::class,
+    )
+    fun ecommerceHelpdeskCommandsWebClient(
+        @Value("\${ecommerce-helpdesk-commands.server.uri}") serverUri: String,
+        @Value("\${ecommerce-helpdesk-commands.server.readTimeoutMillis}") readTimeoutMillis: Int,
+        @Value("\${ecommerce-helpdesk-commands.server.connectionTimeoutMillis}")
+        connectionTimeoutMillis: Int,
+    ): WebClient {
+
+        val httpClient =
+            HttpClient.create()
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, connectionTimeoutMillis)
+                .doOnConnected { connection: Connection ->
+                    connection.addHandlerLast(
+                        ReadTimeoutHandler(readTimeoutMillis.toLong(), TimeUnit.MILLISECONDS)
+                    )
+                }
+                .resolver { nameResolverSpec: NameResolverSpec -> nameResolverSpec.ndots(1) }
+
+        return EcommerceHelpdeskCommandsApiClient.buildWebClientBuilder()
+            .clientConnector(ReactorClientHttpConnector(httpClient))
+            .baseUrl(serverUri)
+            .build()
+    }
+
+    @Bean
+    fun ecommerceHelpdeskCommandsApi(
+        @Value("\${ecommerce-helpdesk-commands.server.uri}") serverUri: String,
+        @Value("\${ecommerce-helpdesk-commands.apiKey}") apiKey: String,
+        ecommerceHelpdeskCommandsWebClient: WebClient,
+    ): EcommerceHelpdeskCommandsApi {
+        val apiClient = EcommerceHelpdeskCommandsApiClient(ecommerceHelpdeskCommandsWebClient)
+        apiClient.setBasePath(serverUri)
+        apiClient.setApiKey(apiKey)
+        return EcommerceHelpdeskCommandsApi(apiClient)
     }
 }
