@@ -6,9 +6,7 @@ import java.time.Instant
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
-/**
- * TOTP (RFC 6238) with HMAC-SHA1, 6 digits and 30 seconds steps, as used by Authenticator apps.
- */
+/** TOTP (RFC 6238) with HMAC-SHA1, 6 digits and 30 seconds steps, as used by Authenticator apps. */
 object Totp {
     const val STEP_SECONDS = 30L
     private const val DIGITS = 6
