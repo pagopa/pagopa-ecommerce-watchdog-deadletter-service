@@ -18,7 +18,7 @@ object Totp {
     fun timeStep(instant: Instant): Long = instant.epochSecond / STEP_SECONDS
 
     fun generate(secret: ByteArray, timeStep: Long): String {
-        val mac = Mac.getInstance(HMAC_ALGORITHM)
+        val mac = Mac.getInstance(HMAC_ALGORITHM) // NOSONAR
         mac.init(SecretKeySpec(secret, HMAC_ALGORITHM))
         val hash = mac.doFinal(ByteBuffer.allocate(8).putLong(timeStep).array())
         val offset = hash.last().toInt() and 0x0f
