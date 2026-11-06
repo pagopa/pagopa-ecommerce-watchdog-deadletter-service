@@ -18,6 +18,8 @@ import java.util.stream.IntStream
 import org.junit.jupiter.api.Test
 import org.mockito.BDDMockito.given
 import org.mockito.kotlin.any
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
 import org.openapitools.jackson.nullable.JsonNullable
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest
@@ -209,6 +211,29 @@ class WatchdogDeadletterControllerTest {
             .exchange()
             .expectStatus()
             .isNotFound
+    }
+
+    @Test
+    fun `add action to deadletter transactions return '400 Bad Request' when more than 100 ids are passed`() {
+        val input =
+            DeadletterTransactionsActionInputDto(
+                (0..100).map { "id-$it" },
+                "Nessuna azione richiesta",
+            )
+
+        given(authService.getAuthenticatedUserId()).willReturn(Mono.just("test-user"))
+
+        webClient
+            .post()
+            .uri("/deadletter-transactions/actions/bulk")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(input)
+            .exchange()
+            .expectStatus()
+            .isBadRequest
+
+        verify(deadletterTransactionsService, never())
+            .addActionToDeadletterTransactions(any(), any())
     }
 
     @Test
