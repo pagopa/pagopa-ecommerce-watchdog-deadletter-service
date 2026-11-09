@@ -31,6 +31,7 @@ import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.DeadletterTran
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.ListDeadletterTransactions200ResponseDto as ListDeadletterTransactions200ResponseDtoV2
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.PageInfoDto as PageInfoDtoV2
 import it.pagopa.generated.nodo.support.model.PositionPaymentSnapshotDtoDto
+import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.Period
@@ -42,6 +43,8 @@ import kotlin.jvm.optionals.getOrNull
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.dao.DuplicateKeyException
+import org.springframework.dao.OptimisticLockingFailureException
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
@@ -51,6 +54,7 @@ import reactor.kotlin.core.publisher.toMono
 import reactor.kotlin.core.util.function.component1
 import reactor.kotlin.core.util.function.component2
 import reactor.kotlin.core.util.function.component3
+import reactor.util.retry.Retry
 
 @Service
 class DeadletterTransactionsService(
@@ -459,83 +463,190 @@ class DeadletterTransactionsService(
                 .searchTransactions(transactionId)
                 .map { it?.transactions?.firstOrNull() }
                 .flatMap { t ->
-                    val previousAction =
-                        deadletterTransactionActionRepository
-                            .findFirstByTransactionIdOrderByTimestampDesc(transactionId)
-                            .cache()
-                    val newAction =
-                        deadletterTransactionActionRepository
-                            .save(
-                                Action(
-                                    id = UUID.randomUUID().toString(),
-                                    transactionId = transactionId,
-                                    userId = userId,
-                                    action = actionType,
-                                    timestamp = Instant.now(),
-                                )
-                            )
-                            .cache()
-
                     val creationDate = t?.transactionInfo?.creationDate?.toLocalDate()
-                    if (creationDate == null) {
-                        newAction
-                    } else {
-                        updateStats(
-                                transactionId,
-                                creationDate,
-                                previousAction.map { it.action }.singleOptional(),
-                                newAction.map { it.action },
-                            )
-                            .then(newAction)
-                    }
+                    deadletterTransactionActionRepository
+                        .save(newAction(transactionId, userId, actionType))
+                        .flatMap { saved ->
+                            if (creationDate == null) {
+                                Mono.just(saved)
+                            } else {
+                                // The previous action is derived from the saved one, so
+                                // concurrent requests form a chain of transitions.
+                                updateStats(
+                                        transactionId,
+                                        creationDate,
+                                        findPreviousAction(saved),
+                                        Mono.just(saved.action),
+                                    )
+                                    .thenReturn(saved)
+                            }
+                        }
                 }
                 .switchIfEmpty(Mono.error(InvalidTransactionId()))
     }
+
+    private fun newAction(transactionId: String, userId: String, actionType: ActionType) =
+        Action(
+            id = UUID.randomUUID().toString(),
+            transactionId = transactionId,
+            userId = userId,
+            action = actionType,
+            timestamp = Instant.now().truncatedTo(ChronoUnit.MILLIS),
+        )
+
+    private fun findPreviousAction(saved: Action): Mono<Optional<ActionType>> =
+        deadletterTransactionActionRepository
+            .findFirstByTransactionIdAndIdNotAndTimestampLessThanOrderByTimestampDesc(
+                saved.transactionId,
+                saved.id,
+                saved.timestamp,
+            )
+            .map { it.action }
+            .singleOptional()
 
     fun addActionToDeadletterTransactions(
         input: DeadletterTransactionsActionInputDto,
         userId: String,
     ): Mono<List<Action>> {
 
-        val actionType: ActionType? = actionTypeConfig.types.find { input.value == it.value }
-        return if (actionType == null) Mono.error(InvalidActionValue())
-        else
-            Flux.fromIterable(input.transactionIds)
-                .flatMap { tId ->
-                    ecommerceHelpdeskServiceV1
-                        .searchTransactions(tId)
-                        .map { tId to it?.transactions?.firstOrNull() }
-                        .switchIfEmpty(Mono.error(InvalidTransactionId()))
-                }
-                .flatMap { (tId, transaction) ->
-                    val previousAction =
-                        deadletterTransactionActionRepository
-                            .findFirstByTransactionIdOrderByTimestampDesc(tId)
-                    val newAction =
-                        deadletterTransactionActionRepository.save(
-                            Action(
-                                id = UUID.randomUUID().toString(),
-                                transactionId = tId,
-                                userId = userId,
-                                action = actionType,
-                                timestamp = Instant.now(),
-                            )
-                        )
+        val actionType: ActionType =
+            actionTypeConfig.types.find { input.value == it.value }
+                ?: return Mono.error(InvalidActionValue())
 
-                    val creationDate = transaction?.transactionInfo?.creationDate?.toLocalDate()
-                    if (creationDate == null) {
-                        newAction
-                    } else {
-                        updateStats(
-                                tId,
-                                creationDate,
-                                previousAction.map { it.action }.singleOptional(),
-                                newAction.map { it.action },
+        val transactionIds = input.transactionIds.distinct()
+
+        /*
+         * 1. Resolve (in parallel, bounded) the creation date of every transaction. No write is
+         *    performed here, so an invalid transaction id makes the whole request fail without
+         *    leaving partial data.
+         * 2. Save the new actions (in parallel, bounded, preserving input order) and derive the
+         *    previous action from the saved one (the action immediately preceding it in the
+         *    history), so concurrent requests on the same transaction form a chain of
+         *    transitions and are never counted twice.
+         * 3. Update calendar stats grouping transitions by day: exactly one read-modify-write
+         *    per day document, days processed in parallel (different documents never
+         *    conflict). Conflicts with concurrent requests are handled with a retry.
+         */
+        return Flux.fromIterable(transactionIds)
+            .flatMapSequential({ tId -> resolvePendingAction(tId) }, BULK_CONCURRENCY)
+            .collectList()
+            .flatMap { pendingActions ->
+                Flux.fromIterable(pendingActions)
+                    .flatMapSequential(
+                        { pending ->
+                            deadletterTransactionActionRepository
+                                .save(newAction(pending.transactionId, userId, actionType))
+                                .flatMap<Result<Pair<Action, AccountedTransition?>>> { saved ->
+                                    if (pending.creationDate == null) {
+                                        Mono.just(Result.success(saved to null))
+                                    } else {
+                                        findPreviousAction(saved).map {
+                                            Result.success(
+                                                saved to
+                                                    AccountedTransition(
+                                                        pending.creationDate,
+                                                        it.getOrNull(),
+                                                    )
+                                            )
+                                        }
+                                    }
+                                }
+                                .onErrorResume { Mono.just(Result.failure(it)) }
+                        },
+                        BULK_CONCURRENCY,
+                    )
+                    .collectList()
+                    .flatMap { results ->
+                        // Stats are always updated for the actions actually persisted, even if
+                        // some other save failed, so that stored actions are never left
+                        // unaccounted for.
+                        val saved = results.mapNotNull { it.getOrNull() }
+                        val firstFailure = results.firstNotNullOfOrNull { it.exceptionOrNull() }
+                        updateStatsByDay(saved.mapNotNull { it.second }, actionType)
+                            .then(
+                                if (firstFailure != null) Mono.error(firstFailure)
+                                else Mono.just(saved.map { it.first })
                             )
-                            .then(newAction)
                     }
-                }
-                .collectList()
+            }
+    }
+
+    private data class PendingAction(val transactionId: String, val creationDate: LocalDate?)
+
+    private data class AccountedTransition(
+        val creationDate: LocalDate,
+        val previousAction: ActionType?,
+    )
+
+    private fun resolvePendingAction(transactionId: String): Mono<PendingAction> =
+        ecommerceHelpdeskServiceV1
+            .searchTransactions(transactionId)
+            .switchIfEmpty(Mono.error(InvalidTransactionId()))
+            .map { response ->
+                PendingAction(
+                    transactionId,
+                    response.transactions
+                        ?.firstOrNull()
+                        ?.transactionInfo
+                        ?.creationDate
+                        ?.toLocalDate(),
+                )
+            }
+
+    private fun updateStatsByDay(
+        transitions: List<AccountedTransition>,
+        newAction: ActionType,
+    ): Mono<Void> =
+        Flux.fromIterable(transitions.groupBy({ it.creationDate }, { it.previousAction }).entries)
+            .flatMap(
+                { (date, previousActions) ->
+                    applyStatsTransitions(date, previousActions.map { it to newAction })
+                },
+                BULK_CONCURRENCY,
+            )
+            .then()
+
+    /**
+     * Applies all the given (previous -> new) transitions to the stats document of the given day
+     * with a single read-modify-write. On concurrent modification (optimistic lock failure or
+     * concurrent first insert) the whole operation is retried, re-reading the document.
+     */
+    private fun applyStatsTransitions(
+        date: LocalDate,
+        transitions: List<Pair<ActionType?, ActionType>>,
+    ): Mono<CalendarStats> =
+        Mono.defer {
+                calendarStatsRepository
+                    .findByDate(date)
+                    .singleOptional()
+                    .map { current ->
+                        transitions.fold(current.getOrNull()) { stats, (previous, next) ->
+                            stats?.transition(previous?.type, next.type)
+                                ?: CalendarStats.createFrom(next, date)
+                        }!!
+                    }
+                    .flatMap { calendarStatsRepository.save(it) }
+            }
+            .retryWhen(
+                Retry.backoff(STATS_MAX_RETRIES, STATS_RETRY_MIN_BACKOFF)
+                    .jitter(0.5)
+                    .filter {
+                        it is OptimisticLockingFailureException || it is DuplicateKeyException
+                    }
+                    .doBeforeRetry {
+                        logger.warn(
+                            "Concurrent update of calendar stats for [{}], retry #{}",
+                            date,
+                            it.totalRetries() + 1,
+                        )
+                    }
+                    .onRetryExhaustedThrow { _, signal -> signal.failure() }
+            )
+
+    companion object {
+        private const val BULK_CONCURRENCY = 16
+        private const val STATS_MAX_RETRIES = 5L
+        private val STATS_RETRY_MIN_BACKOFF: Duration = Duration.ofMillis(50)
     }
 
     fun listActionsForDeadletterTransaction(transactionId: String, userId: String): Flux<Action> {
@@ -735,44 +846,16 @@ class DeadletterTransactionsService(
         previousAction: Mono<Optional<ActionType>>,
         newAction: Mono<ActionType>,
     ): Mono<CalendarStats> {
-        return Mono.zip(previousAction, newAction)
-            .flatMap { (oldOpt, new) ->
-                calendarStatsRepository
-                    .findByDate(transactionCreationDate)
-                    .map { stats ->
-                        oldOpt.ifPresentOrElse(
-                            {
-                                logger.debug(
-                                    "Previous action found for {}, stats already exists on {}",
-                                    transactionId,
-                                    transactionCreationDate,
-                                )
-                            },
-                            {
-                                logger.debug(
-                                    "No previous action was found for {}, but stats already exist on {}",
-                                    transactionId,
-                                    transactionCreationDate,
-                                )
-                            },
-                        )
-
-                        val old: ActionType? = oldOpt.getOrNull()
-
-                        stats.transition(old?.type, new.type)
-                    }
-                    .switchIfEmpty {
-                        newAction.map {
-                            logger.debug(
-                                "No previous stats for {} on {}, creating from scratch",
-                                transactionId,
-                                transactionCreationDate,
-                            )
-                            CalendarStats.createFrom(it, transactionCreationDate)
-                        }
-                    }
-            }
-            .flatMap { calendarStatsRepository.save(it) }
+        return Mono.zip(previousAction, newAction).flatMap { (oldOpt, new) ->
+            logger.debug(
+                "Updating stats on {} for {}: {} -> {}",
+                transactionCreationDate,
+                transactionId,
+                oldOpt.getOrNull()?.type,
+                new.type,
+            )
+            applyStatsTransitions(transactionCreationDate, listOf(oldOpt.getOrNull() to new))
+        }
     }
 
     fun updateHistoricStats(from: LocalDate, to: LocalDate): Mono<MonthStatsResponseDto> {

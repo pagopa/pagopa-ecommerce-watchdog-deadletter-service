@@ -732,9 +732,12 @@ class DeadletterTransactionServiceTest {
             Mono.just(it.getArgument<Action>(0))
         }
         whenever(
-                deadletterTransactionActionRepository.findFirstByTransactionIdOrderByTimestampDesc(
-                    any<String>()
-                )
+                deadletterTransactionActionRepository
+                    .findFirstByTransactionIdAndIdNotAndTimestampLessThanOrderByTimestampDesc(
+                        any<String>(),
+                        any<String>(),
+                        any<Instant>(),
+                    )
             )
             .thenReturn(Mono.empty())
         whenever(calendarStatsRepository.findByDate(any<LocalDate>())).thenReturn(Mono.empty())
@@ -939,9 +942,12 @@ class DeadletterTransactionServiceTest {
         whenever(ecommerceHelpdeskServiceV1.searchTransactions(any()))
             .thenReturn(Mono.just(searchTransactionResponseDto))
         whenever(
-                deadletterTransactionActionRepository.findFirstByTransactionIdOrderByTimestampDesc(
-                    any<String>()
-                )
+                deadletterTransactionActionRepository
+                    .findFirstByTransactionIdAndIdNotAndTimestampLessThanOrderByTimestampDesc(
+                        any<String>(),
+                        any<String>(),
+                        any<Instant>(),
+                    )
             )
             .thenReturn(Mono.empty())
         whenever(deadletterTransactionActionRepository.save(any())).thenAnswer {
@@ -987,9 +993,12 @@ class DeadletterTransactionServiceTest {
         whenever(ecommerceHelpdeskServiceV1.searchTransactions(any()))
             .thenReturn(Mono.just(searchTransactionResponseDto))
         whenever(
-                deadletterTransactionActionRepository.findFirstByTransactionIdOrderByTimestampDesc(
-                    any<String>()
-                )
+                deadletterTransactionActionRepository
+                    .findFirstByTransactionIdAndIdNotAndTimestampLessThanOrderByTimestampDesc(
+                        any<String>(),
+                        any<String>(),
+                        any<Instant>(),
+                    )
             )
             .thenReturn(Mono.empty())
         whenever(deadletterTransactionActionRepository.save(any())).thenAnswer {
@@ -1087,6 +1096,170 @@ class DeadletterTransactionServiceTest {
 
         StepVerifier.create(resultMono).expectError(InvalidTransactionId::class.java).verify()
         verify(deadletterTransactionActionRepository, never()).save(any())
+    }
+
+    private fun searchResponseWithCreationDate(date: OffsetDateTime) =
+        SearchTransactionResponseDto().apply {
+            transactions = buildList {
+                add(
+                    TransactionResultDto().apply {
+                        transactionInfo = TransactionInfoDto().apply { creationDate = date }
+                    }
+                )
+            }
+        }
+
+    @Test
+    fun `addActionToDeadletterTransactions should update stats once per day aggregating transitions`() {
+        val transactionIds = listOf("t1", "t2", "t3", "t1")
+        val userId = "userIdTest"
+        val finalAction = ActionType("final", ActionType.Type.FINAL)
+        val notFinalAction = ActionType("notFinal", ActionType.Type.NOT_FINAL)
+        actionConfig.types = listOf(finalAction, notFinalAction)
+        val creationDate = OffsetDateTime.now(ZoneOffset.UTC)
+
+        whenever(ecommerceHelpdeskServiceV1.searchTransactions(any()))
+            .thenReturn(Mono.just(searchResponseWithCreationDate(creationDate)))
+        // t1 had NOT_FINAL, t2 and t3 had no previous action
+        whenever(
+                deadletterTransactionActionRepository
+                    .findFirstByTransactionIdAndIdNotAndTimestampLessThanOrderByTimestampDesc(
+                        eq("t1"),
+                        any<String>(),
+                        any<Instant>(),
+                    )
+            )
+            .thenReturn(Mono.just(Action("a", "t1", userId, notFinalAction, Instant.now())))
+        whenever(
+                deadletterTransactionActionRepository
+                    .findFirstByTransactionIdAndIdNotAndTimestampLessThanOrderByTimestampDesc(
+                        eq("t2"),
+                        any<String>(),
+                        any<Instant>(),
+                    )
+            )
+            .thenReturn(Mono.empty())
+        whenever(
+                deadletterTransactionActionRepository
+                    .findFirstByTransactionIdAndIdNotAndTimestampLessThanOrderByTimestampDesc(
+                        eq("t3"),
+                        any<String>(),
+                        any<Instant>(),
+                    )
+            )
+            .thenReturn(Mono.empty())
+        whenever(deadletterTransactionActionRepository.save(any())).thenAnswer {
+            Mono.just(it.getArgument<Action>(0))
+        }
+        whenever(calendarStatsRepository.findByDate(any<LocalDate>()))
+            .thenReturn(Mono.just(CalendarStats(creationDate.toLocalDate().toString(), 0, 1, 5, 1)))
+        whenever(calendarStatsRepository.save(any<CalendarStats>())).thenAnswer {
+            Mono.just(it.getArgument<CalendarStats>(0))
+        }
+
+        StepVerifier.create(
+                deadletterTransactionsService.addActionToDeadletterTransactions(
+                    DeadletterTransactionsActionInputDto(transactionIds, "final"),
+                    userId,
+                )
+            )
+            .expectNextMatches { actions ->
+                actions.map { it.transactionId } == listOf("t1", "t2", "t3")
+            }
+            .verifyComplete()
+
+        verify(deadletterTransactionActionRepository, times(3)).save(any())
+        val statsCaptor = argumentCaptor<CalendarStats>()
+        verify(calendarStatsRepository, times(1)).save(statsCaptor.capture())
+        assertEquals(3, statsCaptor.firstValue.finalized)
+        assertEquals(0, statsCaptor.firstValue.notFinalized)
+        assertEquals(3, statsCaptor.firstValue.notAnalyzed)
+    }
+
+    @Test
+    fun `addActionToDeadletterTransactions should update stats for saved actions when another save fails`() {
+        val userId = "userIdTest"
+        val finalAction = ActionType("final", ActionType.Type.FINAL)
+        actionConfig.types = listOf(finalAction)
+        val creationDate = OffsetDateTime.now(ZoneOffset.UTC)
+
+        whenever(ecommerceHelpdeskServiceV1.searchTransactions(any()))
+            .thenReturn(Mono.just(searchResponseWithCreationDate(creationDate)))
+        whenever(
+                deadletterTransactionActionRepository
+                    .findFirstByTransactionIdAndIdNotAndTimestampLessThanOrderByTimestampDesc(
+                        any<String>(),
+                        any<String>(),
+                        any<Instant>(),
+                    )
+            )
+            .thenReturn(Mono.empty())
+        whenever(deadletterTransactionActionRepository.save(any())).thenAnswer {
+            val action = it.getArgument<Action>(0)
+            if (action.transactionId == "t2") Mono.error<Action>(RuntimeException("save failed"))
+            else Mono.just(action)
+        }
+        whenever(calendarStatsRepository.findByDate(any<LocalDate>())).thenReturn(Mono.empty())
+        whenever(calendarStatsRepository.save(any<CalendarStats>())).thenAnswer {
+            Mono.just(it.getArgument<CalendarStats>(0))
+        }
+
+        StepVerifier.create(
+                deadletterTransactionsService.addActionToDeadletterTransactions(
+                    DeadletterTransactionsActionInputDto(listOf("t1", "t2", "t3"), "final"),
+                    userId,
+                )
+            )
+            .expectErrorMatches { it is RuntimeException && it.message == "save failed" }
+            .verify()
+
+        val statsCaptor = argumentCaptor<CalendarStats>()
+        verify(calendarStatsRepository, times(1)).save(statsCaptor.capture())
+        assertEquals(2, statsCaptor.firstValue.finalized)
+    }
+
+    @Test
+    fun `addActionToDeadletterTransactions should retry stats update on optimistic locking failure`() {
+        val userId = "userIdTest"
+        val finalAction = ActionType("final", ActionType.Type.FINAL)
+        actionConfig.types = listOf(finalAction)
+        val creationDate = OffsetDateTime.now(ZoneOffset.UTC)
+
+        whenever(ecommerceHelpdeskServiceV1.searchTransactions(any()))
+            .thenReturn(Mono.just(searchResponseWithCreationDate(creationDate)))
+        whenever(
+                deadletterTransactionActionRepository
+                    .findFirstByTransactionIdAndIdNotAndTimestampLessThanOrderByTimestampDesc(
+                        any<String>(),
+                        any<String>(),
+                        any<Instant>(),
+                    )
+            )
+            .thenReturn(Mono.empty())
+        whenever(deadletterTransactionActionRepository.save(any())).thenAnswer {
+            Mono.just(it.getArgument<Action>(0))
+        }
+        whenever(calendarStatsRepository.findByDate(any<LocalDate>()))
+            .thenReturn(
+                Mono.just(CalendarStats(creationDate.toLocalDate().toString(), 0, 0, null, 1))
+            )
+        whenever(calendarStatsRepository.save(any<CalendarStats>()))
+            .thenReturn(
+                Mono.error(org.springframework.dao.OptimisticLockingFailureException("conflict"))
+            )
+            .thenAnswer { Mono.just(it.getArgument<CalendarStats>(0)) }
+
+        StepVerifier.create(
+                deadletterTransactionsService.addActionToDeadletterTransactions(
+                    DeadletterTransactionsActionInputDto(listOf("t1"), "final"),
+                    userId,
+                )
+            )
+            .expectNextMatches { it.size == 1 }
+            .verifyComplete()
+
+        verify(calendarStatsRepository, times(2)).findByDate(any<LocalDate>())
+        verify(calendarStatsRepository, times(2)).save(any<CalendarStats>())
     }
 
     @Test
