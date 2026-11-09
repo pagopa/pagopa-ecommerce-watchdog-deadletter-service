@@ -463,42 +463,46 @@ class DeadletterTransactionsService(
                 .searchTransactions(transactionId)
                 .map { it?.transactions?.firstOrNull() }
                 .flatMap { t ->
-                    val previousAction =
-                        deadletterTransactionActionRepository
-                            .findFirstByTransactionIdOrderByTimestampDesc(transactionId)
-                            .cache()
-                    val newAction =
-                        previousAction
-                            .then(
-                                Mono.defer {
-                                    deadletterTransactionActionRepository.save(
-                                        Action(
-                                            id = UUID.randomUUID().toString(),
-                                            transactionId = transactionId,
-                                            userId = userId,
-                                            action = actionType,
-                                            timestamp = Instant.now(),
-                                        )
-                                    )
-                                }
-                            )
-                            .cache()
-
                     val creationDate = t?.transactionInfo?.creationDate?.toLocalDate()
-                    if (creationDate == null) {
-                        newAction
-                    } else {
-                        updateStats(
-                                transactionId,
-                                creationDate,
-                                previousAction.map { it.action }.singleOptional(),
-                                newAction.map { it.action },
-                            )
-                            .then(newAction)
-                    }
+                    deadletterTransactionActionRepository
+                        .save(newAction(transactionId, userId, actionType))
+                        .flatMap { saved ->
+                            if (creationDate == null) {
+                                Mono.just(saved)
+                            } else {
+                                // The previous action is derived from the saved one, so
+                                // concurrent requests form a chain of transitions.
+                                updateStats(
+                                        transactionId,
+                                        creationDate,
+                                        findPreviousAction(saved),
+                                        Mono.just(saved.action),
+                                    )
+                                    .thenReturn(saved)
+                            }
+                        }
                 }
                 .switchIfEmpty(Mono.error(InvalidTransactionId()))
     }
+
+    private fun newAction(transactionId: String, userId: String, actionType: ActionType) =
+        Action(
+            id = UUID.randomUUID().toString(),
+            transactionId = transactionId,
+            userId = userId,
+            action = actionType,
+            timestamp = Instant.now().truncatedTo(ChronoUnit.MILLIS),
+        )
+
+    private fun findPreviousAction(saved: Action): Mono<Optional<ActionType>> =
+        deadletterTransactionActionRepository
+            .findFirstByTransactionIdAndIdNotAndTimestampLessThanOrderByTimestampDesc(
+                saved.transactionId,
+                saved.id,
+                saved.timestamp,
+            )
+            .map { it.action }
+            .singleOptional()
 
     fun addActionToDeadletterTransactions(
         input: DeadletterTransactionsActionInputDto,
@@ -512,10 +516,13 @@ class DeadletterTransactionsService(
         val transactionIds = input.transactionIds.distinct()
 
         /*
-         * 1. Resolve (in parallel, bounded) creation date and previous action of every
-         *    transaction. No write is performed here, so an invalid transaction id makes the
-         *    whole request fail without leaving partial data.
-         * 2. Save the new actions (in parallel, bounded, preserving input order).
+         * 1. Resolve (in parallel, bounded) the creation date of every transaction. No write is
+         *    performed here, so an invalid transaction id makes the whole request fail without
+         *    leaving partial data.
+         * 2. Save the new actions (in parallel, bounded, preserving input order) and derive the
+         *    previous action from the saved one (the action immediately preceding it in the
+         *    history), so concurrent requests on the same transaction form a chain of
+         *    transitions and are never counted twice.
          * 3. Update calendar stats grouping transitions by day: exactly one read-modify-write
          *    per day document, days processed in parallel (different documents never
          *    conflict). Conflicts with concurrent requests are handled with a retry.
@@ -527,28 +534,47 @@ class DeadletterTransactionsService(
                 Flux.fromIterable(pendingActions)
                     .flatMapSequential(
                         { pending ->
-                            deadletterTransactionActionRepository.save(
-                                Action(
-                                    id = UUID.randomUUID().toString(),
-                                    transactionId = pending.transactionId,
-                                    userId = userId,
-                                    action = actionType,
-                                    timestamp = Instant.now(),
-                                )
-                            )
+                            deadletterTransactionActionRepository
+                                .save(newAction(pending.transactionId, userId, actionType))
+                                .flatMap<Result<Pair<Action, AccountedTransition?>>> { saved ->
+                                    if (pending.creationDate == null) {
+                                        Mono.just(Result.success(saved to null))
+                                    } else {
+                                        findPreviousAction(saved).map {
+                                            Result.success(
+                                                saved to
+                                                    AccountedTransition(
+                                                        pending.creationDate,
+                                                        it.getOrNull(),
+                                                    )
+                                            )
+                                        }
+                                    }
+                                }
+                                .onErrorResume { Mono.just(Result.failure(it)) }
                         },
                         BULK_CONCURRENCY,
                     )
                     .collectList()
-                    .flatMap { savedActions ->
-                        updateStatsByDay(pendingActions, actionType).thenReturn(savedActions)
+                    .flatMap { results ->
+                        // Stats are always updated for the actions actually persisted, even if
+                        // some other save failed, so that stored actions are never left
+                        // unaccounted for.
+                        val saved = results.mapNotNull { it.getOrNull() }
+                        val firstFailure = results.firstNotNullOfOrNull { it.exceptionOrNull() }
+                        updateStatsByDay(saved.mapNotNull { it.second }, actionType)
+                            .then(
+                                if (firstFailure != null) Mono.error(firstFailure)
+                                else Mono.just(saved.map { it.first })
+                            )
                     }
             }
     }
 
-    private data class PendingAction(
-        val transactionId: String,
-        val creationDate: LocalDate?,
+    private data class PendingAction(val transactionId: String, val creationDate: LocalDate?)
+
+    private data class AccountedTransition(
+        val creationDate: LocalDate,
         val previousAction: ActionType?,
     )
 
@@ -556,34 +582,22 @@ class DeadletterTransactionsService(
         ecommerceHelpdeskServiceV1
             .searchTransactions(transactionId)
             .switchIfEmpty(Mono.error(InvalidTransactionId()))
-            .flatMap { response ->
-                val creationDate =
+            .map { response ->
+                PendingAction(
+                    transactionId,
                     response.transactions
                         ?.firstOrNull()
                         ?.transactionInfo
                         ?.creationDate
-                        ?.toLocalDate()
-                if (creationDate == null) {
-                    Mono.just(PendingAction(transactionId, null, null))
-                } else {
-                    deadletterTransactionActionRepository
-                        .findFirstByTransactionIdOrderByTimestampDesc(transactionId)
-                        .map { it.action }
-                        .singleOptional()
-                        .map { PendingAction(transactionId, creationDate, it.getOrNull()) }
-                }
+                        ?.toLocalDate(),
+                )
             }
 
     private fun updateStatsByDay(
-        pendingActions: List<PendingAction>,
+        transitions: List<AccountedTransition>,
         newAction: ActionType,
     ): Mono<Void> =
-        Flux.fromIterable(
-                pendingActions
-                    .filter { it.creationDate != null }
-                    .groupBy({ it.creationDate!! }, { it.previousAction })
-                    .entries
-            )
+        Flux.fromIterable(transitions.groupBy({ it.creationDate }, { it.previousAction }).entries)
             .flatMap(
                 { (date, previousActions) ->
                     applyStatsTransitions(date, previousActions.map { it to newAction })
