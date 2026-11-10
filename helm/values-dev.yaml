@@ -68,7 +68,7 @@ microservice-chart:
   envConfig:
     ACTIVE_PROFILE: k8s
     ROOT_LOGGING_LEVEL: "info"
-    OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.elastic-system.svc:4317"
+    OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-scalable-lb-collector.otel.svc.cluster.local:4317"
     OTEL_RESOURCE_ATTRIBUTES_DEPLOYMENT_ENVIRONMENT: "dev"
     OTEL_EXPORTER_OTLP_PROTOCOL: grpc
     OTEL_TRACES_EXPORTER: otlp
