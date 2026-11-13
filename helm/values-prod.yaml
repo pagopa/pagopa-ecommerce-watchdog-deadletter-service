@@ -119,6 +119,7 @@ microservice-chart:
     ECOMMERCE_HELPDESK_COMMANDS_API_KEY: ecommerce-helpdesk-commands-service-api-key-for-watchdog
     NODO_TECHNICAL_SUPPORT_API_KEY: nodo-helpdesk-service-api-key-for-watchdog
     AUTH_TOTP_SECRETS: watchdog-totp-secrets
+    INTERNAL_API_KEY: watchdog-internal-api-key
   nodeSelector: {}
   tolerations: []
   affinity:
