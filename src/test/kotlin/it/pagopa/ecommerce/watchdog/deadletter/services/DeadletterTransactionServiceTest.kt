@@ -1502,6 +1502,32 @@ class DeadletterTransactionServiceTest {
     }
 
     @Test
+    fun `getDeadletterTransactionsWithActionsByDateRange should propagate helpdesk errors`() {
+        whenever(
+                ecommerceHelpdeskServiceV1.getDeadletterTransactionsByDateRange(
+                    any(),
+                    any(),
+                    any(),
+                    any(),
+                )
+            )
+            .thenReturn(Mono.error(RuntimeException("helpdesk unavailable")))
+
+        StepVerifier.create(
+                deadletterTransactionsService.getDeadletterTransactionsWithActionsByDateRange(
+                    LocalDate.now(),
+                    LocalDate.now(),
+                    0,
+                    10,
+                )
+            )
+            .expectErrorMatches { it is RuntimeException && it.message == "helpdesk unavailable" }
+            .verify()
+
+        verify(deadletterTransactionActionRepository, never()).findAllByTransactionIdIn(any())
+    }
+
+    @Test
     fun `getDeadletterTransactionsByDateRange should return empty response on client error`() {
         val fromDate = LocalDate.now()
         val toDate = LocalDate.now()

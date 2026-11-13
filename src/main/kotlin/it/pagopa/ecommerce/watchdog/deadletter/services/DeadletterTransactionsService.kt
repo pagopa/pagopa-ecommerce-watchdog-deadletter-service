@@ -224,6 +224,25 @@ class DeadletterTransactionsService(
         toDate: LocalDate,
         pageNumber: Int,
         pageSize: Int,
+    ): Mono<ListDeadletterTransactions200ResponseDtoV2> =
+        fetchDeadletterTransactionsByDateRange(
+            fromDate,
+            toDate,
+            pageNumber,
+            pageSize,
+            emptyOnHelpdeskError = true,
+        )
+
+    /**
+     * @param emptyOnHelpdeskError when true an error retrieving the deadletter transactions list
+     *   from helpdesk is logged and an empty page is returned, otherwise the error is propagated
+     */
+    private fun fetchDeadletterTransactionsByDateRange(
+        fromDate: LocalDate,
+        toDate: LocalDate,
+        pageNumber: Int,
+        pageSize: Int,
+        emptyOnHelpdeskError: Boolean,
     ): Mono<ListDeadletterTransactions200ResponseDtoV2> {
         return ecommerceHelpdeskServiceV1
             .getDeadletterTransactionsByDateRange(fromDate, toDate, pageSize, pageNumber)
@@ -235,7 +254,7 @@ class DeadletterTransactionsService(
                     error.message,
                     error,
                 )
-                Mono.empty()
+                if (emptyOnHelpdeskError) Mono.empty() else Mono.error(error)
             }
             .flatMap { response ->
                 val deadLetterEvents = response.deadLetterEvents
@@ -792,7 +811,8 @@ class DeadletterTransactionsService(
 
     /**
      * Retrieves the deadletter transactions of the given date range, each one enriched with the
-     * actions taken on it.
+     * actions taken on it. Unlike [getDeadletterTransactionsByDateRange], an error retrieving the
+     * list from helpdesk is propagated, so that callers can tell it apart from an empty result.
      */
     fun getDeadletterTransactionsWithActionsByDateRange(
         fromDate: LocalDate,
@@ -800,27 +820,33 @@ class DeadletterTransactionsService(
         pageNumber: Int,
         pageSize: Int,
     ): Mono<DeadletterTransactionsWithActionsResponseDto> =
-        getDeadletterTransactionsByDateRange(fromDate, toDate, pageNumber, pageSize).flatMap {
-            response ->
-            val transactionIds = response.deadletterTransactions.map { tx -> tx.transactionId }
-            listActionsForDeadletterTransactions(
-                    DeadletterTransactionActionsRequestDto(transactionIds)
-                )
-                .collectList()
-                .map { actionsLists ->
-                    val actionsByTransactionId =
-                        actionsLists.flatten().groupBy { action -> action.transactionId }
-                    DeadletterTransactionsWithActionsResponseDto(
-                        response.deadletterTransactions.map { tx ->
-                            toTransactionWithActions(
-                                tx,
-                                actionsByTransactionId[tx.transactionId] ?: emptyList(),
-                            )
-                        },
-                        response.page,
+        fetchDeadletterTransactionsByDateRange(
+                fromDate,
+                toDate,
+                pageNumber,
+                pageSize,
+                emptyOnHelpdeskError = false,
+            )
+            .flatMap { response ->
+                val transactionIds = response.deadletterTransactions.map { tx -> tx.transactionId }
+                listActionsForDeadletterTransactions(
+                        DeadletterTransactionActionsRequestDto(transactionIds)
                     )
-                }
-        }
+                    .collectList()
+                    .map { actionsLists ->
+                        val actionsByTransactionId =
+                            actionsLists.flatten().groupBy { action -> action.transactionId }
+                        DeadletterTransactionsWithActionsResponseDto(
+                            response.deadletterTransactions.map { tx ->
+                                toTransactionWithActions(
+                                    tx,
+                                    actionsByTransactionId[tx.transactionId] ?: emptyList(),
+                                )
+                            },
+                            response.page,
+                        )
+                    }
+            }
 
     private fun toTransactionWithActions(
         tx: DeadletterTransactionDtoV2,
