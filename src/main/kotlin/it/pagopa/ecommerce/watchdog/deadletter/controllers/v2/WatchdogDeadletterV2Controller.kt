@@ -5,6 +5,7 @@ import it.pagopa.ecommerce.watchdog.deadletter.services.DeadletterTransactionsSe
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.api.V2Api
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.DeadletterTransactionActionDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.DeadletterTransactionActionsRequestDto
+import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.DeadletterTransactionsWithActionsResponseDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.ListDeadletterTransactions200ResponseDto
 import jakarta.validation.Valid
 import jakarta.validation.constraints.Max
@@ -52,6 +53,23 @@ class WatchdogDeadletterV2Controller(
         logger.info("Received listDeadletterTransactions request for [{},{}] ", fromDate, toDate)
         return deadletterTransactionsService
             .getDeadletterTransactionsByDateRange(fromDate, toDate, pageNumber, pageSize)
+            .map { transactions -> ResponseEntity.ok(transactions) }
+    }
+
+    override fun listDeadletterTransactionsInternal(
+        @RequestParam("fromDate") @NotNull @Valid fromDate: LocalDate,
+        @RequestParam("toDate") @NotNull @Valid toDate: LocalDate,
+        @RequestParam("pageNumber") @NotNull @Min(value = 0) @Valid pageNumber: Int,
+        @RequestParam("pageSize") @NotNull @Min(value = 1) @Max(value = 1000) @Valid pageSize: Int,
+        exchange: ServerWebExchange,
+    ): Mono<ResponseEntity<DeadletterTransactionsWithActionsResponseDto>> {
+        logger.info(
+            "Received listDeadletterTransactionsInternal request for [{},{}] ",
+            fromDate,
+            toDate,
+        )
+        return deadletterTransactionsService
+            .getDeadletterTransactionsWithActionsByDateRange(fromDate, toDate, pageNumber, pageSize)
             .map { transactions -> ResponseEntity.ok(transactions) }
     }
 }

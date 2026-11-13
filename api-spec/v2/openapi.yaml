@@ -12,6 +12,8 @@ tags:
     description: Manual actions or notes related to deadletter transactions
   - name: authentication
     description: User authentication
+  - name: internal
+    description: Internal APIs authenticated with an api key
 paths:
   /v2/deadletter-transactions:
     get:
@@ -135,8 +137,77 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProblemJson'
+  /v2/internal/deadletter-transactions:
+    get:
+      description: >
+        Internal API authenticated with an api key (x-api-key header), intended to be invoked by APIM only. Every transaction is returned together with the actions taken on it.
+      tags:
+        - internal
+      summary: List all deadletter transactions with their actions
+      operationId: listDeadletterTransactionsInternal
+      security:
+        - apiKeyAuth: []
+      parameters:
+        - name: fromDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+            example: '2025-08-19'
+          description: Filter transactions by a starting date (format YYYY-MM-DD)
+        - name: toDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+            example: '2025-08-19'
+          description: Filter transactions by a ending date (format YYYY-MM-DD)
+        - name: pageNumber
+          in: query
+          required: true
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+          description: Searched page number, starting from 0
+        - name: pageSize
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 10
+          description: Max element per page
+      responses:
+        '200':
+          description: List of deadletter transactions with pagination, each one with the actions taken on it
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeadletterTransactionsWithActionsResponse'
+        '400':
+          description: Invalid request or query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
+        '401':
+          description: Unauthorized. Missing or invalid api key.
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemJson'
 components:
   securitySchemes:
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
     bearerAuth:
       type: http
       scheme: bearer
@@ -200,6 +271,30 @@ components:
         - pspId
         - eCommerceStatus
         - deadletterTransactionDetails
+    DeadletterTransactionsWithActionsResponse:
+      type: object
+      properties:
+        deadletterTransactions:
+          type: array
+          items:
+            $ref: '#/components/schemas/DeadletterTransactionWithActions'
+        page:
+          $ref: '#/components/schemas/PageInfo'
+      required:
+        - deadletterTransactions
+        - page
+    DeadletterTransactionWithActions:
+      allOf:
+        - $ref: '#/components/schemas/DeadletterTransaction'
+        - type: object
+          properties:
+            actions:
+              type: array
+              description: Actions taken on the deadletter transaction, sorted by timestamp
+              items:
+                $ref: '#/components/schemas/DeadletterTransactionAction'
+          required:
+            - actions
     DeadletterTransactionAction:
       type: object
       properties:

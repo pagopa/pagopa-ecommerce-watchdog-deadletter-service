@@ -1420,6 +1420,88 @@ class DeadletterTransactionServiceTest {
     }
 
     @Test
+    fun `getDeadletterTransactionsWithActionsByDateRange should return transactions enriched with their actions`() {
+        val fromDate = LocalDate.parse("2025-01-01")
+        val toDate = LocalDate.parse("2025-01-02")
+
+        fun deadLetterEvent(id: String) =
+            DeadLetterEventDto().apply {
+                transactionInfo =
+                    DeadLetterTransactionInfoDto().apply {
+                        transactionId = id
+                        paymentGateway = "NPG"
+                    }
+            }
+
+        whenever(
+                ecommerceHelpdeskServiceV1.getDeadletterTransactionsByDateRange(
+                    any(),
+                    any(),
+                    any(),
+                    any(),
+                )
+            )
+            .thenReturn(
+                Mono.just(
+                    SearchDeadLetterEventResponseDto().apply {
+                        deadLetterEvents = listOf(deadLetterEvent("tx1"), deadLetterEvent("tx2"))
+                        page =
+                            PageInfoDto().apply {
+                                current = 0
+                                total = 1
+                                results = 2
+                            }
+                    }
+                )
+            )
+        whenever(ecommerceHelpdeskServiceV1.searchTransactions(any()))
+            .thenReturn(
+                Mono.just(
+                    SearchTransactionResponseDto().apply {
+                        transactions = mutableListOf(TransactionResultDto())
+                    }
+                )
+            )
+        whenever(ecommerceHelpdeskServiceV1.searchNpgOperations(any()))
+            .thenReturn(
+                Mono.just(
+                    it.pagopa.generated.ecommerce.helpdesk.model.SearchNpgOperationsResponseDto()
+                )
+            )
+        val action =
+            Action(
+                UUID.randomUUID().toString(),
+                "tx1",
+                "userIdTest",
+                ActionType("test", ActionType.Type.NOT_FINAL),
+                Instant.now(),
+            )
+        whenever(deadletterTransactionActionRepository.findAllByTransactionIdIn(any()))
+            .thenReturn(Flux.just(action))
+
+        StepVerifier.create(
+                deadletterTransactionsService.getDeadletterTransactionsWithActionsByDateRange(
+                    fromDate,
+                    toDate,
+                    0,
+                    10,
+                )
+            )
+            .expectNextMatches { response ->
+                response.page.results == 2 &&
+                    response.deadletterTransactions.map { it.transactionId } ==
+                        listOf("tx1", "tx2") &&
+                    response.deadletterTransactions[0].actions.map { it.id } == listOf(action.id) &&
+                    response.deadletterTransactions[1].actions.isEmpty()
+            }
+            .verifyComplete()
+
+        val idsCaptor = argumentCaptor<List<String>>()
+        verify(deadletterTransactionActionRepository).findAllByTransactionIdIn(idsCaptor.capture())
+        assertEquals(listOf("tx1", "tx2"), idsCaptor.firstValue.sorted())
+    }
+
+    @Test
     fun `getDeadletterTransactionsByDateRange should return empty response on client error`() {
         val fromDate = LocalDate.now()
         val toDate = LocalDate.now()

@@ -28,6 +28,8 @@ import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.ActionTypeDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.DeadletterTransactionActionDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.DeadletterTransactionActionsRequestDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.DeadletterTransactionDto as DeadletterTransactionDtoV2
+import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.DeadletterTransactionWithActionsDto
+import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.DeadletterTransactionsWithActionsResponseDto
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.ListDeadletterTransactions200ResponseDto as ListDeadletterTransactions200ResponseDtoV2
 import it.pagopa.generated.ecommerce.watchdog.deadletter.v2.model.PageInfoDto as PageInfoDtoV2
 import it.pagopa.generated.nodo.support.model.PositionPaymentSnapshotDtoDto
@@ -787,6 +789,60 @@ class DeadletterTransactionsService(
                 }
             }
     }
+
+    /**
+     * Retrieves the deadletter transactions of the given date range, each one enriched with the
+     * actions taken on it.
+     */
+    fun getDeadletterTransactionsWithActionsByDateRange(
+        fromDate: LocalDate,
+        toDate: LocalDate,
+        pageNumber: Int,
+        pageSize: Int,
+    ): Mono<DeadletterTransactionsWithActionsResponseDto> =
+        getDeadletterTransactionsByDateRange(fromDate, toDate, pageNumber, pageSize).flatMap {
+            response ->
+            val transactionIds = response.deadletterTransactions.map { tx -> tx.transactionId }
+            listActionsForDeadletterTransactions(
+                    DeadletterTransactionActionsRequestDto(transactionIds)
+                )
+                .collectList()
+                .map { actionsLists ->
+                    val actionsByTransactionId =
+                        actionsLists.flatten().groupBy { action -> action.transactionId }
+                    DeadletterTransactionsWithActionsResponseDto(
+                        response.deadletterTransactions.map { tx ->
+                            toTransactionWithActions(
+                                tx,
+                                actionsByTransactionId[tx.transactionId] ?: emptyList(),
+                            )
+                        },
+                        response.page,
+                    )
+                }
+        }
+
+    private fun toTransactionWithActions(
+        tx: DeadletterTransactionDtoV2,
+        actions: List<DeadletterTransactionActionDto>,
+    ): DeadletterTransactionWithActionsDto =
+        DeadletterTransactionWithActionsDto(
+                tx.transactionId,
+                tx.insertionDate,
+                tx.paymentToken,
+                tx.paymentMethodName,
+                tx.pspId,
+                tx.geteCommerceStatus(),
+                tx.deadletterTransactionDetails,
+                actions,
+            )
+            .gatewayAuthorizationStatus(tx.gatewayAuthorizationStatus)
+            .nodoStatus(tx.nodoStatus)
+            .paymentEndToEndId(tx.paymentEndToEndId)
+            .operationId(tx.operationId)
+            .eCommerceDetails(tx.geteCommerceDetails())
+            .nodoDetails(tx.nodoDetails)
+            .npgDetails(tx.npgDetails)
 
     fun updateNote(noteId: String, noteText: String, userId: String): Mono<Long> {
         /*
