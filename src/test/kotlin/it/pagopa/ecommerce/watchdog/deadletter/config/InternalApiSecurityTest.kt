@@ -10,6 +10,8 @@ import java.time.LocalDate
 import org.junit.jupiter.api.Test
 import org.mockito.BDDMockito.given
 import org.mockito.kotlin.any
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest
 import org.springframework.context.annotation.Import
@@ -91,6 +93,21 @@ class InternalApiSecurityTest {
             .exchange()
             .expectStatus()
             .isUnauthorized
+    }
+
+    @Test
+    fun `internal api should return 400 when pageSize is greater than 100`() {
+        webClient
+            .get()
+            .uri(
+                "/v2/internal/deadletter-transactions?fromDate=2025-08-19&toDate=2025-08-20&pageNumber=0&pageSize=101"
+            )
+            .header(API_KEY_HEADER, "test-internal-api-key")
+            .exchange()
+            .expectStatus()
+            .isBadRequest
+        verify(deadletterTransactionsService, never())
+            .getDeadletterTransactionsWithActionsByDateRange(any(), any(), any(), any())
     }
 
     @Test
