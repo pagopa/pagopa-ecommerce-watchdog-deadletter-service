@@ -92,3 +92,37 @@ stages:
                 docker logs pagopa-ecommerce-watchdog-deadletter-service
                 exit 1
               displayName: 'Health check'
+
+            - script: |
+                BASE_URL="localhost:8080/v2/internal/deadletter-transactions"
+                QUERY="fromDate=2025-10-28&toDate=2025-10-28&pageNumber=0&pageSize=10"
+                API_KEY="local-internal-api-key"
+
+                fail() {
+                  echo "$1"
+                  docker logs pagopa-ecommerce-watchdog-deadletter-service
+                  exit 1
+                }
+
+                echo "Without api key -> 401"
+                STATUS=$(curl -s -o /dev/null -w '%{http_code}' "$BASE_URL?$QUERY")
+                [ "$STATUS" == "401" ] || fail "Expected 401 without api key, got $STATUS"
+
+                echo "Wrong api key -> 401"
+                STATUS=$(curl -s -o /dev/null -w '%{http_code}' -H "x-api-key: wrong" "$BASE_URL?$QUERY")
+                [ "$STATUS" == "401" ] || fail "Expected 401 with wrong api key, got $STATUS"
+
+                echo "Invalid pageSize with valid api key -> 400"
+                STATUS=$(curl -s -o /dev/null -w '%{http_code}' -H "x-api-key: $API_KEY" "$BASE_URL?fromDate=2025-10-28&toDate=2025-10-28&pageNumber=0&pageSize=0")
+                [ "$STATUS" == "400" ] || fail "Expected 400 with pageSize=0, got $STATUS"
+
+                echo "Valid api key -> 200 with transactions and actions"
+                STATUS=$(curl -s -o response.json -w '%{http_code}' -H "x-api-key: $API_KEY" "$BASE_URL?$QUERY")
+                cat response.json; echo
+                [ "$STATUS" == "200" ] || fail "Expected 200 with valid api key, got $STATUS"
+                jq -e '.deadletterTransactions | length == 1' response.json || fail "Expected exactly one transaction"
+                jq -e '.deadletterTransactions[0].transactionId == "f6b85ca9fd8c4b58b2c02a7de7918a3d"' response.json || fail "Unexpected transactionId"
+                jq -e '.deadletterTransactions[0].actions | length >= 1' response.json || fail "Expected at least one action on the transaction"
+                jq -e '.deadletterTransactions[0].actions[0].transactionId == "f6b85ca9fd8c4b58b2c02a7de7918a3d"' response.json || fail "Action not bound to the transaction"
+                jq -e '.page.results == 1' response.json || fail "Unexpected page info"
+              displayName: 'Internal API test (deadletter-transactions with actions)'

@@ -6,6 +6,8 @@ services:
       context: .
     env_file:
       - ./.env
+    environment:
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-local-internal-api-key}
     ports:
       - "8080:8080"
     volumes:

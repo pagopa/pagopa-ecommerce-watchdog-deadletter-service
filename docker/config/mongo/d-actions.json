@@ -218,4 +218,17 @@
     "$date": "2026-06-09T07:30:08.622Z"
   },
   "_class": "it.pagopa.ecommerce.watchdog.deadletter.documents.Action"
+},
+{
+  "_id": "7d0b5d6e-3f0a-4d41-9b0c-2f6f1d3a9a11",
+  "transactionId": "f6b85ca9fd8c4b58b2c02a7de7918a3d",
+  "userId": "test",
+  "action": {
+    "value": "Presa in carico",
+    "type": "NOT_FINAL"
+  },
+  "timestamp": {
+    "$date": "2025-10-28T12:00:00.000Z"
+  },
+  "_class": "it.pagopa.ecommerce.watchdog.deadletter.documents.Action"
 }]
