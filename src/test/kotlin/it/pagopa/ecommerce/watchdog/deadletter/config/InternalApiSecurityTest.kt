@@ -96,11 +96,11 @@ class InternalApiSecurityTest {
     }
 
     @Test
-    fun `internal api should return 400 when pageSize is greater than 100`() {
+    fun `internal api should return 400 when pageSize is greater than 20`() {
         webClient
             .get()
             .uri(
-                "/v2/internal/deadletter-transactions?fromDate=2025-08-19&toDate=2025-08-20&pageNumber=0&pageSize=101"
+                "/v2/internal/deadletter-transactions?fromDate=2025-08-19&toDate=2025-08-20&pageNumber=0&pageSize=21"
             )
             .header(API_KEY_HEADER, "test-internal-api-key")
             .exchange()

@@ -60,7 +60,7 @@ class WatchdogDeadletterV2Controller(
         @RequestParam("fromDate") @NotNull @Valid fromDate: LocalDate,
         @RequestParam("toDate") @NotNull @Valid toDate: LocalDate,
         @RequestParam("pageNumber") @NotNull @Min(value = 0) @Valid pageNumber: Int,
-        @RequestParam("pageSize") @NotNull @Min(value = 1) @Max(value = 100) @Valid pageSize: Int,
+        @RequestParam("pageSize") @NotNull @Min(value = 1) @Max(value = 20) @Valid pageSize: Int,
         exchange: ServerWebExchange,
     ): Mono<ResponseEntity<DeadletterTransactionsWithActionsResponseDto>> {
         logger.info(
