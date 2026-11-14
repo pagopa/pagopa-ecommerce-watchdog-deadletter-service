@@ -92,3 +92,18 @@ stages:
                 docker logs pagopa-ecommerce-watchdog-deadletter-service
                 exit 1
               displayName: 'Health check'
+
+            - script: |
+                npx --yes newman@6 run postman/internal-api.postman_collection.json \
+                  -e postman/internal-api-local.postman_environment.json \
+                  --reporters cli,junit --reporter-junit-export Results/internal-api-TEST.xml \
+                || { docker logs pagopa-ecommerce-watchdog-deadletter-service; exit 1; }
+              displayName: 'Internal API test (newman)'
+
+            - task: PublishTestResults@2
+              condition: always()
+              inputs:
+                testResultsFormat: 'JUnit'
+                testResultsFiles: 'Results/internal-api-TEST.xml'
+                testRunTitle: 'Internal API (newman)'
+              displayName: 'Publish newman results'

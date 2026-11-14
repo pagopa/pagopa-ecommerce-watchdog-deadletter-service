@@ -1,0 +1,220 @@
+{
+  "info": {
+    "name": "Watchdog internal API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Without api key returns 401",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status is 401', () => pm.response.to.have.status(401));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/v2/internal/deadletter-transactions?fromDate={{fromDate}}&toDate={{toDate}}&pageNumber=0&pageSize=10",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "v2",
+            "internal",
+            "deadletter-transactions"
+          ],
+          "query": [
+            {
+              "key": "fromDate",
+              "value": "{{fromDate}}"
+            },
+            {
+              "key": "toDate",
+              "value": "{{toDate}}"
+            },
+            {
+              "key": "pageNumber",
+              "value": "0"
+            },
+            {
+              "key": "pageSize",
+              "value": "10"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Wrong api key returns 401",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status is 401', () => pm.response.to.have.status(401));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "x-api-key",
+            "value": "wrong"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/v2/internal/deadletter-transactions?fromDate={{fromDate}}&toDate={{toDate}}&pageNumber=0&pageSize=10",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "v2",
+            "internal",
+            "deadletter-transactions"
+          ],
+          "query": [
+            {
+              "key": "fromDate",
+              "value": "{{fromDate}}"
+            },
+            {
+              "key": "toDate",
+              "value": "{{toDate}}"
+            },
+            {
+              "key": "pageNumber",
+              "value": "0"
+            },
+            {
+              "key": "pageSize",
+              "value": "10"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Invalid pageSize returns 400",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status is 400', () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "x-api-key",
+            "value": "{{internalApiKey}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/v2/internal/deadletter-transactions?fromDate={{fromDate}}&toDate={{toDate}}&pageNumber=0&pageSize=0",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "v2",
+            "internal",
+            "deadletter-transactions"
+          ],
+          "query": [
+            {
+              "key": "fromDate",
+              "value": "{{fromDate}}"
+            },
+            {
+              "key": "toDate",
+              "value": "{{toDate}}"
+            },
+            {
+              "key": "pageNumber",
+              "value": "0"
+            },
+            {
+              "key": "pageSize",
+              "value": "0"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Valid api key returns transactions with actions",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status is 200', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test('one transaction is returned', () => pm.expect(body.deadletterTransactions).to.have.lengthOf(1));",
+              "const tx = body.deadletterTransactions[0];",
+              "pm.test('transactionId matches', () => pm.expect(tx.transactionId).to.eql(pm.environment.get('transactionId')));",
+              "pm.test('actions are attached to the transaction', () => {",
+              "    pm.expect(tx.actions).to.be.an('array').that.is.not.empty;",
+              "    tx.actions.forEach(a => pm.expect(a.transactionId).to.eql(tx.transactionId));",
+              "});",
+              "pm.test('page info is present', () => pm.expect(body.page.results).to.eql(1));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "x-api-key",
+            "value": "{{internalApiKey}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/v2/internal/deadletter-transactions?fromDate={{fromDate}}&toDate={{toDate}}&pageNumber=0&pageSize=10",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "v2",
+            "internal",
+            "deadletter-transactions"
+          ],
+          "query": [
+            {
+              "key": "fromDate",
+              "value": "{{fromDate}}"
+            },
+            {
+              "key": "toDate",
+              "value": "{{toDate}}"
+            },
+            {
+              "key": "pageNumber",
+              "value": "0"
+            },
+            {
+              "key": "pageSize",
+              "value": "10"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
