@@ -840,7 +840,9 @@ class DeadletterTransactionsService(
                             response.deadletterTransactions.map { tx ->
                                 toTransactionWithActions(
                                     tx,
-                                    actionsByTransactionId[tx.transactionId] ?: emptyList(),
+                                    // ArrayList instead of emptyList(): Jackson cannot
+                                    // introspect kotlin.collections.EmptyList in native image
+                                    actionsByTransactionId[tx.transactionId] ?: ArrayList(),
                                 )
                             },
                             response.page,

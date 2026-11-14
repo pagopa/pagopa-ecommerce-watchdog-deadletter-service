@@ -1492,7 +1492,9 @@ class DeadletterTransactionServiceTest {
                     response.deadletterTransactions.map { it.transactionId } ==
                         listOf("tx1", "tx2") &&
                     response.deadletterTransactions[0].actions.map { it.id } == listOf(action.id) &&
-                    response.deadletterTransactions[1].actions.isEmpty()
+                    response.deadletterTransactions[1].actions.isEmpty() &&
+                    // kotlin EmptyList cannot be serialized in native image
+                    response.deadletterTransactions[1].actions is java.util.ArrayList<*>
             }
             .verifyComplete()
 
