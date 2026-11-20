@@ -468,9 +468,29 @@ components:
           format: date-time
         eventCode:
           type: string
+        errorDetails:
+          $ref: '#/components/schemas/ErrorDetails'
+      required:
+        - creationDate
+        - eventCode
       example:
         creationDate: "2023-08-07T15:32:56.592Z"
         eventCode: "TRANSACTION_ACTIVATED_EVENT"
+        errorDetails:
+          httpErrorCode: 500
+          description: "Internal server error"
+    ErrorDetails:
+      type: object
+      description: Error details
+      properties:
+        httpErrorCode:
+          $ref: '#/components/schemas/HttpStatusCode'
+        description:
+          type: string
+          description: error description
+      required:
+        - httpErrorCode
+        - description
     DeadLetterExcludedPaymentGateway:
       type: array
       items:
