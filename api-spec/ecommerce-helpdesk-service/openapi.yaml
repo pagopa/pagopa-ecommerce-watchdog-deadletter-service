@@ -488,9 +488,12 @@ components:
         description:
           type: string
           description: error description
+        errorType:
+          type: string
+          description: error type
       required:
-        - httpErrorCode
         - description
+        - errorType
     DeadLetterExcludedPaymentGateway:
       type: array
       items:
